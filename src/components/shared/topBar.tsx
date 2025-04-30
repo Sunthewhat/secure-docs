@@ -6,7 +6,6 @@ import { Button } from '../ui/button';
 const TopBar: FC = () => {
 	const auth = useAuth();
 	const navigate = useNavigate();
-	const a = 'b';
 	return (
 		<header className='bg-white shadow'>
 			<div className='max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center'>
