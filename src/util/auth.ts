@@ -1,5 +1,4 @@
 // A fake authentication service
-// In a real app, this would connect to your backend
 
 type AuthService = {
 	isAuthenticated: boolean;
