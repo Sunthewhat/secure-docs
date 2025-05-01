@@ -5,7 +5,7 @@ import { useAuth } from '@/context/authContext';
 type LocationState = {
 	from?: {
 		pathname: string;
-	};
+	} | null;
 };
 
 // Login page (public)
@@ -15,7 +15,9 @@ const LoginPage = () => {
 	const auth = useAuth();
 
 	// Get the redirect path from location state or default to dashboard
-	const from = (location.state as LocationState).from?.pathname || '/dashboard';
+	const from = location.state
+		? (location.state as LocationState).from?.pathname || '/dashboard'
+		: '/dashboard';
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -33,7 +35,7 @@ const LoginPage = () => {
 	};
 
 	return (
-		<div className='p-4 max-w-md mx-auto'>
+		<div className='p-4 max-w-md mx-auto font-noto'>
 			<h2 className='text-2xl font-bold mb-4'>Login</h2>
 			<p className='mb-4'>You must log in to view the dashboard.</p>
 
