@@ -8,12 +8,12 @@
 @theme {
 	--font-noto: 'Noto Sans Thai', sans-serif;
 	--font-adlam: 'ADLaM Display', system-ui;
-	--color-primary_text: '#000000';
-	--color-secondary_text: '#FFFFFF';
-	--color-logo_text: '#FFFFFF';
-	--color-background: '#E5E7EB';
-	--color-primary_button: '#1C3FB7';
-	--color-secondary_button: '#9CA3AF';
+	--color-primary_text: #000000;
+	--color-secondary_text: #ffffff;
+	--color-logo_text: #ffffff;
+	--color-background: #e5e7eb;
+	--color-primary_button: #1c3fb7;
+	--color-secondary_button: #9ca3af;
 }
 
 @theme inline {
