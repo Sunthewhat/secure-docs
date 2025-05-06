@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/authContext';
 import { Button } from '../ui/button';
 import { IoDocumentTextOutline } from "react-icons/io5";
-import clsx from 'clsx';
-import "@fontsource/noto-sans-thai/600.css"; // Make sure this is imported
+import clsx from 'clsx';// Make sure this is imported
 
 const TopBar: FC = () => {
 	const auth = useAuth();
