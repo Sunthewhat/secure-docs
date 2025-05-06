@@ -2,8 +2,8 @@ import { FC } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/authContext';
 import { Button } from '../ui/button';
-import { IoDocumentTextOutline } from "react-icons/io5";
-import clsx from 'clsx';// Make sure this is imported
+import { IoDocumentTextOutline } from 'react-icons/io5';
+import clsx from 'clsx';
 
 const TopBar: FC = () => {
 	const auth = useAuth();
@@ -13,16 +13,16 @@ const TopBar: FC = () => {
 	const isActive = (path: string) => location.pathname === path;
 
 	return (
-		<header className='bg-black shadow'>
+		<header className='bg-black shadow font-noto'>
 			<div className='mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-				
 				{/* Left: Logo + nav */}
 				<div className='flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto'>
-					<IoDocumentTextOutline size={30} className="text-white" />
+					<IoDocumentTextOutline size={30} className='text-white' />
 					<h1
-					
 						className='text-2xl font-bold text-white font-adlam cursor-pointer text-[25px]'
-						onClick={() => {void navigate('/'); }}
+						onClick={() => {
+							void navigate('/');
+						}}
 					>
 						SecureDocs
 					</h1>
@@ -37,7 +37,7 @@ const TopBar: FC = () => {
 						].map(({ path, label }) => (
 							<Button
 								key={path}
-								variant="link"
+								variant='link'
 								className={clsx(
 									'hover:underline p-0 h-auto font-noto font-semibold text-[18px]',
 									isActive(path) ? 'text-white' : 'text-gray-400'
@@ -67,7 +67,13 @@ const TopBar: FC = () => {
 							</button>
 						</>
 					) : (
-						<Button onClick={() => { void navigate('/login'); }}>Log in</Button>
+						<Button
+							onClick={() => {
+								void navigate('/login');
+							}}
+						>
+							Log in
+						</Button>
 					)}
 				</div>
 			</div>
