@@ -1,6 +1,6 @@
 import { Layout } from '@/components/shared/layout/mainLayout';
 import { RequireAuth } from '@/components/shared/requiredAuth';
-import { DashboardPage } from '@/page/dashboard';
+import { DashboardPage } from '@/page/design';
 import { HomePage } from '@/page/home';
 import { LoginPage } from '@/page/login';
 import { FC } from 'react';

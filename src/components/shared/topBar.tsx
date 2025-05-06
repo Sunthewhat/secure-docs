@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/authContext';
-import { Button } from '../ui/button';
 
 const TopBar: FC = () => {
 	const auth = useAuth();
@@ -26,7 +25,7 @@ const TopBar: FC = () => {
 							</button>
 						</div>
 					) : (
-						<Button onClick={() => void navigate('/login')}>log in</Button>
+						<button onClick={() => void navigate('/login')}>log in</button>
 					)}
 				</div>
 			</div>
