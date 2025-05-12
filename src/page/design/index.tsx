@@ -1,6 +1,6 @@
 import { useAuth } from '@/context/authContext';
 
-const DashboardPage = () => {
+const DesignPage = () => {
 	const auth = useAuth();
 
 	return (
@@ -14,4 +14,4 @@ const DashboardPage = () => {
 	);
 };
 
-export { DashboardPage };
+export { DesignPage };
