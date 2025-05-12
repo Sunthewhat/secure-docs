@@ -1,8 +1,10 @@
 import { Layout } from '@/components/shared/layout/mainLayout';
 import { RequireAuth } from '@/components/shared/requiredAuth';
-import { DashboardPage } from '@/page/dashboard';
+import { DesignPage } from '@/page/design';
+import { HistoryPage } from '@/page/history';
 import { HomePage } from '@/page/home';
 import { LoginPage } from '@/page/login';
+import { SharePage } from '@/page/share';
 import { FC } from 'react';
 import { Routes, Route } from 'react-router';
 
@@ -11,15 +13,39 @@ const RouterProvider: FC = () => {
 		<Routes>
 			<Route element={<Layout />}>
 				{/* Public Routes */}
-				<Route path='/' element={<HomePage />} />
+				{/* <Route path='/' element={<HomePage />} /> */}
 				<Route path='/login' element={<LoginPage />} />
 
 				{/* Protected Routes */}
 				<Route
-					path='/dashboard'
+					path='/'
 					element={
 						<RequireAuth>
-							<DashboardPage />
+							<HomePage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path='/design'
+					element={
+						<RequireAuth>
+							<DesignPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path='/share'
+					element={
+						<RequireAuth>
+							<SharePage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path='/history'
+					element={
+						<RequireAuth>
+							<HistoryPage />
 						</RequireAuth>
 					}
 				/>

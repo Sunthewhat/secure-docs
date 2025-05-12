@@ -1,9 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=ADLaM+Display&family=Noto+Sans+Thai:wdth,wght@62.5..100,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=ADLaM+Display&family=Noto+Sans+Thai:wdth,wght@62.5..100,100..900&display=swap");
 
-@import 'tailwindcss';
-@import 'tw-animate-css';
-
-@custom-variant dark (&:is(.dark *));
+@import "tailwindcss";
 
 @theme {
 	--font-noto: 'Noto Sans Thai', sans-serif;
@@ -12,6 +9,7 @@
 	--color-secondary_text: #ffffff;
 	--color-logo_text: #ffffff;
 	--color-background: #e5e7eb;
+	--color-secondary_background: #FFFFFF;
 	--color-primary_button: #1c3fb7;
 	--color-secondary_button: #9ca3af;
 }

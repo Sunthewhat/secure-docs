@@ -6,7 +6,7 @@ import { TopBar } from '../topBar';
  */
 const Layout = () => {
 	return (
-		<div className='min-h-screen bg-gray-50'>
+		<div className='min-h-screen bg-gray-200'>
 			{/* Header */}
 			<TopBar />
 			{/* Main content */}
