@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import searchIcon from "../../asset/searchIcon.svg";
-import { Collection } from "../../components/home/collection.js";
+
 const HomePage = () => {
   const navigate = useNavigate();
   return (
     <div className=" flex flex-col">
       {/*  div text search and button */}
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-[1218px] h-[139px] px-[20px]">
+      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-full h-full px-[20px]">
         {/* div text  */}
         <div className="px-[25px] py-[50px]">
           <p className="font-bold text-lg w-fit">Collections</p>
@@ -37,7 +37,7 @@ const HomePage = () => {
       {/* <div className="font-noto bg-secondary_background rounded-[15px] mt-[40px] flex">
 				<Collection name="dsf" />
 			</div> */}
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-[1218px] h-[854px] px-[20px] mt-[25px] py-[20px]">
+      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-full h-full px-[20px] mt-[25px] py-[20px]">
         <div className="grid grid-cols-3 gap-[20px] w-full h-full">
           {[
             "IT4K",
@@ -46,6 +46,7 @@ const HomePage = () => {
             "D-Day",
             "IT6K",
             "GoodStudent",
+            "Test",
           ].map((label, i) => (
             <div
               key={i}
