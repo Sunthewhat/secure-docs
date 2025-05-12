@@ -32,7 +32,7 @@ const TopBar: FC = () => {
               { path: "/", label: "Home" },
               { path: "/design", label: "Design" },
               { path: "/share", label: "Share" },
-              { path: "/shared", label: "Shared" },
+              { path: "/history", label: "History" },
             ].map(({ path, label }) => (
               <button
                 key={path}
