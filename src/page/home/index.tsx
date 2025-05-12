@@ -21,13 +21,13 @@ const HomePage = () => {
               alt="searchIcon"
             />
             <input
-              className="text-noto text-[14px] border-1 rounded-[15px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
+              className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
               type="text"
               placeholder="Search designs..."
             />
           </div>
           <button
-            className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[15px] w-[185px] h-[39px] flex justify-center items-center"
+            className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[185px] h-[39px] flex justify-center items-center"
             onClick={() => void navigate("/")}
           >
             + Create design
