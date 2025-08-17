@@ -5,6 +5,7 @@ import { HistoryPage } from '@/page/history';
 import { HomePage } from '@/page/home';
 import { LoginPage } from '@/page/login';
 import { SharePage } from '@/page/share';
+import { PreviewPage } from '@/page/share/preview';
 import { FC } from 'react';
 import { Routes, Route } from 'react-router';
 
@@ -42,6 +43,14 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
+					path='/share/preview'
+					element={
+						<RequireAuth>
+							<PreviewPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
 					path='/history'
 					element={
 						<RequireAuth>
@@ -49,6 +58,7 @@ const RouterProvider: FC = () => {
 						</RequireAuth>
 					}
 				/>
+				
 
 				{/* Fallback for undefined routes */}
 				<Route path='*' element={<p>There's nothing here!</p>} />
