@@ -23,7 +23,7 @@ const TopBar: FC = () => {
               void navigate("/");
             }}
           >
-            SecureDocs
+            EasyCert
           </h1>
 
           {/* Nav Links */}
