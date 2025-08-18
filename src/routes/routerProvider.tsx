@@ -6,7 +6,7 @@ import { HomePage } from '@/page/home';
 import { LoginPage } from '@/page/login';
 import { SharePage } from '@/page/share';
 import { PreviewPage } from '@/page/share/preview';
-import { SaveSendPage } from '@/page/share/savesSend';
+import { SaveSendPage } from '@/page/share/saveSend';
 import { FC } from 'react';
 import { Routes, Route } from 'react-router';
 
