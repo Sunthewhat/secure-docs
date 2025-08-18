@@ -20,7 +20,9 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
       {/* Main Sidebar */}
       <div className="flex flex-col min-h-full border-r-[3px] border-gray-950 pr-2">
         <div
-          className="flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer hover:bg-gray-100 rounded-lg"
+          className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
+            activeMenu === "background" ? "bg-black text-white" : "hover:bg-gray-100"
+          }`}
           onClick={() =>
             setActiveMenu(activeMenu === "background" ? null : "background")
           }
@@ -29,11 +31,16 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
             src={backgroundIcon}
             alt="Background"
             className="w-6 h-6 mb-2"
+            style={{ 
+              filter: activeMenu === "background" ? "brightness(0) invert(1)" : "" 
+            }}
           />
           <span className="text-[14px]">Background</span>
         </div>
         <div
-          className="flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer hover:bg-gray-100 rounded-lg"
+          className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
+            activeMenu === "element" ? "bg-black text-white" : "hover:bg-gray-100"
+          }`}
           onClick={() =>
             setActiveMenu(activeMenu === "element" ? null : "element")
           }
@@ -42,11 +49,16 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
             src={lineIcon}
             alt="Line"
             className="w-6 h-6 mb-2"
+            style={{ 
+              filter: activeMenu === "element" ? "brightness(0) invert(1)" : "" 
+            }}
           />
           <span className="text-[14px]">Element</span>
         </div>
         <div
-          className="flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer hover:bg-gray-100 rounded-lg"
+          className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
+            activeMenu === "text" ? "bg-black text-white" : "hover:bg-gray-100"
+          }`}
           onClick={() =>
             setActiveMenu(activeMenu === "text" ? null : "text")
           }
@@ -55,7 +67,9 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
             src={textIcon}
             alt="Text"
             className="w-8 h-8 mb-2"
-            style={{ filter: "brightness(0)" }}
+            style={{ 
+              filter: activeMenu === "text" ? "brightness(0) invert(1)" : "brightness(0)" 
+            }}
           />
           <span className="text-[14px]">Text</span>
         </div>
@@ -75,26 +89,7 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
                 />
                 <span className="text-[14px]">Upload</span>
               </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <div className="w-6 h-6 bg-white border mb-2"></div>
-                <span className="text-[14px]">White</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <div className="w-6 h-6 bg-gray-200 mb-2"></div>
-                <span className="text-[14px]">Gray</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <div className="w-6 h-6 bg-blue-500 mb-2"></div>
-                <span className="text-[14px]">Blue</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <div className="w-6 h-6 bg-green-500 mb-2"></div>
-                <span className="text-[14px]">Green</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <div className="w-6 h-6 bg-red-500 mb-2"></div>
-                <span className="text-[14px]">Red</span>
-              </div>
+              {/* TODO add the bg image here */}
             </div>
           </div>
         )}

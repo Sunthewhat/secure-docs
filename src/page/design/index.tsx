@@ -1,16 +1,16 @@
-import { useAuth } from "@/context/authContext";
+// import { useAuth } from "@/context/authContext";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import CanvasArea from "@/components/design/CanvasArea";
 import ToolsSidebar from "@/components/design/ToolsSidebar";
 
 const DesignPage = () => {
-	const auth = useAuth();
+	// const auth = useAuth();
 	const navigate = useNavigate();
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
 		"background" | "element" | "text" | null
-	>(null);
+	>("element");
 	const handleShare = () => {
 		// Implement share functionality
 		void navigate("/share");
