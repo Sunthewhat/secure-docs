@@ -37,7 +37,7 @@ const RouterProvider: FC = () => {
           }
         />
         <Route
-          path="/share"
+          path="/share/:certId"
           element={
             <RequireAuth>
               <SharePage />
@@ -45,7 +45,7 @@ const RouterProvider: FC = () => {
           }
         />
         <Route
-          path="/share/preview"
+          path="/preview/:certId"
           element={
             <RequireAuth>
               <PreviewPage />

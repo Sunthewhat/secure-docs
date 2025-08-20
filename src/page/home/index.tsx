@@ -77,7 +77,7 @@ const HomePage = () => {
                 <button className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full">
                   Delete
                 </button>
-                <button className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full">
+                <button className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full" onClick={() => void navigate(`/share/${data.id}`)}>
                   Share
                 </button>
               </div>

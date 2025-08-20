@@ -30,10 +30,10 @@ const TopBar: FC = () => {
         {/* Nav Links */}
         <div className="flex flex-row px-18 gap-15">
           {[
-            { path: "/", label: "Home" },
-            { path: "/design", label: "Design" },
-            { path: "/share", label: "Share" },
-            { path: "/history", label: "History" },
+            // { path: "/", label: "Home" },
+            // { path: "/design", label: "Design" },
+        
+            // { path: "/history", label: "History" },
           ].map(({ path, label }) => (
             <button
               key={path}
