@@ -34,6 +34,15 @@ const PreviewPage = () => {
 		// Pass recipients data to the next page via navigate state
 		void navigate("/share/preview/send", { state: { recipients } });
 	};
+	const handleEdit = () => {
+		// Pass edit mode and certificate ID to design page
+		void navigate("/design", { 
+			state: { 
+				isEditing: true, 
+				certificateId: "cert_id_here" // Replace with actual certificate ID
+			} 
+		});
+	};
 
 	return (
 		<div className="select-none cursor-default">
@@ -80,7 +89,8 @@ const PreviewPage = () => {
 
 						{/* Edit Design Button */}
 						<div className="mt-5 flex flex-row justify-between items-center w-full xl:max-w-[500px] max-w-full">
-							<button className="bg-primary_button text-white px-5 h-[40px] rounded-[7px] text-sm font-medium ">
+							<button className="bg-primary_button text-white px-5 h-[40px] rounded-[7px] text-sm font-medium "
+							onClick={handleEdit}>
 								Edit Design
 							</button>
 							{/* Navigation arrows */}

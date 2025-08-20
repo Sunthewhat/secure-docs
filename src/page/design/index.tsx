@@ -1,72 +1,287 @@
-// import { useAuth } from "@/context/authContext";
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import CanvasArea from "@/components/design/CanvasArea";
-import ToolsSidebar from "@/components/design/ToolsSidebar";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
+import * as fabric from "fabric";
+import DesignHeader from "@/components/design/DesignHeader";
+import CertificateCanvas from "@/components/design/CertificateCanvas";
+import { Axios } from "@/util/axiosInstance";
+
+// Ensure custom properties are registered
+if (fabric.FabricObject) {
+	fabric.FabricObject.customProperties =
+		fabric.FabricObject.customProperties || [];
+	const customProps = ["name", "id", "dbField", "isAnchor"];
+	customProps.forEach((prop) => {
+		if (!fabric.FabricObject.customProperties.includes(prop)) {
+			fabric.FabricObject.customProperties.push(prop);
+		}
+	});
+}
+
+interface ElementUpdate {
+	fill?: string;
+	stroke?: string;
+	fontSize?: number;
+	fontWeight?: "normal" | "bold";
+	fontStyle?: "normal" | "italic";
+	text?: string;
+	dbField?: string;
+	anchorId?: string;
+}
 
 const DesignPage = () => {
-	// const auth = useAuth();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
-		"background" | "element" | "text" | null
+		"background" | "element" | "text" | "anchor" | null
 	>("element");
+	const [selectedElement, setSelectedElement] =
+		useState<fabric.Object | null>(null);
+	const [, setForceUpdate] = useState({});
+
+	// Edit mode state
+	const [isEditing, setIsEditing] = useState(false);
+	const [certificateId, setCertificateId] = useState<string | null>(null);
+
+	// Check for edit mode from navigation state
+	useEffect(() => {
+		if (location.state?.isEditing) {
+			setIsEditing(true);
+			setCertificateId(location.state.certificateId);
+		}
+	}, [location.state]);
+
 	const handleShare = () => {
-		// Implement share functionality
 		void navigate("/share");
 	};
-	const handleSaveDraft = () => {
-		// Implement save functionality
+
+	const handleSaveCertificate = async () => {
+		if (!certificateName.trim()) {
+			alert("Please enter a certificate name");
+			return;
+		}
+
+		if (!canvasRef.current) {
+			alert("Canvas not ready");
+			return;
+		}
+
+		try {
+			const canvas = canvasRef.current;
+
+			// Debug: Check custom properties
+			console.log(
+				"Custom properties:",
+				fabric.FabricObject.customProperties
+			);
+
+			// Debug: Check individual objects
+			canvas.getObjects().forEach((obj, i) => {
+				console.log(`Object ${i}:`, {
+					type: obj.type,
+					id: (obj as any).id,
+					dbField: (obj as any).dbField,
+					isAnchor: (obj as any).isAnchor,
+				});
+			});
+
+			const fabricDesign = canvas.toJSON();
+			console.log("Fabric design:", fabricDesign);
+
+			const payload = {
+				name: certificateName,
+				design: JSON.stringify(fabricDesign),
+			};
+			console.log("Payload:", payload);
+
+			let response;
+			if (isEditing && certificateId) {
+				response = await Axios.put(
+					`/certificate/${certificateId}`,
+					payload
+				);
+			} else {
+				response = await Axios.post("/certificate", payload);
+			}
+
+			if (response.status === 200) {
+				alert(
+					isEditing
+						? "Certificate updated successfully!"
+						: "Certificate saved successfully!"
+				);
+				if (isEditing) {
+					void navigate("/share");
+				}
+			} else {
+				alert(response.data?.msg || "Failed to save certificate");
+			}
+		} catch (error) {
+			console.error("Save failed:", error);
+			alert("Failed to save certificate. Please try again.");
+		}
+	};
+
+	const addElement = (type: string) => {
+		if (!canvasRef.current) return;
+
+		let fabricObject: fabric.Object;
+		const color = type === "text" ? "#000000" : "#3b82f6";
+
+		switch (type) {
+			case "rectangle":
+				fabricObject = new fabric.Rect({
+					left: 100,
+					top: 100,
+					width: 120,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "square":
+				fabricObject = new fabric.Rect({
+					left: 100,
+					top: 100,
+					width: 80,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "circle":
+				fabricObject = new fabric.Circle({
+					left: 100,
+					top: 100,
+					radius: 40,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "triangle":
+				fabricObject = new fabric.Triangle({
+					left: 100,
+					top: 100,
+					width: 80,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "line":
+				fabricObject = new fabric.Line([0, 0, 100, 0], {
+					left: 100,
+					top: 100,
+					stroke: color,
+					strokeWidth: 3,
+					fill: "",
+					originX: "left",
+					originY: "top",
+				});
+				break;
+			case "text":
+				fabricObject = new fabric.Textbox("Sample Text", {
+					left: 100,
+					top: 100,
+					width: 200,
+					fontSize: 18,
+					fill: color,
+					fontFamily: "Arial",
+				});
+				break;
+			case "anchor":
+				fabricObject = new fabric.Textbox("{{COLUMN}}", {
+					left: 100,
+					top: 100,
+					width: 150,
+					fontSize: 16,
+					fill: "#3b82f6",
+					fontFamily: "Arial",
+					textAlign: "center",
+					// Custom properties for database field mapping
+					dbField: "column",
+					isAnchor: true,
+					// Lock text editing on canvas
+					editable: false,
+					selectable: true,
+					id: "PLACEHOLDER-COLUMN",
+				});
+				break;
+			default:
+				return;
+		}
+
+		canvasRef.current.add(fabricObject);
+		canvasRef.current.setActiveObject(fabricObject);
+		canvasRef.current.renderAll();
+		setSelectedElement(fabricObject);
 	};
 
 	const handleShapeAdd = (shapeType: string) => {
-		console.log('Shape clicked:', shapeType);
+		addElement(shapeType);
 	};
 
-	const handleTextAdd = (textType: string) => {
-		console.log('Text clicked:', textType);
+	const handleTextAdd = () => {
+		addElement("text");
+	};
+
+	const handleUpdateElement = (updates: ElementUpdate) => {
+		if (!selectedElement || !canvasRef.current) return;
+
+		selectedElement.set(updates);
+		canvasRef.current.renderAll();
+		setForceUpdate({});
+	};
+
+	const handleDeleteElement = () => {
+		if (!selectedElement || !canvasRef.current) return;
+
+		canvasRef.current.remove(selectedElement);
+		canvasRef.current.renderAll();
+		setSelectedElement(null);
+	};
+
+	const handleCanvasReady = (canvas: fabric.Canvas) => {
+		canvasRef.current = canvas;
+
+		canvas.on("selection:created", () => {
+			const activeObject = canvas.getActiveObject();
+			setSelectedElement(activeObject || null);
+		});
+
+		canvas.on("selection:updated", () => {
+			const activeObject = canvas.getActiveObject();
+			setSelectedElement(activeObject || null);
+		});
+
+		canvas.on("selection:cleared", () => {
+			setSelectedElement(null);
+		});
 	};
 	return (
 		<div className="select-none cursor-default">
-			<div className="font-noto bg-secondary_background rounded-[15px] flex  flex-row items-center w-full h-[72px] px-[20px]">
-				{/* div text  */}
-				<div className=" pl-[10px]">
-					<p className="font-semibold text-[25px] w-fit ">
-						Certificate canva
-					</p>
-				</div>
-				{/*div button*/}
-				<div className="flex flex-row items-center ml-auto gap-3">
-					{/* form here */}
-					<input
-						type="text"
-						value={certificateName}
-						onChange={(e) => setCertificateName(e.target.value)}
-						placeholder="Enter certificate name"
-						className="font-noto text-[14px] px-3 py-2 border border-gray-300 rounded-[7px] w-[200px] h-[39px] focus:outline-none focus:border-blue-500"
-					/>
-					<button
-						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
-						onClick={handleSaveDraft}>
-						Save draft
-					</button>
-					<button
-						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
-						onClick={handleShare}>
-						Share
-					</button>
-				</div>
-			</div>
-			{/* Main content area */}
-			<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
-				<ToolsSidebar
-					activeMenu={activeMenu}
-					setActiveMenu={setActiveMenu}
-					onShapeAdd={handleShapeAdd}
-					onTextAdd={handleTextAdd}
-				/>
-				<CanvasArea />
-			</div>
+			<DesignHeader
+				certificateName={certificateName}
+				setCertificateName={setCertificateName}
+				isEditing={isEditing}
+				onSave={handleSaveCertificate}
+				onShare={handleShare}
+			/>
+			<CertificateCanvas
+				activeMenu={activeMenu}
+				setActiveMenu={setActiveMenu}
+				selectedElement={selectedElement}
+				onShapeAdd={handleShapeAdd}
+				onTextAdd={handleTextAdd}
+				onUpdateElement={handleUpdateElement}
+				onDeleteElement={handleDeleteElement}
+				onCanvasReady={handleCanvasReady}
+			/>
 		</div>
 	);
 };
