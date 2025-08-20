@@ -5,6 +5,11 @@ export type Login = {
 	lastname: string;
 };
 
+export type CertType ={
+	name: string;
+	design: string;
+}
+
 export type BaseResponse<T> = {
 	success: boolean;
 	msg: string;
@@ -12,3 +17,4 @@ export type BaseResponse<T> = {
 };
 
 export type LoginResponse = BaseResponse<Login>;
+export type AllCertTypeResponse = BaseResponse<CertType[]>;
