@@ -35,8 +35,13 @@ const PreviewPage = () => {
 		void navigate("/share/preview/send", { state: { recipients } });
 	};
 	const handleEdit = () => {
-		//TODO
-		void navigate("/design");
+		// Pass edit mode and certificate ID to design page
+		void navigate("/design", { 
+			state: { 
+				isEditing: true, 
+				certificateId: "cert_id_here" // Replace with actual certificate ID
+			} 
+		});
 	};
 
 	return (

@@ -1,35 +1,98 @@
 // import { useAuth } from "@/context/authContext";
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import * as fabric from "fabric";
 import CanvasArea from "@/components/design/CanvasArea";
 import ToolsSidebar from "@/components/design/ToolsSidebar";
 import PropertiesPanel from "@/components/design/PropertiesPanel";
+import { Axios } from "@/util/axiosInstance";
 
 interface ElementUpdate {
 	fill?: string;
 	stroke?: string;
 	fontSize?: number;
-	fontWeight?: 'normal' | 'bold';
-	fontStyle?: 'normal' | 'italic';
+	fontWeight?: "normal" | "bold";
+	fontStyle?: "normal" | "italic";
 }
 
 const DesignPage = () => {
 	// const auth = useAuth();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
 		"background" | "element" | "text" | null
 	>("element");
-	const [selectedElement, setSelectedElement] = useState<fabric.Object | null>(null);
+	const [selectedElement, setSelectedElement] =
+		useState<fabric.Object | null>(null);
 	const [, setForceUpdate] = useState({});
+	
+	// Edit mode state
+	const [isEditing, setIsEditing] = useState(false);
+	const [certificateId, setCertificateId] = useState<string | null>(null);
+	
+	// Check for edit mode from navigation state
+	useEffect(() => {
+		if (location.state?.isEditing) {
+			setIsEditing(true);
+			setCertificateId(location.state.certificateId);
+			// Load existing certificate data here if needed
+			// You might want to fetch the certificate design and populate the canvas
+		}
+	}, [location.state]);
+
 	const handleShare = () => {
 		// Implement share functionality
 		void navigate("/share");
 	};
+	const handleSaveCertificate = async () => {
+		if (!certificateName.trim()) {
+			alert("Please enter a certificate name");
+			return;
+		}
+
+		if (!canvasRef.current) {
+			alert("Canvas not ready");
+			return;
+		}
+
+		try {
+			const fabricDesign = canvasRef.current.toJSON();
+			console.log("Fabric design:", fabricDesign);
+
+			const payload = {
+				name: certificateName,
+				design: JSON.stringify(fabricDesign),
+			};
+			console.log("Payload:", payload);
+
+			let response;
+			if (isEditing && certificateId) {
+				// Update existing certificate
+				response = await Axios.put(`/certificate/${certificateId}`, payload);
+			} else {
+				// Create new certificate
+				response = await Axios.post("/certificate", payload);
+			}
+
+			if (response.status === 200) {
+				alert(isEditing ? "Certificate updated successfully!" : "Certificate saved successfully!");
+				if (isEditing) {
+					// Navigate back to preview page after successful update
+					void navigate("/share/preview");
+				}
+			} else {
+				alert(response.data?.msg || "Failed to save certificate");
+			}
+		} catch (error) {
+			console.error("Save failed:", error);
+			alert("Failed to save certificate. Please try again.");
+		}
+	};
+
 	const handleSaveDraft = () => {
-		// Implement save functionality
+		void handleSaveCertificate();
 	};
 
 	const addElement = (type: string) => {
@@ -88,9 +151,9 @@ const DesignPage = () => {
 					top: 100,
 					stroke: color,
 					strokeWidth: 3,
-					fill: '',
-					originX: 'left',
-					originY: 'top'
+					fill: "",
+					originX: "left",
+					originY: "top",
 				});
 				break;
 			case "text":
@@ -126,7 +189,7 @@ const DesignPage = () => {
 
 		selectedElement.set(updates);
 		canvasRef.current.renderAll();
-		
+
 		// Force re-render of properties panel
 		setForceUpdate({});
 	};
@@ -178,7 +241,7 @@ const DesignPage = () => {
 					<button
 						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
 						onClick={handleSaveDraft}>
-						Save draft
+						{isEditing ? "Update" : "Save draft"}
 					</button>
 					<button
 						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
