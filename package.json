@@ -12,6 +12,7 @@
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.0",
     "@tailwindcss/vite": "^4.1.4",
+    "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fabric": "^6.7.1",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@types/fabric": "^5.3.10",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^22.15.3",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
