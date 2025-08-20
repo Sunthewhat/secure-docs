@@ -4,21 +4,25 @@ import { AuthContext } from './authContext';
 
 // Provider component that wraps the app and makes auth available
 const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
-	const [user, setUser] = useState<User | null>(null);
-
-	// Restore user data from localStorage on app load
-	useEffect(() => {
+	const [user, setUser] = useState<User | null>(() => {
+		// Initialize user state from localStorage immediately
 		const savedUserData = localStorage.getItem('userData');
 		if (savedUserData) {
 			try {
-				const userData = JSON.parse(savedUserData) as User;
-				setUser(userData);
+				return JSON.parse(savedUserData) as User;
 			} catch {
 				// Clear invalid data
 				localStorage.removeItem('userData');
 				localStorage.removeItem('authToken');
+				return null;
 			}
 		}
+		return null;
+	});
+
+	// Clean up effect is no longer needed since we initialize state directly
+	useEffect(() => {
+		// This effect can be used for additional auth validation if needed
 	}, []);
 
 	// Sign in handler
