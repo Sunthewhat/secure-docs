@@ -9,11 +9,14 @@ interface ElementUpdate {
 	fontSize?: number;
 	fontWeight?: 'normal' | 'bold';
 	fontStyle?: 'normal' | 'italic';
+	text?: string;
+	dbField?: string;
+	anchorId?: string;
 }
 
 interface CertificateCanvasProps {
-	activeMenu: "background" | "element" | "text" | null;
-	setActiveMenu: (menu: "background" | "element" | "text" | null) => void;
+	activeMenu: "background" | "element" | "text" | "anchor" | null;
+	setActiveMenu: (menu: "background" | "element" | "text" | "anchor" | null) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
