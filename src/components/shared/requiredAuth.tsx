@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { FC, ReactNode } from 'react';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth/useAuth';
 
 type RequireAuthProps = {
 	children: ReactNode;
@@ -12,6 +12,8 @@ type RequireAuthProps = {
 const RequireAuth: FC<RequireAuthProps> = ({ children }) => {
 	const auth = useAuth();
 	const location = useLocation();
+
+	console.log(auth.user);
 
 	if (!auth.user) {
 		// Redirect to the login page, but save the current location
