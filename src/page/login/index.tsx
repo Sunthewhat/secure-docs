@@ -1,37 +1,39 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { FormEvent } from "react";
-import { useAuth } from "@/context/authContext";
+"use client";
 
-type LocationState = {
-  from?: {
-    pathname: string;
-  } | null;
-};
+import React, { useState } from "react";
+import { LoginResponse } from "@/types/response";
+import { Axios } from "@/util/axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 // Login page (public)
+
 const LoginPage = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const location = useLocation();
-  const auth = useAuth();
 
-  // Get the redirect path from location state or default to dashboard
-  const from = location.state
-    ? (location.state as LocationState).from?.pathname || "/dashboard"
-    : "/dashboard";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    try {
+      console.log("adsf");
+      const response = await Axios.post<LoginResponse>("/auth/login", {
+        username: username,
+        password: password,
+      });
 
-    const formData = new FormData(event.currentTarget);
-    const username = formData.get("username") as string;
-
-    console.log(username);
-
-    // Call the auth signin method
-    auth.signin(() => {
-      // Redirect to the page they tried to visit
-      void navigate(from, { replace: true });
-    });
+      console.log(username, password);
+      console.log(response);
+      if (response.status !== 200) {
+        alert(response.data.msg);
+        return;
+        // Redirect to home page on successful login
+      }
+      void navigate("/");
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Login failed. Please try again.");
+    }
   };
 
   return (
@@ -40,7 +42,13 @@ const LoginPage = () => {
         <h2 className="text-center text-[25px] font-bold mb-4">Login</h2>
         {/* <p className="mb-4">You must log in first.</p> */}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit(e);
+          }}
+          className="space-y-4"
+        >
           <div>
             <label htmlFor="username" className="block mb-1">
               Username:
@@ -49,7 +57,9 @@ const LoginPage = () => {
               name="username"
               type="text"
               className="w-full border p-2 rounded"
-              defaultValue="user@example.com"
+              onChange={(e) => setUsername(e.target.value)}
+              value={username}
+              required
             />
           </div>
           <div>
@@ -60,17 +70,19 @@ const LoginPage = () => {
               name="password"
               type="password"
               className="w-full border p-2 rounded"
-              defaultValue="password"
+              onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              required
             />
           </div>
-		  <div className="flex justify-center mt-8">
-          <button
-            type="submit"
-            className="bg-primary_button text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Login
-          </button>
-		  </div>
+          <div className="flex justify-center mt-8">
+            <button
+              type="submit"
+              className="bg-primary_button text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Login
+            </button>
+          </div>
         </form>
       </div>
     </div>
