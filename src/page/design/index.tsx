@@ -1,16 +1,29 @@
 // import { useAuth } from "@/context/authContext";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
+import * as fabric from "fabric";
 import CanvasArea from "@/components/design/CanvasArea";
 import ToolsSidebar from "@/components/design/ToolsSidebar";
+import PropertiesPanel from "@/components/design/PropertiesPanel";
+
+interface ElementUpdate {
+	fill?: string;
+	stroke?: string;
+	fontSize?: number;
+	fontWeight?: 'normal' | 'bold';
+	fontStyle?: 'normal' | 'italic';
+}
 
 const DesignPage = () => {
 	// const auth = useAuth();
 	const navigate = useNavigate();
+	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
 		"background" | "element" | "text" | null
 	>("element");
+	const [selectedElement, setSelectedElement] = useState<fabric.Object | null>(null);
+	const [, setForceUpdate] = useState({});
 	const handleShare = () => {
 		// Implement share functionality
 		void navigate("/share");
@@ -19,12 +32,129 @@ const DesignPage = () => {
 		// Implement save functionality
 	};
 
-	const handleShapeAdd = (shapeType: string) => {
-		console.log('Shape clicked:', shapeType);
+	const addElement = (type: string) => {
+		if (!canvasRef.current) return;
+
+		let fabricObject: fabric.Object;
+		const color = type === "text" ? "#000000" : "#3b82f6";
+
+		switch (type) {
+			case "rectangle":
+				fabricObject = new fabric.Rect({
+					left: 100,
+					top: 100,
+					width: 120,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "square":
+				fabricObject = new fabric.Rect({
+					left: 100,
+					top: 100,
+					width: 80,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "circle":
+				fabricObject = new fabric.Circle({
+					left: 100,
+					top: 100,
+					radius: 40,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "triangle":
+				fabricObject = new fabric.Triangle({
+					left: 100,
+					top: 100,
+					width: 80,
+					height: 80,
+					fill: color,
+					stroke: "#ccc",
+					strokeWidth: 1,
+				});
+				break;
+			case "line":
+				fabricObject = new fabric.Line([0, 0, 100, 0], {
+					left: 100,
+					top: 100,
+					stroke: color,
+					strokeWidth: 3,
+					fill: '',
+					originX: 'left',
+					originY: 'top'
+				});
+				break;
+			case "text":
+				fabricObject = new fabric.Textbox("Sample Text", {
+					left: 100,
+					top: 100,
+					width: 200,
+					fontSize: 18,
+					fill: color,
+					fontFamily: "Arial",
+				});
+				break;
+			default:
+				return;
+		}
+
+		canvasRef.current.add(fabricObject);
+		canvasRef.current.setActiveObject(fabricObject);
+		canvasRef.current.renderAll();
+		setSelectedElement(fabricObject);
 	};
 
-	const handleTextAdd = (textType: string) => {
-		console.log('Text clicked:', textType);
+	const handleShapeAdd = (shapeType: string) => {
+		addElement(shapeType);
+	};
+
+	const handleTextAdd = () => {
+		addElement("text");
+	};
+
+	const handleUpdateElement = (updates: ElementUpdate) => {
+		if (!selectedElement || !canvasRef.current) return;
+
+		selectedElement.set(updates);
+		canvasRef.current.renderAll();
+		
+		// Force re-render of properties panel
+		setForceUpdate({});
+	};
+
+	const handleDeleteElement = () => {
+		if (!selectedElement || !canvasRef.current) return;
+
+		canvasRef.current.remove(selectedElement);
+		canvasRef.current.renderAll();
+		setSelectedElement(null);
+	};
+
+	const handleCanvasReady = (canvas: fabric.Canvas) => {
+		canvasRef.current = canvas;
+
+		canvas.on("selection:created", () => {
+			const activeObject = canvas.getActiveObject();
+			setSelectedElement(activeObject || null);
+		});
+
+		canvas.on("selection:updated", () => {
+			const activeObject = canvas.getActiveObject();
+			setSelectedElement(activeObject || null);
+		});
+
+		canvas.on("selection:cleared", () => {
+			setSelectedElement(null);
+		});
 	};
 	return (
 		<div className="select-none cursor-default">
@@ -65,7 +195,14 @@ const DesignPage = () => {
 					onShapeAdd={handleShapeAdd}
 					onTextAdd={handleTextAdd}
 				/>
-				<CanvasArea />
+				<div className="flex-1 flex flex-col">
+					<PropertiesPanel
+						selectedElement={selectedElement}
+						onUpdateElement={handleUpdateElement}
+						onDeleteElement={handleDeleteElement}
+					/>
+					<CanvasArea onCanvasReady={handleCanvasReady} />
+				</div>
 			</div>
 		</div>
 	);

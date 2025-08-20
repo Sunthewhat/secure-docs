@@ -11,7 +11,7 @@ interface ToolsSidebarProps {
   activeMenu: 'background' | 'element' | 'text' | null;
   setActiveMenu: (menu: 'background' | 'element' | 'text' | null) => void;
   onShapeAdd: (shapeType: string) => void;
-  onTextAdd: (textType: string) => void;
+  onTextAdd: () => void;
 }
 
 const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: ToolsSidebarProps) => {
@@ -149,15 +149,9 @@ const ToolsSidebar = ({ activeMenu, setActiveMenu, onShapeAdd, onTextAdd }: Tool
 
         {activeMenu === "text" && (
           <div className="bg-white rounded-lg ">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50" onClick={() => onTextAdd('textbox')}>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50" onClick={onTextAdd}>
                 <span className="text-[14px]">Text Box</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50" onClick={() => onTextAdd('heading')}>
-                <span className="text-[14px]">Heading</span>
-              </div>
-              <div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50 col-span-2" onClick={() => onTextAdd('subtitle')}>
-                <span className="text-[14px]">Subtitle</span>
               </div>
             </div>
           </div>
