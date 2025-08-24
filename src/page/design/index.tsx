@@ -52,8 +52,48 @@ const DesignPage = () => {
 		}
 	}, [location.state]);
 
-	const handleShare = () => {
-		void navigate("/share");
+	const handleShare = async () => {
+		if (!certificateName.trim()) {
+			alert("Please enter a certificate name");
+			return;
+		}
+
+		if (!canvasRef.current) {
+			alert("Canvas not ready");
+			return;
+		}
+
+		try {
+			const canvas = canvasRef.current;
+			const fabricDesign = canvas.toJSON();
+
+			const payload = {
+				name: certificateName,
+				design: JSON.stringify(fabricDesign),
+			};
+
+			let response;
+			if (isEditing && certificateId) {
+				response = await Axios.put(
+					`/certificate/${certificateId}`,
+					payload
+				);
+			} else {
+				response = await Axios.post("/certificate", payload);
+			}
+
+			if (response.status === 200) {
+				const certId = isEditing
+					? certificateId
+					: response.data.data.id;
+				void navigate(`/share/${certId}`);
+			} else {
+				alert(response.data?.msg || "Failed to save certificate");
+			}
+		} catch (error) {
+			console.error("Save failed:", error);
+			alert("Failed to save certificate. Please try again.");
+		}
 	};
 
 	const handleSaveCertificate = async () => {
