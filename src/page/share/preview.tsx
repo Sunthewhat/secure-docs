@@ -1,31 +1,51 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
+import { Axios } from "@/util/axiosInstance";
 
 interface Recipient {
 	id: string;
-	name: string;
-	email: string;
+	certificate_id: string;
+	is_revoked: boolean;
+	created_at: string;
+	updated_at: string;
+	data: {
+		[key: string]: string; // dynamic columns
+	};
 }
 
 const PreviewPage = () => {
 	const navigate = useNavigate();
-	const [recipients, setRecipients] = useState<Recipient[]>([
-		{
-			id: "1",
-			name: "Thawatchai Wongboonsiri",
-			email: "thawatchai.wongb@mail.kmutt.ac.th",
-		},
-		{
-			id: "2",
-			name: "John Doe",
-			email: "john.doe@mail.kmutt.ac.th",
-		},
-		{
-			id: "3",
-			name: "Jane Smith",
-			email: "jane.smith@mail.kmutt.ac.th",
-		},
-	]);
+	const { certId } = useParams<{ certId: string }>();
+	const [recipients, setRecipients] = useState<Recipient[]>([]);
+	const [columns, setColumns] = useState<string[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	// Fetch participants data from API
+	useEffect(() => {
+		const fetchParticipants = async () => {
+			if (!certId) return;
+
+			try {
+				setLoading(true);
+				const response = await Axios.get(`/participant/${certId}`);
+				if (response.status === 200) {
+					setRecipients(response.data);
+					// Extract column names from first recipient's data object if data exists
+					if (response.data.length > 0 && response.data[0].data) {
+						setColumns(Object.keys(response.data[0].data));
+					}
+				} else {
+					console.error("Failed to fetch participants");
+				}
+			} catch (error) {
+				console.error("Error fetching participants:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		void fetchParticipants();
+	}, [certId]);
 
 	// Function to handle sending data to next page via navigation state
 	const handleSend = () => {
@@ -36,12 +56,7 @@ const PreviewPage = () => {
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page
-		void navigate("/design", {
-			state: {
-				isEditing: true,
-				certificateId: "cert_id_here", // Replace with actual certificate ID
-			},
-		});
+		void navigate(`/design/${certId}/edit`);
 	};
 
 	return (
@@ -124,27 +139,57 @@ const PreviewPage = () => {
 							<table className="w-full border border-gray-200 text-center text-sm table-fixed">
 								<thead>
 									<tr className="bg-gray-100">
-										<th className="font-normal px-6 py-2 border-r border-gray-200 w-1/2">
-											Recipient Name
-										</th>
-										<th className="font-normal px-6 py-2 w-1/2">
-											Recipient Email
-										</th>
+										{columns.map((col, index) => (
+											<th
+												key={index}
+												className={`font-normal px-6 py-2 ${
+													index < columns.length - 1
+														? "border-r border-gray-200"
+														: ""
+												}`}>
+												{col}
+											</th>
+										))}
 									</tr>
 								</thead>
 								<tbody>
-									{recipients.map((recipient) => (
-										<tr
-											key={recipient.id}
-											className="border border-gray-200">
-											<td className="border-r border-gray-200 px-6 py-2 break-words">
-												{recipient.name}
-											</td>
-											<td className="px-6 py-2 break-words">
-												{recipient.email}
+									{loading ? (
+										<tr>
+											<td
+												colSpan={columns.length}
+												className="px-6 py-8 text-gray-500">
+												Loading participants...
 											</td>
 										</tr>
-									))}
+									) : recipients.length > 0 ? (
+										recipients.map((recipient) => (
+											<tr
+												key={recipient.id}
+												className="border border-gray-200">
+												{columns.map((col, index) => (
+													<td
+														key={index}
+														className={`px-6 py-2 break-words ${
+															index <
+															columns.length - 1
+																? "border-r border-gray-200"
+																: ""
+														}`}>
+														{recipient.data[col] ||
+															""}
+													</td>
+												))}
+											</tr>
+										))
+									) : (
+										<tr>
+											<td
+												colSpan={columns.length || 1}
+												className="px-6 py-8 text-gray-500">
+												No participants found
+											</td>
+										</tr>
+									)}
 								</tbody>
 							</table>
 						</div>
