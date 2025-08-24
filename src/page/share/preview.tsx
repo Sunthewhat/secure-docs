@@ -1,23 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Axios } from "@/util/axiosInstance";
-
-interface Recipient {
-	id: string;
-	certificate_id: string;
-	is_revoked: boolean;
-	created_at: string;
-	updated_at: string;
-	data: {
-		[key: string]: string; // dynamic columns
-	};
-}
+import { GetParticipantResponse, Participant } from "@/types/response";
 
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
-	const [recipients, setRecipients] = useState<Recipient[]>([]);
-	const [columns, setColumns] = useState<string[]>([]);
+	const [participants, setParticipants] = useState<Participant[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	// Fetch participants data from API
@@ -27,13 +16,12 @@ const PreviewPage = () => {
 
 			try {
 				setLoading(true);
-				const response = await Axios.get(`/participant/${certId}`);
+				const response = await Axios.get<GetParticipantResponse>(
+					`/participant/${certId}`
+				);
 				if (response.status === 200) {
-					setRecipients(response.data);
-					// Extract column names from first recipient's data object if data exists
-					if (response.data.length > 0 && response.data[0].data) {
-						setColumns(Object.keys(response.data[0].data));
-					}
+					setParticipants(response.data.data);
+					// Extract column names from first participant's data object if data exists
 				} else {
 					console.error("Failed to fetch participants");
 				}
@@ -49,10 +37,7 @@ const PreviewPage = () => {
 
 	// Function to handle sending data to next page via navigation state
 	const handleSend = () => {
-		//TODO
-		setRecipients(recipients);
-		// Pass recipients data to the next page via navigate state
-		void navigate("/share/preview/send", { state: { recipients } });
+		void navigate("/share/preview/send", { state: { participants } });
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page
@@ -73,7 +58,7 @@ const PreviewPage = () => {
 						fill="currentColor">
 						<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
 					</svg>
-					Edit Recipients
+					Edit
 				</button>
 				{/* div text  */}
 				<div className="absolute left-1/2 transform  -translate-x-1/2">
@@ -133,45 +118,66 @@ const PreviewPage = () => {
 						</div>
 					</div>
 
-					{/* Recipients Table */}
-					<div className="w-full xl:w-4/7 pl-0 xl:pl-[20px] mt-8 xl:mt-0 flex-shrink-0 overflow-hidden">
-						<div className="overflow-y-scroll max-h-[600px]">
-							<table className="w-full border border-gray-200 text-center text-sm table-fixed">
+					{/* Participants Table */}
+					<div className="w-full xl:w-4/7 pl-0 xl:pl-[20px] mt-8 xl:mt-0 flex-shrink-0">
+						<div
+							className="overflow-auto max-h-[600px] scrollbar-visible"
+							style={{ scrollbarWidth: "auto" }}>
+							<table className="min-w-full border border-gray-200 text-center text-sm table-auto">
 								<thead>
 									<tr className="bg-gray-100">
-										{columns.map((col, index) => (
-											<th
-												key={index}
-												className={`font-normal px-6 py-2 ${
-													index < columns.length - 1
-														? "border-r border-gray-200"
-														: ""
-												}`}>
-												{col}
-											</th>
-										))}
+										{participants.length > 0 &&
+											Object.keys(
+												participants[0].data
+											).map((col, index) => (
+												<th
+													key={index}
+													className={`font-normal px-6 py-2 ${
+														index <
+														Object.keys(
+															participants[0].data
+														).length -
+															1
+															? "border-r border-gray-200"
+															: ""
+													}`}>
+													{col}
+												</th>
+											))}
 									</tr>
 								</thead>
 								<tbody>
 									{loading ? (
 										<tr>
 											<td
-												colSpan={columns.length}
+												colSpan={
+													participants.length > 0
+														? Object.keys(
+																participants[0]
+																	.data
+														  ).length
+														: 1
+												}
 												className="px-6 py-8 text-gray-500">
 												Loading participants...
 											</td>
 										</tr>
-									) : recipients.length > 0 ? (
-										recipients.map((recipient) => (
+									) : participants.length > 0 ? (
+										participants.map((recipient) => (
 											<tr
 												key={recipient.id}
 												className="border border-gray-200">
-												{columns.map((col, index) => (
+												{Object.keys(
+													recipient.data
+												).map((col, index) => (
 													<td
 														key={index}
 														className={`px-6 py-2 break-words ${
 															index <
-															columns.length - 1
+															Object.keys(
+																recipient.data
+															).length -
+																1
 																? "border-r border-gray-200"
 																: ""
 														}`}>
@@ -184,7 +190,7 @@ const PreviewPage = () => {
 									) : (
 										<tr>
 											<td
-												colSpan={columns.length || 1}
+												colSpan={1}
 												className="px-6 py-8 text-gray-500">
 												No participants found
 											</td>
