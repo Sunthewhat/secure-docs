@@ -15,8 +15,8 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 		if (fabricCanvasRef.current) return;
 
 		const canvas = new fabric.Canvas(canvasElRef.current, {
-			width: 883,
-			height: 600,
+			width: 850,
+			height: 601,
 			backgroundColor: "#f9fafb",
 			selection: true,
 		});
@@ -40,7 +40,7 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 	return (
 		<div className="flex-1 p-4">
 			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden">
-				<canvas ref={canvasElRef} width={883} height={600} />
+				<canvas ref={canvasElRef} width={850} height={601} />
 			</div>
 		</div>
 	);
