@@ -3,20 +3,37 @@ import searchIcon from "../../asset/searchIcon.svg";
 import { AllCertTypeResponse, CertType } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 import { useEffect, useState } from "react";
+import ShareModal from "@/components/modal/ShareModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [certificateItem, setCertificateItem] = useState<CertType[]>([]);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectingShareCert, setSelectingShareCert] = useState<CertType | null>(
+    null
+  );
+
+  const handleSelectShareCert = (cert: CertType) => {
+    setSelectingShareCert(cert);
+    setIsShareModalOpen(true);
+  };
+
+  const handleShare = (certId: string) => {
+    setIsShareModalOpen(false);
+    navigate(`/share/${certId}`);
+  };
 
   const fetchCerts = async () => {
     const response = await Axios.get<AllCertTypeResponse>("/certificate");
 
-    if (response.status !== 200){
+    if (response.status !== 200) {
       alert(response.data.data);
       return;
     }
     setCertificateItem(response.data.data);
-  }
+
+    console.log(response.data.data);
+  };
 
   useEffect(() => {
     fetchCerts();
@@ -47,7 +64,7 @@ const HomePage = () => {
           </div>
           <button
             className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[185px] h-[39px] flex justify-center items-center"
-            onClick={() => void navigate("/")}
+            onClick={() => void navigate("/design")}
           >
             + Create design
           </button>
@@ -58,7 +75,7 @@ const HomePage = () => {
 			</div> */}
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-full min-h-[770px] px-[20px] mt-[25px] py-[20px]">
         <div className="grid grid-cols-3 gap-[20px] w-full h-full">
-          {certificateItem.map((data, index) => (
+          {certificateItem.map((cert, index) => (
             <div
               key={index}
               className="rounded-[10px] w-full aspect-square flex flex-col px-5 py-5 items-center"
@@ -71,13 +88,16 @@ const HomePage = () => {
                 />
               </div>
               <span className="mt-5 font-semibold text-[16px] text-center text-primary_text">
-                {data.name}
+                {cert.name}
               </span>
               <div className="mt-[15px] flex flex-row gap-[10px] w-full">
                 <button className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full">
                   Delete
                 </button>
-                <button className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full" onClick={() => void navigate(`/share/${data.id}`)}>
+                <button
+                  className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full"
+                  onClick={() => handleSelectShareCert(cert)}
+                >
                   Share
                 </button>
               </div>
@@ -85,6 +105,12 @@ const HomePage = () => {
           ))}
         </div>
       </div>
+      <ShareModal
+        open={isShareModalOpen}
+        cert={selectingShareCert}
+        onClose={() => setIsShareModalOpen(false)}
+        onConfirm={handleShare}
+      />
     </div>
   );
 };
