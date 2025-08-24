@@ -36,11 +36,11 @@ const PreviewPage = () => {
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page
-		void navigate("/design", { 
-			state: { 
-				isEditing: true, 
-				certificateId: "cert_id_here" // Replace with actual certificate ID
-			} 
+		void navigate("/design", {
+			state: {
+				isEditing: true,
+				certificateId: "cert_id_here", // Replace with actual certificate ID
+			},
 		});
 	};
 
@@ -76,7 +76,7 @@ const PreviewPage = () => {
 			<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full px-[40px] mt-[25px] py-[48px] ">
 				<div className="flex flex-col xl:flex-row w-full h-full">
 					<div className="flex flex-col w-full xl:w-3/7 flex-shrink-0 items-start">
-						<div className=" border-4 border-black p-2 aspect-[4/3] w-full xl:max-w-[500px] max-w-full">
+						<div className=" border-4 border-black p-2 aspect-[297/210] w-full xl:max-w-[500px] max-w-full">
 							<img
 								src={
 									"https://marketplace.canva.com/EAFlVDzb7sA/3/0/1600w/canva-white-gold-elegant-modern-certificate-of-participation-Qn4Rei141MM.jpg"
@@ -89,8 +89,9 @@ const PreviewPage = () => {
 
 						{/* Edit Design Button */}
 						<div className="mt-5 flex flex-row justify-between items-center w-full xl:max-w-[500px] max-w-full">
-							<button className="bg-primary_button text-white px-5 h-[40px] rounded-[7px] text-sm font-medium "
-							onClick={handleEdit}>
+							<button
+								className="bg-primary_button text-white px-5 h-[40px] rounded-[7px] text-sm font-medium "
+								onClick={handleEdit}>
 								Edit Design
 							</button>
 							{/* Navigation arrows */}
