@@ -44,7 +44,7 @@ const DesignPage = () => {
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
-		"background" | "element" | "text" | "anchor" | null
+		"background" | "element" | "image" | "text" | "anchor" | null
 	>("element");
 	const [selectedElement, setSelectedElement] =
 		useState<fabric.Object | null>(null);
@@ -56,7 +56,7 @@ const DesignPage = () => {
 		return isEditPath;
 	});
 	const [isDataFetched, setIsDataFetched] = useState(false);
-	const [designData, setDesignData] = useState<any>(null);
+	const [designData, setDesignData] = useState<object | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [certificateId, setCertificateId] = useState<string | null>(() => {
 		const isEditPath = window.location.pathname.includes("/edit");
@@ -156,6 +156,83 @@ const DesignPage = () => {
 			console.error("Save failed:", error);
 			alert("Failed to save certificate. Please try again.");
 		}
+	};
+
+	const addBackgroundImage = (imageUrl: string) => {
+		if (!canvasRef.current) return;
+
+		fabric.Image.fromURL(imageUrl, {
+			crossOrigin: "anonymous", // Handle CORS for external images
+		})
+			.then((img: fabric.Image) => {
+				if (!canvasRef.current) return;
+
+				const canvas = canvasRef.current;
+				const canvasWidth = canvas.width || 800;
+				const canvasHeight = canvas.height || 600;
+
+				// Scale image to fit canvas while maintaining aspect ratio
+				const scaleX = canvasWidth / (img.width || 1);
+				const scaleY = canvasHeight / (img.height || 1);
+				const scale = Math.min(scaleX, scaleY);
+
+				img.set({
+					left: 0,
+					top: 0,
+					scaleX: scale,
+					scaleY: scale,
+					selectable: false, // Background should not be selectable
+					evented: false, // Background should not receive events
+					id: "background-image",
+				});
+
+				// Remove existing background if any
+				const existingBg = canvas
+					.getObjects()
+					.find((obj) => obj.id === "background-image");
+				if (existingBg) {
+					canvas.remove(existingBg);
+				}
+
+				canvas.add(img);
+				canvas.sendObjectToBack(img); // Send to back to act as background
+				canvas.renderAll();
+			})
+			.catch((error) => {
+				console.error("Error loading image:", error);
+			});
+	};
+
+	const addImage = (imageUrl: string) => {
+		if (!canvasRef.current) return;
+
+		fabric.Image.fromURL(imageUrl, {
+			crossOrigin: "anonymous",
+		})
+			.then((img: fabric.Image) => {
+				if (!canvasRef.current) return;
+
+				const canvas = canvasRef.current;
+
+				// Set default properties for selectable images
+				img.set({
+					left: 100,
+					top: 100,
+					scaleX: 0.3, // Default smaller scale for selectable images
+					scaleY: 0.3,
+					selectable: true, // Images should be selectable
+					evented: true,    // Images should receive events
+					id: `image-${Date.now()}` // Unique ID for each image
+				});
+
+				canvas.add(img);
+				canvas.setActiveObject(img); // Select the newly added image
+				canvas.renderAll();
+				setSelectedElement(img);
+			})
+			.catch((error) => {
+				console.error("Error loading image:", error);
+			});
 	};
 
 	const handleSaveCertificate = async () => {
@@ -408,6 +485,8 @@ const DesignPage = () => {
 				onUpdateElement={handleUpdateElement}
 				onDeleteElement={handleDeleteElement}
 				onCanvasReady={handleCanvasReady}
+				onBackgroundAdd={addBackgroundImage}
+				onImageAdd={addImage}
 			/>
 		</div>
 	);

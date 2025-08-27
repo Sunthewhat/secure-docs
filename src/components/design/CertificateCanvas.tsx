@@ -15,14 +15,16 @@ interface ElementUpdate {
 }
 
 interface CertificateCanvasProps {
-	activeMenu: "background" | "element" | "text" | "anchor" | null;
-	setActiveMenu: (menu: "background" | "element" | "text" | "anchor" | null) => void;
+	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
+	setActiveMenu: (menu: "background" | "element" | "image" | "text" | "anchor" | null) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
 	onUpdateElement: (updates: ElementUpdate) => void;
 	onDeleteElement: () => void;
 	onCanvasReady: (canvas: fabric.Canvas) => void;
+	onBackgroundAdd: (imageUrl: string) => void;
+	onImageAdd: (imageUrl: string) => void;
 }
 
 const CertificateCanvas = ({
@@ -34,6 +36,8 @@ const CertificateCanvas = ({
 	onUpdateElement,
 	onDeleteElement,
 	onCanvasReady,
+	onBackgroundAdd,
+	onImageAdd,
 }: CertificateCanvasProps) => {
 	return (
 		<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
@@ -42,6 +46,8 @@ const CertificateCanvas = ({
 				setActiveMenu={setActiveMenu}
 				onShapeAdd={onShapeAdd}
 				onTextAdd={onTextAdd}
+				onBackgroundAdd={onBackgroundAdd}
+				onImageAdd={onImageAdd}
 			/>
 			<div className="flex-1 flex flex-col">
 				<PropertiesPanel

@@ -8,12 +8,14 @@ import triangleIcon from "@/asset/design/tools/triangle.svg";
 import uploadIcon from "@/asset/design/tools/upload.svg";
 
 interface ToolsSidebarProps {
-	activeMenu: "background" | "element" | "text" | "anchor" | null;
+	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
 	setActiveMenu: (
-		menu: "background" | "element" | "text" | "anchor" | null
+		menu: "background" | "element" | "image" | "text" | "anchor" | null
 	) => void;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
+	onBackgroundAdd: (imageUrl: string) => void;
+	onImageAdd: (imageUrl: string) => void;
 }
 
 const ToolsSidebar = ({
@@ -21,6 +23,8 @@ const ToolsSidebar = ({
 	setActiveMenu,
 	onShapeAdd,
 	onTextAdd,
+	onBackgroundAdd,
+	onImageAdd,
 }: ToolsSidebarProps) => {
 	return (
 		<div className="flex">
@@ -73,6 +77,28 @@ const ToolsSidebar = ({
 						}}
 					/>
 					<span className="text-[14px]">Element</span>
+				</div>
+				<div
+					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
+						activeMenu === "image"
+							? "bg-black text-white"
+							: "hover:bg-gray-100"
+					}`}
+					onClick={() =>
+						setActiveMenu(activeMenu === "image" ? null : "image")
+					}>
+					<img
+						src={uploadIcon}
+						alt="Image"
+						className="w-6 h-6 mb-2"
+						style={{
+							filter:
+								activeMenu === "image"
+									? "brightness(0) invert(1)"
+									: "brightness(0)",
+						}}
+					/>
+					<span className="text-[14px]">Image</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
@@ -134,7 +160,16 @@ const ToolsSidebar = ({
 								/>
 								<span className="text-[14px]">Upload</span>
 							</div>
-							{/* TODO add the bg image here */}
+							<div
+								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
+								onClick={() =>
+									onBackgroundAdd(
+										"https://marketplace.canva.com/EAFh7cFx9So/5/0/1600w/canva-white-and-gold-certificate-of-appreciation-fE_Brsy8-8E.jpg"
+									)
+								}>
+								<div className="w-6 h-6 mb-2 bg-gradient-to-br from-blue-400 to-purple-500 rounded"></div>
+								<span className="text-[12px]">Mock BG</span>
+							</div>
 						</div>
 					</div>
 				)}
@@ -197,6 +232,29 @@ const ToolsSidebar = ({
 									style={{ filter: "brightness(0)" }}
 								/>
 								<span className="text-[14px]">Line</span>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{activeMenu === "image" && (
+					<div className="bg-white rounded-lg ">
+						<div className="grid grid-cols-2 gap-2">
+							<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
+								<img
+									src={uploadIcon}
+									alt="Upload"
+									className="w-6 h-6 mb-2"
+									style={{ filter: "brightness(0)" }}
+								/>
+								<span className="text-[14px]">Upload</span>
+							</div>
+							<div 
+								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
+								onClick={() => onImageAdd('https://marketplace.canva.com/EAFh7cFx9So/5/0/1600w/canva-white-and-gold-certificate-of-appreciation-fE_Brsy8-8E.jpg')}
+							>
+								<div className="w-6 h-6 mb-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded"></div>
+								<span className="text-[12px]">Mock Image</span>
 							</div>
 						</div>
 					</div>

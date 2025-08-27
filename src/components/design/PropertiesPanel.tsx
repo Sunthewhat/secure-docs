@@ -21,7 +21,8 @@ const PropertiesPanel = ({
 	onUpdateElement,
 	onDeleteElement,
 }: PropertiesPanelProps) => {
-	if (!selectedElement) {
+	// Don't show properties panel for images
+	if (!selectedElement || selectedElement.type === 'image') {
 		return (
 			<div
 				className="bg-white border border-gray-300 rounded-lg p-4 mb-4 shadow-sm mx-auto"
