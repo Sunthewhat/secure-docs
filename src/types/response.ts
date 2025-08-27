@@ -23,6 +23,15 @@ export type CertType = {
 	design: string;
 };
 
+export type Certificate = {
+	id: string;
+	name: string;
+	design: string;
+	user_id: string;
+	created_at: string;
+	updated_at: string;
+};
+
 export type BaseResponse<T> = {
 	success: boolean;
 	msg: string;
