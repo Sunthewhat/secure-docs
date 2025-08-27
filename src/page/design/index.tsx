@@ -1,9 +1,19 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router";
 import * as fabric from "fabric";
 import DesignHeader from "@/components/design/DesignHeader";
 import CertificateCanvas from "@/components/design/CertificateCanvas";
 import { Axios } from "@/util/axiosInstance";
+import { GetCertificateResponse } from "@/types/response";
+
+// Extend fabric.Object to include custom properties
+declare module "fabric" {
+	interface Object {
+		id?: string;
+		dbField?: string;
+		isAnchor?: boolean;
+	}
+}
 
 // Ensure custom properties are registered
 if (fabric.FabricObject) {
@@ -30,7 +40,7 @@ interface ElementUpdate {
 
 const DesignPage = () => {
 	const navigate = useNavigate();
-	const location = useLocation();
+	const { certId } = useParams<{ certId?: string }>();
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
@@ -40,17 +50,69 @@ const DesignPage = () => {
 		useState<fabric.Object | null>(null);
 	const [, setForceUpdate] = useState({});
 
-	// Edit mode state
-	const [isEditing, setIsEditing] = useState(false);
-	const [certificateId, setCertificateId] = useState<string | null>(null);
+	// Edit mode state - initialize based on current URL
+	const [isEditing, setIsEditing] = useState(() => {
+		const isEditPath = window.location.pathname.includes("/edit");
+		return isEditPath;
+	});
+	const [isDataFetched, setIsDataFetched] = useState(false);
+	const [designData, setDesignData] = useState<any>(null);
+	const [isLoading, setIsLoading] = useState(false);
+	const [certificateId, setCertificateId] = useState<string | null>(() => {
+		const isEditPath = window.location.pathname.includes("/edit");
+		return isEditPath && certId ? certId : null;
+	});
 
-	// Check for edit mode from navigation state
-	useEffect(() => {
-		if (location.state?.isEditing) {
-			setIsEditing(true);
-			setCertificateId(location.state.certificateId);
+	// Fetch existing certificate design when in edit mode
+	const fetchCertificateDesign = useCallback(async () => {
+		if (isDataFetched || isLoading) {
+			return;
 		}
-	}, [location.state]);
+
+		if (!isEditing || !certificateId) {
+			return;
+		}
+
+		setIsLoading(true);
+
+		try {
+			const response = await Axios.get<GetCertificateResponse>(
+				`/certificate/${certId}`
+			);
+
+			if (response.status === 200) {
+				const certificate = response.data.data;
+				setCertificateName(certificate.name);
+
+				if (certificate.design) {
+					const parsedDesign = JSON.parse(certificate.design);
+					setDesignData(parsedDesign);
+				} else {
+					setDesignData(null);
+				}
+
+				setIsDataFetched(true);
+			} else {
+				console.error("Failed to fetch certificate design");
+			}
+		} catch (error) {
+			console.error("Error fetching certificate design:", error);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [isEditing, certificateId, certId, isDataFetched, isLoading]);
+
+	// Check for edit mode from URL parameters
+	useEffect(() => {
+		const currentPath = window.location.pathname;
+		const isEditPath = currentPath.includes("/edit");
+		if (isEditPath && certId) {
+			setIsEditing(true);
+			setCertificateId(certId);
+			fetchCertificateDesign();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleShare = async () => {
 		if (!certificateName.trim()) {
@@ -120,9 +182,9 @@ const DesignPage = () => {
 			canvas.getObjects().forEach((obj, i) => {
 				console.log(`Object ${i}:`, {
 					type: obj.type,
-					id: (obj as any).id,
-					dbField: (obj as any).dbField,
-					isAnchor: (obj as any).isAnchor,
+					id: obj.id,
+					dbField: obj.dbField,
+					isAnchor: obj.isAnchor,
 				});
 			});
 
@@ -151,9 +213,9 @@ const DesignPage = () => {
 						? "Certificate updated successfully!"
 						: "Certificate saved successfully!"
 				);
-				if (isEditing) {
-					void navigate("/share");
-				}
+				// if (isEditing) {
+				// 	void navigate("/share");
+				// }
 			} else {
 				alert(response.data?.msg || "Failed to save certificate");
 			}
@@ -289,6 +351,13 @@ const DesignPage = () => {
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
 		canvasRef.current = canvas;
 
+		// Load design data if it's already available
+		if (isEditing && designData) {
+			canvas
+				.loadFromJSON(designData)
+				.then((canvas) => canvas.requestRenderAll());
+		}
+
 		canvas.on("selection:created", () => {
 			const activeObject = canvas.getActiveObject();
 			setSelectedElement(activeObject || null);
@@ -303,6 +372,24 @@ const DesignPage = () => {
 			setSelectedElement(null);
 		});
 	};
+	// Show loading state while fetching design data for edit mode
+	if (isEditing && isLoading) {
+		return (
+			<div className="select-none cursor-default">
+				<DesignHeader
+					certificateName={certificateName}
+					setCertificateName={setCertificateName}
+					isEditing={isEditing}
+					onSave={handleSaveCertificate}
+					onShare={handleShare}
+				/>
+				<div className="flex items-center justify-center h-96">
+					<p className="text-lg">Loading design...</p>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="select-none cursor-default">
 			<DesignHeader
