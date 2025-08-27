@@ -8,6 +8,12 @@ interface CanvasAreaProps {
 const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 	const canvasElRef = useRef<HTMLCanvasElement>(null);
 	const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+	const onCanvasReadyRef = useRef(onCanvasReady);
+
+	// Keep the callback ref updated
+	useEffect(() => {
+		onCanvasReadyRef.current = onCanvasReady;
+	}, [onCanvasReady]);
 
 	useEffect(() => {
 		if (!canvasElRef.current) return;
@@ -23,23 +29,20 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 
 		fabricCanvasRef.current = canvas;
 
+		// Call onCanvasReady immediately after canvas creation using ref
+		onCanvasReadyRef.current(canvas);
+
 		return () => {
 			if (fabricCanvasRef.current) {
 				void fabricCanvasRef.current.dispose();
 				fabricCanvasRef.current = null;
 			}
 		};
-	}, []);
-
-	useEffect(() => {
-		if (fabricCanvasRef.current) {
-			onCanvasReady(fabricCanvasRef.current);
-		}
-	}, [onCanvasReady]);
+	}, []); // No dependencies to prevent canvas recreation
 
 	return (
 		<div className="flex-1 p-4">
-			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden">
+			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden w-fit">
 				<canvas ref={canvasElRef} width={850} height={601} />
 			</div>
 		</div>

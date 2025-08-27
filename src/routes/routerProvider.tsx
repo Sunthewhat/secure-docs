@@ -11,69 +11,76 @@ import { FC } from "react";
 import { Routes, Route } from "react-router";
 
 const RouterProvider: FC = () => {
-  return (
-    <Routes>
-		<Route path="/login" element={<LoginPage />} />
-      <Route element={<Layout />}>
-        {/* Public Routes */}
-        {/* <Route path='/' element={<HomePage />} /> */}
-        
+	return (
+		<Routes>
+			<Route path="/login" element={<LoginPage />} />
+			<Route element={<Layout />}>
+				{/* Public Routes */}
+				{/* <Route path='/' element={<HomePage />} /> */}
 
-        {/* Protected Routes */}
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <HomePage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/design"
-          element={
-            <RequireAuth>
-              <DesignPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/share/:certId"
-          element={
-            <RequireAuth>
-              <SharePage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/preview/:certId"
-          element={
-            <RequireAuth>
-              <PreviewPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/share/preview/send"
-          element={
-            <RequireAuth>
-              <SaveSendPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            <RequireAuth>
-              <HistoryPage />
-            </RequireAuth>
-          }
-        />
+				{/* Protected Routes */}
+				<Route
+					path="/"
+					element={
+						<RequireAuth>
+							<HomePage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/design"
+					element={
+						<RequireAuth>
+							<DesignPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/design/:certId/edit"
+					element={
+						<RequireAuth>
+							<DesignPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/share/:certId"
+					element={
+						<RequireAuth>
+							<SharePage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/preview/:certId"
+					element={
+						<RequireAuth>
+							<PreviewPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/share/preview/send"
+					element={
+						<RequireAuth>
+							<SaveSendPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/history"
+					element={
+						<RequireAuth>
+							<HistoryPage />
+						</RequireAuth>
+					}
+				/>
 
-        {/* Fallback for undefined routes */}
-        <Route path="*" element={<p>There's nothing here!</p>} />
-      </Route>
-    </Routes>
-  );
+				{/* Fallback for undefined routes */}
+				<Route path="*" element={<p>There's nothing here!</p>} />
+			</Route>
+		</Routes>
+	);
 };
 
 export { RouterProvider };
