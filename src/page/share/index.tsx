@@ -1,8 +1,17 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { RiEdit2Line, RiDeleteBinLine, RiAddLine, RiCheckLine, RiCloseLine } from "react-icons/ri";
+import {
+  RiEdit2Line,
+  RiDeleteBinLine,
+  RiAddLine,
+  RiCheckLine,
+  RiCloseLine,
+} from "react-icons/ri";
 import { useState, useRef, useEffect } from "react";
 import { Axios } from "@/util/axiosInstance";
-import { AddParticipantResponse } from "@/types/response";
+import {
+  AddParticipantResponse,
+  GetParticipantResponse,
+} from "@/types/response";
 
 type Recipient = {
   [key: string]: string; // dynamic columns
@@ -36,6 +45,47 @@ const SharePage = () => {
     navigate(`/preview/${certId}`);
   };
 
+  const fetchParticipants = async () => {
+  const response = await Axios.get<GetParticipantResponse>(
+    `/participant/${certId}`
+  );
+  if (response.status !== 200) {
+    alert(response.data.msg);
+    return;
+  }
+
+  // each item has a `.data` object with actual participant fields
+  const participants = response.data.data.map((p) => p.data);
+
+  console.log("data11111",response.data.data.map((p) => p.data));
+
+  if (participants.length > 0) {
+    // Extract all unique keys from participant "data" objects
+    const uniqueCols = Array.from(
+      new Set(participants.flatMap((p) => Object.keys(p)))
+    );
+
+    // Convert each participant data into Recipient row
+    const mappedRecipients: Recipient[] = participants.map((p) => {
+      const row: Recipient = {};
+      uniqueCols.forEach((col) => {
+        row[col] = p[col as keyof typeof p]?.toString() ?? "";
+      });
+      return row;
+    });
+
+    setColumns(uniqueCols);       // e.g. ["email", "name"]
+    setRecipients(mappedRecipients); // table rows
+  } else {
+    setRecipients([]); // no participants
+  }
+};
+
+
+  useEffect(() => {
+    fetchParticipants();
+  }, []);
+
   // auto-focus input when editing row
   useEffect(() => {
     if (editIndex !== null && inputRef.current) {
@@ -48,7 +98,10 @@ const SharePage = () => {
     setEditForm(recipients[index]);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, col: string) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    col: string
+  ) => {
     setEditForm({ ...editForm, [col]: e.target.value });
   };
 
@@ -215,7 +268,7 @@ const SharePage = () => {
                               placeholder={`Enter ${col}`}
                             />
                           ) : (
-                            recipient[col]
+                            recipient[col] || ""
                           )}
                         </td>
                       ))}
