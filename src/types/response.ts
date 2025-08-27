@@ -40,7 +40,6 @@ export type BaseResponse<T> = {
 
 export type LoginResponse = BaseResponse<Login>;
 export type AllCertTypeResponse = BaseResponse<CertType[]>;
+export type AddParticipantResponse = BaseResponse<{ id: string }>;
+export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
-export type AddParticipantResponse = BaseResponse<{
-	id: string;
-}>;

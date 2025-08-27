@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import searchIcon from "../../asset/searchIcon.svg";
-import { AllCertTypeResponse, CertType } from "@/types/response";
+import { AllCertTypeResponse, CertType, DeleteCertResponse } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 import { useEffect, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
+import DeleteModal from "@/components/modal/DeleteModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,31 @@ const HomePage = () => {
   const [selectingShareCert, setSelectingShareCert] = useState<CertType | null>(
     null
   );
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectingDeleteCert, setSelectingDeleteCert] =
+    useState<CertType | null>(null);
+
+  const handleSelectDeleteCert = (cert: CertType) => {
+    setSelectingDeleteCert(cert);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsDeleteModalOpen(false);
+
+    // TODO: call your API to delete
+    const response = await Axios.delete<DeleteCertResponse>(
+      `/certificate/${id}`
+    );
+
+    if (response.status !== 200) {
+      alert(response.data.msg);
+      return;
+    }
+    // Refresh list
+    fetchCerts();
+  };
 
   const handleSelectShareCert = (cert: CertType) => {
     setSelectingShareCert(cert);
@@ -91,7 +117,10 @@ const HomePage = () => {
                 {cert.name}
               </span>
               <div className="mt-[15px] flex flex-row gap-[10px] w-full">
-                <button className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full">
+                <button
+                  className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full"
+                  onClick={() => handleSelectDeleteCert(cert)}
+                >
                   Delete
                 </button>
                 <button
@@ -105,6 +134,13 @@ const HomePage = () => {
           ))}
         </div>
       </div>
+      <DeleteModal
+        open={isDeleteModalOpen}
+        cert={selectingDeleteCert}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+      />
+
       <ShareModal
         open={isShareModalOpen}
         cert={selectingShareCert}
