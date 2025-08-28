@@ -21,6 +21,7 @@ const PropertiesPanel = ({
 	onUpdateElement,
 	onDeleteElement,
 }: PropertiesPanelProps) => {
+	// Don't show properties panel if no element is selected
 	if (!selectedElement) {
 		return (
 			<div
@@ -37,6 +38,7 @@ const PropertiesPanel = ({
 		selectedElement instanceof fabric.Textbox ||
 		selectedElement instanceof fabric.Text;
 	const isAnchor = selectedElement.get("isAnchor") === true;
+	const isImage = selectedElement.type === "image";
 
 	const handleColorChange = (color: string) => {
 		const isLine = selectedElement instanceof fabric.Line;
@@ -94,19 +96,29 @@ const PropertiesPanel = ({
 			style={{ width: "883px", height: "60px" }}>
 			{/* Left side controls */}
 			<div className="flex items-center gap-6">
-				{/* Color Picker */}
-				<div className="flex items-center gap-3">
-					<label className="text-sm font-medium">Color:</label>
-					<input
-						type="color"
-						value={currentColor}
-						onChange={(e) => handleColorChange(e.target.value)}
-						className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
-					/>
-					<span className="text-xs text-gray-600">
-						{currentColor}
-					</span>
-				</div>
+				{/* Image Properties */}
+				{isImage && (
+					<div className="flex items-center gap-3">
+						<span className="text-sm font-medium text-gray-600">
+							Image selected
+						</span>
+					</div>
+				)}
+				{/* Color Picker - Not for images */}
+				{!isImage && (
+					<div className="flex items-center gap-3">
+						<label className="text-sm font-medium">Color:</label>
+						<input
+							type="color"
+							value={currentColor}
+							onChange={(e) => handleColorChange(e.target.value)}
+							className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+						/>
+						<span className="text-xs text-gray-600">
+							{currentColor}
+						</span>
+					</div>
+				)}
 
 				{/* Anchor Properties */}
 				{isAnchor && (
