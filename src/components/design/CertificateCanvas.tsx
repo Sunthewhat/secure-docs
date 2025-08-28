@@ -7,8 +7,8 @@ interface ElementUpdate {
 	fill?: string;
 	stroke?: string;
 	fontSize?: number;
-	fontWeight?: 'normal' | 'bold';
-	fontStyle?: 'normal' | 'italic';
+	fontWeight?: "normal" | "bold";
+	fontStyle?: "normal" | "italic";
 	text?: string;
 	dbField?: string;
 	anchorId?: string;
@@ -16,7 +16,9 @@ interface ElementUpdate {
 
 interface CertificateCanvasProps {
 	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
-	setActiveMenu: (menu: "background" | "element" | "image" | "text" | "anchor" | null) => void;
+	setActiveMenu: (
+		menu: "background" | "element" | "image" | "text" | "anchor" | null
+	) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
@@ -24,6 +26,7 @@ interface CertificateCanvasProps {
 	onDeleteElement: () => void;
 	onCanvasReady: (canvas: fabric.Canvas) => void;
 	onBackgroundAdd: (imageUrl: string) => void;
+	onBackgroundRemove?: () => void;
 	onImageAdd: (imageUrl: string) => void;
 }
 
@@ -37,6 +40,7 @@ const CertificateCanvas = ({
 	onDeleteElement,
 	onCanvasReady,
 	onBackgroundAdd,
+	onBackgroundRemove,
 	onImageAdd,
 }: CertificateCanvasProps) => {
 	return (
@@ -47,6 +51,7 @@ const CertificateCanvas = ({
 				onShapeAdd={onShapeAdd}
 				onTextAdd={onTextAdd}
 				onBackgroundAdd={onBackgroundAdd}
+				onBackgroundRemove={onBackgroundRemove}
 				onImageAdd={onImageAdd}
 			/>
 			<div className="flex-1 flex flex-col">

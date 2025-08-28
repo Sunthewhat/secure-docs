@@ -203,6 +203,20 @@ const DesignPage = () => {
 			});
 	};
 
+	const removeBackgroundImage = () => {
+		if (!canvasRef.current) return;
+
+		const canvas = canvasRef.current;
+		const existingBg = canvas
+			.getObjects()
+			.find((obj) => obj.id === "background-image");
+
+		if (existingBg) {
+			canvas.remove(existingBg);
+			canvas.renderAll();
+		}
+	};
+
 	const addImage = (imageUrl: string) => {
 		if (!canvasRef.current) return;
 
@@ -221,8 +235,8 @@ const DesignPage = () => {
 					scaleX: 0.3, // Default smaller scale for selectable images
 					scaleY: 0.3,
 					selectable: true, // Images should be selectable
-					evented: true,    // Images should receive events
-					id: `image-${Date.now()}` // Unique ID for each image
+					evented: true, // Images should receive events
+					id: `image-${Date.now()}`, // Unique ID for each image
 				});
 
 				canvas.add(img);
@@ -486,6 +500,7 @@ const DesignPage = () => {
 				onDeleteElement={handleDeleteElement}
 				onCanvasReady={handleCanvasReady}
 				onBackgroundAdd={addBackgroundImage}
+				onBackgroundRemove={removeBackgroundImage}
 				onImageAdd={addImage}
 			/>
 		</div>
