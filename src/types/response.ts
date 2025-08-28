@@ -32,6 +32,18 @@ export type Certificate = {
 	updated_at: string;
 };
 
+type uploadFileType = {
+	filename: string;
+	object_name: string;
+	size: number;
+	url: string;
+};
+
+type getImage = {
+	count: number;
+	files: string[];
+	type: string;
+};
 export type BaseResponse<T> = {
 	success: boolean;
 	msg: string;
@@ -44,3 +56,6 @@ export type EditParticipantResponse = BaseResponse<Participant>;
 export type AddParticipantResponse = BaseResponse<{ id: string }>;
 export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
+
+export type UploadResourceResponse = BaseResponse<uploadFileType>;
+export type GetFilesResponse = BaseResponse<getImage>;

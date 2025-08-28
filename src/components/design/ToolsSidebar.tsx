@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import backgroundIcon from "@/asset/design/background.svg";
 import lineIcon from "@/asset/design/tools/line.svg";
 import textIcon from "@/asset/design/text.svg";
@@ -6,14 +7,19 @@ import rectangleIcon from "@/asset/design/tools/rectangle.svg";
 import squareIcon from "@/asset/design/tools/square.svg";
 import triangleIcon from "@/asset/design/tools/triangle.svg";
 import uploadIcon from "@/asset/design/tools/upload.svg";
+import { uploadBackground, uploadImage } from "@/api/file/upload";
+import { getBackgrounds, getGraphics } from "@/api/file/get";
 
 interface ToolsSidebarProps {
-	activeMenu: "background" | "element" | "text" | "anchor" | null;
+	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
 	setActiveMenu: (
-		menu: "background" | "element" | "text" | "anchor" | null
+		menu: "background" | "element" | "image" | "text" | "anchor" | null
 	) => void;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
+	onBackgroundAdd: (imageUrl: string) => void;
+	onImageAdd: (imageUrl: string) => void;
+	onBackgroundRemove?: () => void;
 }
 
 const ToolsSidebar = ({
@@ -21,7 +27,75 @@ const ToolsSidebar = ({
 	setActiveMenu,
 	onShapeAdd,
 	onTextAdd,
+	onBackgroundAdd,
+	onImageAdd,
+	onBackgroundRemove,
 }: ToolsSidebarProps) => {
+	const [backgrounds, setBackgrounds] = useState<string[]>([]);
+	const [graphics, setGraphics] = useState<string[]>([]);
+	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		const fetchFiles = async () => {
+			setLoading(true);
+			try {
+				const [backgroundsRes, graphicsRes] = await Promise.all([
+					getBackgrounds(),
+					getGraphics(),
+				]);
+
+				if (backgroundsRes.success && backgroundsRes.data) {
+					setBackgrounds(backgroundsRes.data.files || []);
+				}
+
+				if (graphicsRes.success && graphicsRes.data) {
+					setGraphics(graphicsRes.data.files || []);
+				}
+			} catch (error) {
+				console.error("Error fetching files:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchFiles();
+	}, []);
+
+	const handleRemoveBackground = () => {
+		if (onBackgroundRemove) {
+			onBackgroundRemove();
+		}
+	};
+
+	const handleBackgroundUpload = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const file = event.target.files?.[0];
+		if (file && file.type.startsWith("image/")) {
+			try {
+				const response = await uploadBackground(file);
+				onBackgroundAdd(response.data.url);
+			} catch (error) {
+				console.error("Error uploading background:", error);
+				alert("Failed to upload background image");
+			}
+		}
+	};
+
+	const handleImageUpload = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const file = event.target.files?.[0];
+		if (file && file.type.startsWith("image/")) {
+			try {
+				const response = await uploadImage(file);
+				onImageAdd(response.data.url);
+			} catch (error) {
+				console.error("Error uploading image:", error);
+				alert("Failed to upload image");
+			}
+		}
+	};
 	return (
 		<div className="flex">
 			{/* Main Sidebar */}
@@ -76,6 +150,28 @@ const ToolsSidebar = ({
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
+						activeMenu === "image"
+							? "bg-black text-white"
+							: "hover:bg-gray-100"
+					}`}
+					onClick={() =>
+						setActiveMenu(activeMenu === "image" ? null : "image")
+					}>
+					<img
+						src={uploadIcon}
+						alt="Image"
+						className="w-6 h-6 mb-2"
+						style={{
+							filter:
+								activeMenu === "image"
+									? "brightness(0) invert(1)"
+									: "brightness(0)",
+						}}
+					/>
+					<span className="text-[14px]">Image</span>
+				</div>
+				<div
+					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
 						activeMenu === "text"
 							? "bg-black text-white"
 							: "hover:bg-gray-100"
@@ -123,9 +219,9 @@ const ToolsSidebar = ({
 			{/* Tools Sidebar */}
 			<div className="w-50 px-3">
 				{activeMenu === "background" && (
-					<div className="bg-white rounded-lg ">
-						<div className="grid grid-cols-2 gap-2">
-							<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
+					<div className="bg-white rounded-lg">
+						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
 									src={uploadIcon}
 									alt="Upload"
@@ -133,8 +229,38 @@ const ToolsSidebar = ({
 									style={{ filter: "brightness(0)" }}
 								/>
 								<span className="text-[14px]">Upload</span>
+								<input
+									type="file"
+									accept="image/*"
+									onChange={handleBackgroundUpload}
+									className="hidden"
+								/>
+							</label>
+							<div
+								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
+								onClick={handleRemoveBackground}>
+								<div className="w-6 h-6 mb-2 bg-white border border-gray-300 rounded"></div>
+								<span className="text-[12px]">Remove</span>
 							</div>
-							{/* TODO add the bg image here */}
+							{backgrounds.map((bgUrl, index) => (
+								<div
+									key={index}
+									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50 relative overflow-hidden"
+									onClick={() => onBackgroundAdd(bgUrl)}>
+									<img
+										src={bgUrl}
+										alt={`Background ${index + 1}`}
+										className="w-full h-full object-cover rounded-lg"
+									/>
+								</div>
+							))}
+							{loading && (
+								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
+									<span className="text-[10px] text-gray-500">
+										Loading...
+									</span>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -198,6 +324,47 @@ const ToolsSidebar = ({
 								/>
 								<span className="text-[14px]">Line</span>
 							</div>
+						</div>
+					</div>
+				)}
+
+				{activeMenu === "image" && (
+					<div className="bg-white rounded-lg">
+						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
+								<img
+									src={uploadIcon}
+									alt="Upload"
+									className="w-6 h-6 mb-2"
+									style={{ filter: "brightness(0)" }}
+								/>
+								<span className="text-[14px]">Upload</span>
+								<input
+									type="file"
+									accept="image/*"
+									onChange={handleImageUpload}
+									className="hidden"
+								/>
+							</label>
+							{graphics.map((graphicUrl, index) => (
+								<div
+									key={index}
+									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50 relative overflow-hidden"
+									onClick={() => onImageAdd(graphicUrl)}>
+									<img
+										src={graphicUrl}
+										alt={`Graphic ${index + 1}`}
+										className="w-full h-full object-cover rounded-lg"
+									/>
+								</div>
+							))}
+							{loading && (
+								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
+									<span className="text-[10px] text-gray-500">
+										Loading...
+									</span>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
