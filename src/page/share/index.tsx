@@ -10,11 +10,15 @@ import { useState, useRef, useEffect } from "react";
 import { Axios } from "@/util/axiosInstance";
 import {
   AddParticipantResponse,
+  EditParticipantResponse,
   GetParticipantResponse,
 } from "@/types/response";
 
-type Recipient = {
-  [key: string]: string; // dynamic columns
+type Recipient = { [key: string]: string };
+
+type ParticipantRow = {
+  id?: string; // present if row exists on server
+  data: Recipient; // editable fields
 };
 
 const SharePage = () => {
@@ -22,100 +26,136 @@ const SharePage = () => {
   const navigate = useNavigate();
 
   const [columns, setColumns] = useState<string[]>(["Recipient Name"]);
-  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [recipients, setRecipients] = useState<ParticipantRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Recipient>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // for renaming columns
+  // column rename state
   const [editColIndex, setEditColIndex] = useState<number | null>(null);
   const [colEditValue, setColEditValue] = useState<string>("");
 
-  const handleAddParticipants = async (certId: string) => {
-    const response = await Axios.post<AddParticipantResponse>(
-      `/participant/add/${certId}`,
-      { participants: recipients }
-    );
+  // ===== API helpers =====
 
+  const fetchParticipants = async () => {
+    const response = await Axios.get<GetParticipantResponse>(
+      `/participant/${certId}`
+    );
     if (response.status !== 200) {
       alert(response.data.msg);
       return;
     }
 
+    const serverRows = response.data.data ?? [];
+
+    // Collect all unique columns found in server data
+    const uniqueCols = Array.from(
+      new Set(serverRows.flatMap((p) => Object.keys(p.data ?? {})))
+    );
+
+    // Normalize into local rows
+    const mapped: ParticipantRow[] = serverRows.map((p) => {
+      const normalized: Recipient = {};
+      uniqueCols.forEach((col) => {
+        const val = (p.data as any)?.[col];
+        normalized[col] = val !== undefined && val !== null ? String(val) : "";
+      });
+      return { id: p.id, data: normalized };
+    });
+
+    setColumns(uniqueCols.length ? uniqueCols : ["Recipient Name"]);
+    setRecipients(mapped);
+  };
+
+  const editParticipantByParticipantId = async (
+    participantId: string,
+    data: Recipient
+  ) => {
+    const response = await Axios.put<EditParticipantResponse>(
+      `/participant/edit/${participantId}`,
+      { data } // matches API: { data: { ... } }
+    );
+    if (response.status !== 200) {
+      alert(response.data.msg);
+      return;
+    }
+    // Optionally refetch if the server can mutate columns/values
+    // await fetchParticipants();
+  };
+
+  const createParticipant = async (certId: string, data: Recipient) => {
+    // API expects array under "participants"
+    const response = await Axios.post<AddParticipantResponse>(
+      `/participant/add/${certId}`,
+      { participants: [data] }
+    );
+    if (response.status !== 200) {
+      alert(response.data.msg);
+      return;
+    }
+    // After creation, refresh so the new row gets its server id
+    await fetchParticipants();
+  };
+
+  const handleNext = () => {
+    // New rows were posted already on Save, so just navigate
     navigate(`/preview/${certId}`);
   };
 
-  const fetchParticipants = async () => {
-  const response = await Axios.get<GetParticipantResponse>(
-    `/participant/${certId}`
-  );
-  if (response.status !== 200) {
-    alert(response.data.msg);
-    return;
-  }
-
-  // each item has a `.data` object with actual participant fields
-  const participants = response.data.data.map((p) => p.data);
-
-  console.log("data11111",response.data.data.map((p) => p.data));
-
-  if (participants.length > 0) {
-    // Extract all unique keys from participant "data" objects
-    const uniqueCols = Array.from(
-      new Set(participants.flatMap((p) => Object.keys(p)))
-    );
-
-    // Convert each participant data into Recipient row
-    const mappedRecipients: Recipient[] = participants.map((p) => {
-      const row: Recipient = {};
-      uniqueCols.forEach((col) => {
-        row[col] = p[col as keyof typeof p]?.toString() ?? "";
-      });
-      return row;
-    });
-
-    setColumns(uniqueCols);       // e.g. ["email", "name"]
-    setRecipients(mappedRecipients); // table rows
-  } else {
-    setRecipients([]); // no participants
-  }
-};
-
+  // ===== Effects =====
 
   useEffect(() => {
     fetchParticipants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // auto-focus input when editing row
   useEffect(() => {
     if (editIndex !== null && inputRef.current) {
       inputRef.current.focus();
     }
   }, [editIndex]);
 
+  // ===== Row edit handlers =====
+
   const handleEdit = (index: number) => {
     setEditIndex(index);
-    setEditForm(recipients[index]);
+    setEditForm({ ...recipients[index].data });
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     col: string
   ) => {
-    setEditForm({ ...editForm, [col]: e.target.value });
+    setEditForm((prev) => ({ ...prev, [col]: e.target.value }));
   };
 
-  const handleSave = (index: number) => {
+  const handleSave = async (index: number) => {
+    const row = recipients[index];
+
+    // Optimistic local update
     const updated = [...recipients];
-    updated[index] = editForm;
+    updated[index] = { ...row, data: { ...editForm } };
     setRecipients(updated);
     setEditIndex(null);
+
+    try {
+      if (row.id) {
+        // existing row → PUT
+        await editParticipantByParticipantId(row.id, editForm);
+      } else {
+        // new row → POST immediately
+        await createParticipant(certId, editForm);
+      }
+    } catch {
+      // fallback to server truth
+      fetchParticipants();
+    }
   };
 
   const handleCancel = () => {
     if (
       editIndex !== null &&
-      Object.values(recipients[editIndex]).every((v) => v === "")
+      Object.values(recipients[editIndex].data).every((v) => v === "")
     ) {
       setRecipients(recipients.filter((_, i) => i !== editIndex));
     }
@@ -123,22 +163,27 @@ const SharePage = () => {
   };
 
   const handleDelete = (index: number) => {
+    // Local delete only. Wire a DELETE endpoint here if/when you have one.
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
+  // ===== Add row/column & rename column =====
+
   const handleAddRow = () => {
-    const newRow: Recipient = {};
-    columns.forEach((col) => (newRow[col] = ""));
-    const newRecipients = [...recipients, newRow];
+    const newData: Recipient = {};
+    columns.forEach((col) => (newData[col] = ""));
+    const newRecipients = [...recipients, { id: undefined, data: newData }];
     setRecipients(newRecipients);
     setEditIndex(newRecipients.length - 1);
-    setEditForm(newRow);
+    setEditForm(newData);
   };
 
   const handleAddColumn = () => {
-    const newCol = `Column ${columns.length}`;
-    setColumns([...columns, newCol]);
-    setRecipients(recipients.map((r) => ({ ...r, [newCol]: "" })));
+    const newCol = `Column ${columns.length + 1}`;
+    setColumns((c) => [...c, newCol]);
+    setRecipients((rows) =>
+      rows.map((r) => ({ ...r, data: { ...r.data, [newCol]: "" } }))
+    );
   };
 
   const handleStartEditColumn = (index: number, currentName: string) => {
@@ -151,17 +196,16 @@ const SharePage = () => {
     const oldCol = columns[index];
     const newCol = colEditValue.trim();
 
-    const updatedColumns = [...columns];
-    updatedColumns[index] = newCol;
+    setColumns((cols) => cols.map((c, i) => (i === index ? newCol : c)));
 
-    // rename keys in recipients
-    const updatedRecipients = recipients.map((r) => {
-      const { [oldCol]: oldValue, ...rest } = r;
-      return { ...rest, [newCol]: oldValue };
-    });
+    // rename keys inside each row.data
+    setRecipients((rows) =>
+      rows.map((r) => {
+        const { [oldCol]: oldValue, ...rest } = r.data;
+        return { ...r, data: { ...rest, [newCol]: oldValue ?? "" } };
+      })
+    );
 
-    setColumns(updatedColumns);
-    setRecipients(updatedRecipients);
     setEditColIndex(null);
     setColEditValue("");
   };
@@ -170,6 +214,8 @@ const SharePage = () => {
     setEditColIndex(null);
     setColEditValue("");
   };
+
+  // ===== Render =====
 
   return (
     <div className="flex flex-col">
@@ -181,14 +227,14 @@ const SharePage = () => {
         <div className="ml-auto">
           <button
             className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center"
-            onClick={() => handleAddParticipants(certId)}
+            onClick={handleNext}
           >
             Next
           </button>
         </div>
       </div>
 
-      {/* Table with right column box */}
+      {/* Table + side actions */}
       <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex flex-col items-center w-full h-full px-[50px] mt-[25px] py-[48px]">
         <div className="w-full flex gap-4">
           {/* Table */}
@@ -240,6 +286,7 @@ const SharePage = () => {
                   </th>
                 </tr>
               </thead>
+
               <tbody>
                 {recipients.length === 0 ? (
                   <tr>
@@ -251,8 +298,8 @@ const SharePage = () => {
                     </td>
                   </tr>
                 ) : (
-                  recipients.map((recipient, index) => (
-                    <tr key={index}>
+                  recipients.map((row, index) => (
+                    <tr key={row.id ?? `new-${index}`}>
                       {columns.map((col, i) => (
                         <td
                           key={i}
@@ -268,10 +315,11 @@ const SharePage = () => {
                               placeholder={`Enter ${col}`}
                             />
                           ) : (
-                            recipient[col] || ""
+                            row.data[col] || ""
                           )}
                         </td>
                       ))}
+
                       <td className="p-3 border border-gray-300 w-[120px]">
                         <div className="flex gap-4 justify-center">
                           {editIndex === index ? (
@@ -294,6 +342,9 @@ const SharePage = () => {
                               <button
                                 className="text-black hover:text-blue-600"
                                 onClick={() => handleEdit(index)}
+                                title={
+                                  row.id ? "Edit (PUT)" : "Edit (POST on Save)"
+                                }
                               >
                                 <RiEdit2Line size={20} />
                               </button>
@@ -314,7 +365,7 @@ const SharePage = () => {
             </table>
           </div>
 
-          {/* Right box for dynamic columns */}
+          {/* Right box: add column */}
           <div className="flex flex-col gap-2">
             <button
               onClick={handleAddColumn}
@@ -325,7 +376,7 @@ const SharePage = () => {
           </div>
         </div>
 
-        {/* Add Recipient button */}
+        {/* Add Recipient */}
         <div className="flex gap-4 mt-6">
           <button
             onClick={handleAddRow}
