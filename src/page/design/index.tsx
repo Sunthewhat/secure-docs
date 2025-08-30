@@ -69,14 +69,17 @@ const DesignPage = () => {
 	// Save canvas state to local storage (only for create mode)
 	const saveCanvasToLocalStorage = useCallback(() => {
 		if (!canvasRef.current || isEditing) return;
-		
+
 		try {
 			const canvasData = canvasRef.current.toJSON();
-			localStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify({
-				canvasData,
-				certificateName,
-				timestamp: Date.now()
-			}));
+			localStorage.setItem(
+				CANVAS_STORAGE_KEY,
+				JSON.stringify({
+					canvasData,
+					certificateName,
+					timestamp: Date.now(),
+				})
+			);
 		} catch (error) {
 			console.error("Failed to save canvas to local storage:", error);
 		}
@@ -85,7 +88,7 @@ const DesignPage = () => {
 	// Load canvas state from local storage (only for create mode)
 	const loadCanvasFromLocalStorage = useCallback(() => {
 		if (isEditing) return null;
-		
+
 		try {
 			const stored = localStorage.getItem(CANVAS_STORAGE_KEY);
 			if (stored) {
@@ -164,6 +167,34 @@ const DesignPage = () => {
 			saveCanvasToLocalStorage();
 		}
 	}, [certificateName, saveCanvasToLocalStorage, isEditing]);
+
+	// Add keyboard delete functionality
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (!canvasRef.current) return;
+			
+			const activeObject = canvasRef.current.getActiveObject();
+			if (!activeObject) return;
+
+			// Delete with Delete, Backspace, or Ctrl+X
+			if (e.key === "Delete" || e.key === "Backspace" || (e.ctrlKey && e.key.toLowerCase() === 'x')) {
+				if (e.ctrlKey && e.key.toLowerCase() === 'x') {
+					e.preventDefault();
+				}
+				
+				canvasRef.current.remove(activeObject);
+				canvasRef.current.renderAll();
+				setSelectedElement(null);
+				// Auto-save after deletion
+				if (!isEditing) {
+					saveCanvasToLocalStorage();
+				}
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, [isEditing, saveCanvasToLocalStorage]);
 
 	const handleShare = async () => {
 		if (!certificateName.trim()) {
@@ -447,7 +478,7 @@ const DesignPage = () => {
 				});
 				break;
 			case "anchor":
-				fabricObject = new fabric.Textbox("{{COLUMN}}", {
+				fabricObject = new fabric.Textbox("COLUMN", {
 					left: 100,
 					top: 100,
 					width: 150,
@@ -501,22 +532,26 @@ const DesignPage = () => {
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
 		canvasRef.current = canvas;
 
+		// Enable keyboard interactions on canvas
+		canvas.selection = true;
+		canvas.preserveObjectStacking = true;
+
 		// Load design data if it's already available (edit mode)
 		if (isEditing && designData) {
-			canvas
-				.loadFromJSON(designData)
-				.then((canvas) => {
-					// Fix background image properties after restoration
-					const backgroundImage = canvas.getObjects().find(obj => obj.id === "background-image");
-					if (backgroundImage) {
-						backgroundImage.set({
-							selectable: false,
-							evented: false
-						});
-						canvas.sendObjectToBack(backgroundImage);
-					}
-					canvas.requestRenderAll();
-				});
+			canvas.loadFromJSON(designData).then((canvas) => {
+				// Fix background image properties after restoration
+				const backgroundImage = canvas
+					.getObjects()
+					.find((obj) => obj.id === "background-image");
+				if (backgroundImage) {
+					backgroundImage.set({
+						selectable: false,
+						evented: false,
+					});
+					canvas.sendObjectToBack(backgroundImage);
+				}
+				canvas.requestRenderAll();
+			});
 		} else if (!isEditing) {
 			// Load from local storage for create mode
 			const storedData = loadCanvasFromLocalStorage();
@@ -527,11 +562,13 @@ const DesignPage = () => {
 						.loadFromJSON(storedData.canvasData)
 						.then((canvas) => {
 							// Fix background image properties after restoration
-							const backgroundImage = canvas.getObjects().find(obj => obj.id === "background-image");
+							const backgroundImage = canvas
+								.getObjects()
+								.find((obj) => obj.id === "background-image");
 							if (backgroundImage) {
 								backgroundImage.set({
 									selectable: false,
-									evented: false
+									evented: false,
 								});
 								canvas.sendObjectToBack(backgroundImage);
 							}
