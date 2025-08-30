@@ -63,6 +63,50 @@ const DesignPage = () => {
 		return isEditPath && certId ? certId : null;
 	});
 
+	// Local storage key for persisting canvas state in create mode
+	const CANVAS_STORAGE_KEY = "design-canvas-state";
+
+	// Save canvas state to local storage (only for create mode)
+	const saveCanvasToLocalStorage = useCallback(() => {
+		if (!canvasRef.current || isEditing) return;
+		
+		try {
+			const canvasData = canvasRef.current.toJSON();
+			localStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify({
+				canvasData,
+				certificateName,
+				timestamp: Date.now()
+			}));
+		} catch (error) {
+			console.error("Failed to save canvas to local storage:", error);
+		}
+	}, [certificateName, isEditing]);
+
+	// Load canvas state from local storage (only for create mode)
+	const loadCanvasFromLocalStorage = useCallback(() => {
+		if (isEditing) return null;
+		
+		try {
+			const stored = localStorage.getItem(CANVAS_STORAGE_KEY);
+			if (stored) {
+				const parsed = JSON.parse(stored);
+				return parsed;
+			}
+		} catch (error) {
+			console.error("Failed to load canvas from local storage:", error);
+		}
+		return null;
+	}, [isEditing]);
+
+	// Clear local storage when successfully saved to database
+	const clearLocalStorage = useCallback(() => {
+		try {
+			localStorage.removeItem(CANVAS_STORAGE_KEY);
+		} catch (error) {
+			console.error("Failed to clear local storage:", error);
+		}
+	}, []);
+
 	// Fetch existing certificate design when in edit mode
 	const fetchCertificateDesign = useCallback(async () => {
 		if (isDataFetched || isLoading) {
@@ -114,6 +158,13 @@ const DesignPage = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+	// Auto-save when certificate name changes (create mode only)
+	useEffect(() => {
+		if (!isEditing && certificateName) {
+			saveCanvasToLocalStorage();
+		}
+	}, [certificateName, saveCanvasToLocalStorage, isEditing]);
+
 	const handleShare = async () => {
 		if (!certificateName.trim()) {
 			alert("Please enter a certificate name");
@@ -148,6 +199,10 @@ const DesignPage = () => {
 				const certId = isEditing
 					? certificateId
 					: response.data.data.id;
+				// Clear local storage when successfully saved
+				if (!isEditing) {
+					clearLocalStorage();
+				}
 				void navigate(`/share/${certId}`);
 			} else {
 				alert(response.data?.msg || "Failed to save certificate");
@@ -299,6 +354,10 @@ const DesignPage = () => {
 			}
 
 			if (response.status === 200) {
+				// Clear local storage when successfully saved
+				if (!isEditing) {
+					clearLocalStorage();
+				}
 				alert(
 					isEditing
 						? "Certificate updated successfully!"
@@ -442,12 +501,58 @@ const DesignPage = () => {
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
 		canvasRef.current = canvas;
 
-		// Load design data if it's already available
+		// Load design data if it's already available (edit mode)
 		if (isEditing && designData) {
 			canvas
 				.loadFromJSON(designData)
-				.then((canvas) => canvas.requestRenderAll());
+				.then((canvas) => {
+					// Fix background image properties after restoration
+					const backgroundImage = canvas.getObjects().find(obj => obj.id === "background-image");
+					if (backgroundImage) {
+						backgroundImage.set({
+							selectable: false,
+							evented: false
+						});
+						canvas.sendObjectToBack(backgroundImage);
+					}
+					canvas.requestRenderAll();
+				});
+		} else if (!isEditing) {
+			// Load from local storage for create mode
+			const storedData = loadCanvasFromLocalStorage();
+			if (storedData) {
+				setCertificateName(storedData.certificateName || "");
+				if (storedData.canvasData) {
+					canvas
+						.loadFromJSON(storedData.canvasData)
+						.then((canvas) => {
+							// Fix background image properties after restoration
+							const backgroundImage = canvas.getObjects().find(obj => obj.id === "background-image");
+							if (backgroundImage) {
+								backgroundImage.set({
+									selectable: false,
+									evented: false
+								});
+								canvas.sendObjectToBack(backgroundImage);
+							}
+							canvas.requestRenderAll();
+						});
+				}
+			}
 		}
+
+		// Auto-save to local storage on canvas changes (create mode only)
+		const handleCanvasChange = () => {
+			if (!isEditing) {
+				saveCanvasToLocalStorage();
+			}
+		};
+
+		// Add event listeners for canvas changes
+		canvas.on("object:added", handleCanvasChange);
+		canvas.on("object:removed", handleCanvasChange);
+		canvas.on("object:modified", handleCanvasChange);
+		canvas.on("path:created", handleCanvasChange);
 
 		canvas.on("selection:created", () => {
 			const activeObject = canvas.getActiveObject();
