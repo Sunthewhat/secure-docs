@@ -18,7 +18,6 @@ const LoginPage = () => {
 		e.preventDefault();
 
 		try {
-			console.log('adsf');
 			const response = await Axios.post<LoginResponse>('/auth/login', {
 				username: username,
 				password: password,
