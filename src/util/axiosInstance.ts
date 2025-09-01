@@ -30,10 +30,40 @@ Axios.interceptors.request.use(
 Axios.interceptors.response.use(
 	(response) => {
 		const token = response.headers['x-refresh-token'];
-		localStorage.setItem('authToken', token);
+		if (token) {
+			localStorage.setItem('authToken', token);
+		}
 		return response;
 	},
 	(error) => Promise.reject(error)
 );
 
-export { Axios };
+let refreshInterval: NodeJS.Timeout | null = null;
+
+const startTokenRefresh = () => {
+	if (refreshInterval) return; // Already running
+
+	refreshInterval = setInterval(async () => {
+		const token = localStorage.getItem('authToken');
+		if (!token) {
+			stopTokenRefresh();
+			return;
+		}
+
+		try {
+			await Axios.get('/auth/verify');
+		} catch (error) {
+			console.error('Token refresh failed:', error);
+			stopTokenRefresh();
+		}
+	}, 60000); // 1 minute
+};
+
+const stopTokenRefresh = () => {
+	if (refreshInterval) {
+		clearInterval(refreshInterval);
+		refreshInterval = null;
+	}
+};
+
+export { Axios, startTokenRefresh, stopTokenRefresh };
