@@ -8,10 +8,12 @@ import { GetCertificateResponse } from "@/types/response";
 
 // Extend fabric.Object to include custom properties
 declare module "fabric" {
-	interface Object {
+	interface FabricObject {
 		id?: string;
 		dbField?: string;
 		isAnchor?: boolean;
+		isQRanchor?: boolean;
+		undeleteable?: boolean;
 	}
 }
 
@@ -19,7 +21,14 @@ declare module "fabric" {
 if (fabric.FabricObject) {
 	fabric.FabricObject.customProperties =
 		fabric.FabricObject.customProperties || [];
-	const customProps = ["name", "id", "dbField", "isAnchor"];
+	const customProps = [
+		"name",
+		"id",
+		"dbField",
+		"isAnchor",
+		"isQRanchor",
+		"undeleteable",
+	];
 	customProps.forEach((prop) => {
 		if (!fabric.FabricObject.customProperties.includes(prop)) {
 			fabric.FabricObject.customProperties.push(prop);
@@ -172,16 +181,26 @@ const DesignPage = () => {
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!canvasRef.current) return;
-			
+
 			const activeObject = canvasRef.current.getActiveObject();
 			if (!activeObject) return;
 
 			// Delete with Delete, Backspace, or Ctrl+X
-			if (e.key === "Delete" || e.key === "Backspace" || (e.ctrlKey && e.key.toLowerCase() === 'x')) {
-				if (e.ctrlKey && e.key.toLowerCase() === 'x') {
+			if (
+				e.key === "Delete" ||
+				e.key === "Backspace" ||
+				(e.ctrlKey && e.key.toLowerCase() === "x")
+			) {
+				if (e.ctrlKey && e.key.toLowerCase() === "x") {
 					e.preventDefault();
 				}
-				
+
+				// Check if element is undeleteable (like QR anchors)
+				if (activeObject.undeleteable || activeObject.isQRanchor) {
+					alert("This QR code anchor cannot be deleted.");
+					return;
+				}
+
 				canvasRef.current.remove(activeObject);
 				canvasRef.current.renderAll();
 				setSelectedElement(null);
@@ -521,8 +540,50 @@ const DesignPage = () => {
 		setForceUpdate({});
 	};
 
+	const addQRanchor = () => {
+		console.log("addQRanchor called, canvas exists:", !!canvasRef.current);
+		if (!canvasRef.current) {
+			console.log("No canvas ref, skipping QR anchor");
+			return;
+		}
+
+		console.log("Creating QR anchor...");
+		// Create a placeholder rectangle for QR code
+		const qrAnchor = new fabric.Rect({
+			left: 650, // Position on right side
+			top: 450, // Position at bottom
+			width: 100,
+			height: 100,
+			fill: "rgba(59, 130, 246, 0.1)", // Light blue background
+			stroke: "#3b82f6",
+			strokeWidth: 2,
+			strokeDashArray: [5, 5], // Dashed border
+			selectable: true,
+			evented: true,
+			// Custom properties to identify as QR anchor
+			id: `qr-anchor-${Date.now()}`,
+			isQRanchor: true,
+			undeleteable: true,
+		});
+
+		canvasRef.current.add(qrAnchor);
+		canvasRef.current.renderAll();
+		console.log("QR anchor added to canvas");
+
+		// Auto-save after adding QR anchor
+		if (!isEditing) {
+			saveCanvasToLocalStorage();
+		}
+	};
+
 	const handleDeleteElement = () => {
 		if (!selectedElement || !canvasRef.current) return;
+
+		// Check if element is undeleteable (like QR anchors)
+		if (selectedElement.undeleteable || selectedElement.isQRanchor) {
+			alert("This QR code anchor cannot be deleted.");
+			return;
+		}
 
 		canvasRef.current.remove(selectedElement);
 		canvasRef.current.renderAll();
@@ -530,6 +591,7 @@ const DesignPage = () => {
 	};
 
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
+		console.log("Canvas ready - isEditing:", isEditing, "designData:", !!designData);
 		canvasRef.current = canvas;
 
 		// Enable keyboard interactions on canvas
@@ -553,11 +615,15 @@ const DesignPage = () => {
 				canvas.requestRenderAll();
 			});
 		} else if (!isEditing) {
+			console.log("Creating new canvas (not editing mode)");
 			// Load from local storage for create mode
 			const storedData = loadCanvasFromLocalStorage();
+			console.log("Stored data:", !!storedData, storedData?.canvasData ? "has canvas data" : "no canvas data");
+			
 			if (storedData) {
 				setCertificateName(storedData.certificateName || "");
 				if (storedData.canvasData) {
+					console.log("Loading from stored canvas data");
 					canvas
 						.loadFromJSON(storedData.canvasData)
 						.then((canvas) => {
@@ -572,9 +638,27 @@ const DesignPage = () => {
 								});
 								canvas.sendObjectToBack(backgroundImage);
 							}
+							
+							// Check if QR anchor already exists, if not add one
+							const existingQRanchor = canvas.getObjects().find(obj => obj.isQRanchor);
+							if (!existingQRanchor) {
+								console.log("No QR anchor found in stored data, adding one");
+								setTimeout(() => addQRanchor(), 100);
+							} else {
+								console.log("QR anchor already exists in stored data");
+							}
+							
 							canvas.requestRenderAll();
 						});
+				} else {
+					console.log("No stored canvas data, adding QR anchor");
+					// Add QR anchor for new canvas after a short delay
+					setTimeout(() => addQRanchor(), 100);
 				}
+			} else {
+				console.log("No stored data, creating fresh canvas with QR anchor");
+				// First time creating canvas - add QR anchor after a short delay
+				setTimeout(() => addQRanchor(), 100);
 			}
 		}
 
@@ -665,7 +749,9 @@ const DesignPage = () => {
 					if (selectedElement.id === "background-image") return;
 					canvasRef.current.sendObjectToBack(selectedElement);
 					// Ensure background image stays at the back
-					const backgroundImage = canvasRef.current.getObjects().find(obj => obj.id === "background-image");
+					const backgroundImage = canvasRef.current
+						.getObjects()
+						.find((obj) => obj.id === "background-image");
 					if (backgroundImage) {
 						canvasRef.current.sendObjectToBack(backgroundImage);
 					}
