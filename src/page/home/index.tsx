@@ -1,6 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import searchIcon from "../../asset/searchIcon.svg";
-import { AllCertTypeResponse, CertType, DeleteCertResponse } from "@/types/response";
+import {
+	AllCertTypeResponse,
+	CertType,
+	DeleteCertResponse,
+} from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 import { useEffect, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
@@ -16,13 +20,13 @@ const HomePage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectingDeleteCert, setSelectingDeleteCert] = useState<CertType | null>(null);
 
-  const handleSelectDeleteCert = (cert: CertType) => {
-    setSelectingDeleteCert(cert);
-    setIsDeleteModalOpen(true);
-  };
+	const handleSelectDeleteCert = (cert: CertType) => {
+		setSelectingDeleteCert(cert);
+		setIsDeleteModalOpen(true);
+	};
 
-  const handleDelete = async (id: string) => {
-    setIsDeleteModalOpen(false);
+	const handleDelete = async (id: string) => {
+		setIsDeleteModalOpen(false);
 
     const response = await Axios.delete<DeleteCertResponse>(`/certificate/${id}`);
 
@@ -33,10 +37,10 @@ const HomePage = () => {
     fetchCerts();
   };
 
-  const handleSelectShareCert = (cert: CertType) => {
-    setSelectingShareCert(cert);
-    setIsShareModalOpen(true);
-  };
+	const handleSelectShareCert = (cert: CertType) => {
+		setSelectingShareCert(cert);
+		setIsShareModalOpen(true);
+	};
 
   const handleShare = (certId: string) => {
     setIsShareModalOpen(false);
@@ -47,8 +51,8 @@ const HomePage = () => {
     navigate(`/design/${certId}/edit`);
   };
 
-  const fetchCerts = async () => {
-    const response = await Axios.get<AllCertTypeResponse>("/certificate");
+	const fetchCerts = async () => {
+		const response = await Axios.get<AllCertTypeResponse>("/certificate");
 
     if (response.status !== 200) {
       alert(response.data.data as unknown as string);
@@ -57,9 +61,9 @@ const HomePage = () => {
     setCertificateItem(response.data.data);
   };
 
-  useEffect(() => {
-    fetchCerts();
-  }, []);
+	useEffect(() => {
+		fetchCerts();
+	}, []);
 
   return (
     <div className="flex flex-col">
@@ -151,14 +155,14 @@ const HomePage = () => {
         onConfirm={handleDelete}
       />
 
-      <ShareModal
-        open={isShareModalOpen}
-        cert={selectingShareCert}
-        onClose={() => setIsShareModalOpen(false)}
-        onConfirm={handleShare}
-      />
-    </div>
-  );
+			<ShareModal
+				open={isShareModalOpen}
+				cert={selectingShareCert}
+				onClose={() => setIsShareModalOpen(false)}
+				onConfirm={handleShare}
+			/>
+		</div>
+	);
 };
 
 export { HomePage };

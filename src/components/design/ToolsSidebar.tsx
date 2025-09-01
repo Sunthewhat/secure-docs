@@ -387,9 +387,7 @@ const ToolsSidebar = ({
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
 								onClick={() => onShapeAdd("anchor")}>
-								<span className="text-[12px]">
-									Column Anchor
-								</span>
+								<span className="text-[12px]">Add Anchor</span>
 							</div>
 						</div>
 					</div>
