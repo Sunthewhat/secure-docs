@@ -368,30 +368,12 @@ const DesignPage = () => {
 		try {
 			const canvas = canvasRef.current;
 
-			// Debug: Check custom properties
-			console.log(
-				"Custom properties:",
-				fabric.FabricObject.customProperties
-			);
-
-			// Debug: Check individual objects
-			canvas.getObjects().forEach((obj, i) => {
-				console.log(`Object ${i}:`, {
-					type: obj.type,
-					id: obj.id,
-					dbField: obj.dbField,
-					isAnchor: obj.isAnchor,
-				});
-			});
-
 			const fabricDesign = canvas.toJSON();
-			console.log("Fabric design:", fabricDesign);
 
 			const payload = {
 				name: certificateName,
 				design: JSON.stringify(fabricDesign),
 			};
-			console.log("Payload:", payload);
 
 			let response;
 			if (isEditing && certificateId) {
@@ -413,9 +395,6 @@ const DesignPage = () => {
 						? "Certificate updated successfully!"
 						: "Certificate saved successfully!"
 				);
-				// if (isEditing) {
-				// 	void navigate("/share");
-				// }
 			} else {
 				alert(response.data?.msg || "Failed to save certificate");
 			}
@@ -541,13 +520,10 @@ const DesignPage = () => {
 	};
 
 	const addQRanchor = () => {
-		console.log("addQRanchor called, canvas exists:", !!canvasRef.current);
 		if (!canvasRef.current) {
-			console.log("No canvas ref, skipping QR anchor");
 			return;
 		}
 
-		console.log("Creating QR anchor...");
 		// Create a placeholder rectangle for QR code
 		const qrAnchor = new fabric.Rect({
 			left: 650, // Position on right side
@@ -560,6 +536,9 @@ const DesignPage = () => {
 			strokeDashArray: [5, 5], // Dashed border
 			selectable: true,
 			evented: true,
+			hasControls: false, // Remove resize/rotate controls
+			hasBorders: false, // Remove selection borders
+			lockRotation: true, // Disable rotation
 			// Custom properties to identify as QR anchor
 			id: `qr-anchor-${Date.now()}`,
 			isQRanchor: true,
@@ -567,8 +546,8 @@ const DesignPage = () => {
 		});
 
 		canvasRef.current.add(qrAnchor);
+		canvasRef.current.bringObjectToFront(qrAnchor);
 		canvasRef.current.renderAll();
-		console.log("QR anchor added to canvas");
 
 		// Auto-save after adding QR anchor
 		if (!isEditing) {
@@ -591,7 +570,6 @@ const DesignPage = () => {
 	};
 
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
-		console.log("Canvas ready - isEditing:", isEditing, "designData:", !!designData);
 		canvasRef.current = canvas;
 
 		// Enable keyboard interactions on canvas
@@ -615,15 +593,12 @@ const DesignPage = () => {
 				canvas.requestRenderAll();
 			});
 		} else if (!isEditing) {
-			console.log("Creating new canvas (not editing mode)");
 			// Load from local storage for create mode
 			const storedData = loadCanvasFromLocalStorage();
-			console.log("Stored data:", !!storedData, storedData?.canvasData ? "has canvas data" : "no canvas data");
-			
+
 			if (storedData) {
 				setCertificateName(storedData.certificateName || "");
 				if (storedData.canvasData) {
-					console.log("Loading from stored canvas data");
 					canvas
 						.loadFromJSON(storedData.canvasData)
 						.then((canvas) => {
@@ -638,25 +613,22 @@ const DesignPage = () => {
 								});
 								canvas.sendObjectToBack(backgroundImage);
 							}
-							
+
 							// Check if QR anchor already exists, if not add one
-							const existingQRanchor = canvas.getObjects().find(obj => obj.isQRanchor);
+							const existingQRanchor = canvas
+								.getObjects()
+								.find((obj) => obj.isQRanchor);
 							if (!existingQRanchor) {
-								console.log("No QR anchor found in stored data, adding one");
 								setTimeout(() => addQRanchor(), 100);
-							} else {
-								console.log("QR anchor already exists in stored data");
 							}
-							
+
 							canvas.requestRenderAll();
 						});
 				} else {
-					console.log("No stored canvas data, adding QR anchor");
 					// Add QR anchor for new canvas after a short delay
 					setTimeout(() => addQRanchor(), 100);
 				}
 			} else {
-				console.log("No stored data, creating fresh canvas with QR anchor");
 				// First time creating canvas - add QR anchor after a short delay
 				setTimeout(() => addQRanchor(), 100);
 			}
@@ -669,8 +641,17 @@ const DesignPage = () => {
 			}
 		};
 
+		// Keep QR anchor always on top when objects are added
+		const handleObjectAdded = () => {
+			const qrAnchor = canvas.getObjects().find((obj) => obj.isQRanchor);
+			if (qrAnchor) {
+				canvas.bringObjectToFront(qrAnchor);
+			}
+			handleCanvasChange();
+		};
+
 		// Add event listeners for canvas changes
-		canvas.on("object:added", handleCanvasChange);
+		canvas.on("object:added", handleObjectAdded);
 		canvas.on("object:removed", handleCanvasChange);
 		canvas.on("object:modified", handleCanvasChange);
 		canvas.on("path:created", handleCanvasChange);
