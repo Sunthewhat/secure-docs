@@ -1,6 +1,7 @@
 import { User } from '@/types/context';
 import { ReactNode, useState, FC, useEffect } from 'react';
 import { AuthContext } from './authContext';
+import { startTokenRefresh, stopTokenRefresh } from '@/util/axiosInstance';
 
 // Provider component that wraps the app and makes auth available
 const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -20,9 +21,12 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		return null;
 	});
 
-	// Clean up effect is no longer needed since we initialize state directly
+	// Start token refresh if user is already logged in
 	useEffect(() => {
-		// This effect can be used for additional auth validation if needed
+		if (user) {
+			startTokenRefresh();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// Sign in handler
@@ -31,6 +35,7 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		// Store token in localStorage for persistence
 		localStorage.setItem('authToken', userData.token);
 		localStorage.setItem('userData', JSON.stringify(userData));
+		startTokenRefresh();
 		callback();
 	};
 
@@ -40,6 +45,7 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		// Clear stored data
 		localStorage.removeItem('authToken');
 		localStorage.removeItem('userData');
+		stopTokenRefresh();
 		callback();
 	};
 
