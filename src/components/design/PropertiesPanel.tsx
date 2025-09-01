@@ -51,6 +51,7 @@ const PropertiesPanel = ({
 		selectedElement instanceof fabric.Textbox ||
 		selectedElement instanceof fabric.Text;
 	const isAnchor = selectedElement.get("isAnchor") === true;
+	const isQRanchor = selectedElement.get("isQRanchor") === true;
 	const isImage = selectedElement.type === "image";
 
 	const handleColorChange = (color: string) => {
@@ -110,6 +111,15 @@ const PropertiesPanel = ({
 				style={{ width: "883px", height: "60px" }}>
 				{/* Left side controls */}
 				<div className="flex items-center gap-6">
+					{/* QR Anchor Properties */}
+					{isQRanchor && (
+						<div className="flex items-center gap-3">
+							<span className="text-sm font-medium text-gray-600">
+								QR Code Anchor (move only)
+							</span>
+						</div>
+					)}
+
 					{/* Image Properties */}
 					{isImage && (
 						<div className="flex items-center gap-3">
@@ -118,8 +128,8 @@ const PropertiesPanel = ({
 							</span>
 						</div>
 					)}
-					{/* Color Picker - Not for images */}
-					{!isImage && (
+					{/* Color Picker - Not for images or QR anchors */}
+					{!isImage && !isQRanchor && (
 						<div className="flex items-center gap-3">
 							<label className="text-sm font-medium">
 								Color:
@@ -244,20 +254,22 @@ const PropertiesPanel = ({
 					)}
 				</div>
 
-				{/* Right side - Position and Delete Buttons */}
-				<div className="flex items-center gap-2">
-					<button
-						ref={positionButtonRef}
-						onClick={() => setIsPositionModalOpen(true)}
-						className="px-3 py-1 text-sm bg-blue-500 text-white border border-blue-500 rounded hover:bg-blue-600 hover:border-blue-600 hover:shadow-md active:bg-blue-700 active:border-blue-700 active:scale-95 transition-all duration-150">
-						Position
-					</button>
-					<button
-						onClick={onDeleteElement}
-						className="px-3 py-1 text-sm bg-red-500 text-white border border-red-500 rounded hover:bg-red-600 hover:border-red-600 hover:shadow-md active:bg-red-700 active:border-red-700 active:scale-95 transition-all duration-150">
-						Delete
-					</button>
-				</div>
+				{/* Right side - Position and Delete Buttons (not for QR anchors) */}
+				{!isQRanchor && (
+					<div className="flex items-center gap-2">
+						<button
+							ref={positionButtonRef}
+							onClick={() => setIsPositionModalOpen(true)}
+							className="px-3 py-1 text-sm bg-blue-500 text-white border border-blue-500 rounded hover:bg-blue-600 hover:border-blue-600 hover:shadow-md active:bg-blue-700 active:border-blue-700 active:scale-95 transition-all duration-150">
+							Position
+						</button>
+						<button
+							onClick={onDeleteElement}
+							className="px-3 py-1 text-sm bg-red-500 text-white border border-red-500 rounded hover:bg-red-600 hover:border-red-600 hover:shadow-md active:bg-red-700 active:border-red-700 active:scale-95 transition-all duration-150">
+							Delete
+						</button>
+					</div>
+				)}
 			</div>
 
 			<PositionModal
