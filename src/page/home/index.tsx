@@ -107,6 +107,7 @@ const HomePage = () => {
               onEdit={() => handleEdit(cert.id)}
               onDelete={() => handleSelectDeleteCert(cert)}
               onShare={() => handleSelectShareCert(cert)}
+              onHistory={() => navigate(`/history/${cert.id}`)}
             />
           ))}
         </div>
@@ -134,11 +135,13 @@ function Card({
   onEdit,
   onDelete,
   onShare,
+  onHistory,
 }: {
   cert: CertType;
   onEdit: () => void;
   onDelete: () => void;
   onShare: () => void;
+  onHistory?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -233,8 +236,14 @@ function Card({
         {cert.name}
       </span>
 
-      {/* Only Share button remains */}
+      {/* History + Share buttons */}
       <div className="mt-[15px] flex flex-row gap-[10px] w-full">
+        <button
+          className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full"
+          onClick={onHistory}
+        >
+          History
+        </button>
         <button
           className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full"
           onClick={onShare}
@@ -264,8 +273,7 @@ function MenuItem({
   const base =
     "w-full flex items-center gap-2 px-3 py-2 text-left text-sm focus:outline-none bg-white rounded-md";
   const normalHover = " hover:bg-black/5 hover:bg-gray-200 text-black";
-  const danger =
-    " text-red-600 dark:text-red-400 hover:bg-red-100";
+  const danger = " text-red-600 dark:text-red-400 hover:bg-red-100";
 
   return (
     <button
