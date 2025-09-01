@@ -68,7 +68,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/history"
+					path="/history/:certId"
 					element={
 						<RequireAuth>
 							<HistoryPage />
