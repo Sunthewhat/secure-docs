@@ -28,6 +28,10 @@ interface CertificateCanvasProps {
 	onBackgroundAdd: (imageUrl: string) => void;
 	onBackgroundRemove?: () => void;
 	onImageAdd: (imageUrl: string) => void;
+	onBringForward?: () => void;
+	onSendBackward?: () => void;
+	onBringToFront?: () => void;
+	onSendToBack?: () => void;
 }
 
 const CertificateCanvas = ({
@@ -42,6 +46,10 @@ const CertificateCanvas = ({
 	onBackgroundAdd,
 	onBackgroundRemove,
 	onImageAdd,
+	onBringForward,
+	onSendBackward,
+	onBringToFront,
+	onSendToBack,
 }: CertificateCanvasProps) => {
 	return (
 		<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
@@ -59,6 +67,10 @@ const CertificateCanvas = ({
 					selectedElement={selectedElement}
 					onUpdateElement={onUpdateElement}
 					onDeleteElement={onDeleteElement}
+					onBringForward={onBringForward}
+					onSendBackward={onSendBackward}
+					onBringToFront={onBringToFront}
+					onSendToBack={onSendToBack}
 				/>
 				<CanvasArea onCanvasReady={onCanvasReady} />
 			</div>

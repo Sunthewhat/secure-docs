@@ -23,6 +23,12 @@ const HomePage = () => {
   const [selectingDeleteCert, setSelectingDeleteCert] =
     useState<CertType | null>(null);
 
+  const handleCreateDesign = () => {
+    // Clear canvas cache from localStorage to ensure fresh canvas
+    localStorage.removeItem("design-canvas-state");
+    navigate("/design");
+  };
+
   const handleSelectDeleteCert = (cert: CertType) => {
     setSelectingDeleteCert(cert);
     setIsDeleteModalOpen(true);
@@ -90,7 +96,7 @@ const HomePage = () => {
           </div>
           <button
             className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[185px] h-[39px] flex justify-center items-center"
-            onClick={() => void navigate("/design")}
+            onClick={handleCreateDesign}
           >
             + Create design
           </button>

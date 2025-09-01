@@ -1,4 +1,6 @@
 import * as fabric from "fabric";
+import { useState, useRef } from "react";
+import PositionModal from "./PositionModal";
 
 interface ElementUpdate {
 	fill?: string;
@@ -14,13 +16,24 @@ interface PropertiesPanelProps {
 	selectedElement: fabric.Object | null;
 	onUpdateElement: (updates: ElementUpdate) => void;
 	onDeleteElement: () => void;
+	onBringForward?: () => void;
+	onSendBackward?: () => void;
+	onBringToFront?: () => void;
+	onSendToBack?: () => void;
 }
 
 const PropertiesPanel = ({
 	selectedElement,
 	onUpdateElement,
 	onDeleteElement,
+	onBringForward,
+	onSendBackward,
+	onBringToFront,
+	onSendToBack,
 }: PropertiesPanelProps) => {
+	const [isPositionModalOpen, setIsPositionModalOpen] = useState(false);
+	const positionButtonRef = useRef<HTMLButtonElement>(null);
+
 	// Don't show properties panel if no element is selected
 	if (!selectedElement) {
 		return (
@@ -91,57 +104,117 @@ const PropertiesPanel = ({
 	const currentDbField = (selectedElement.get("text") as string) || "";
 
 	return (
-		<div
-			className="bg-white border border-gray-300 rounded-lg p-4 mb-4 shadow-sm mx-auto flex items-center justify-between"
-			style={{ width: "883px", height: "60px" }}>
-			{/* Left side controls */}
-			<div className="flex items-center gap-6">
-				{/* Image Properties */}
-				{isImage && (
-					<div className="flex items-center gap-3">
-						<span className="text-sm font-medium text-gray-600">
-							Image selected
-						</span>
-					</div>
-				)}
-				{/* Color Picker - Not for images */}
-				{!isImage && (
-					<div className="flex items-center gap-3">
-						<label className="text-sm font-medium">Color:</label>
-						<input
-							type="color"
-							value={currentColor}
-							onChange={(e) => handleColorChange(e.target.value)}
-							className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
-						/>
-						<span className="text-xs text-gray-600">
-							{currentColor}
-						</span>
-					</div>
-				)}
+		<>
+			<div
+				className="bg-white border border-gray-300 rounded-lg p-4 mb-4 shadow-sm mx-auto flex items-center justify-between"
+				style={{ width: "883px", height: "60px" }}>
+				{/* Left side controls */}
+				<div className="flex items-center gap-6">
+					{/* Image Properties */}
+					{isImage && (
+						<div className="flex items-center gap-3">
+							<span className="text-sm font-medium text-gray-600">
+								Image selected
+							</span>
+						</div>
+					)}
+					{/* Color Picker - Not for images */}
+					{!isImage && (
+						<div className="flex items-center gap-3">
+							<label className="text-sm font-medium">
+								Color:
+							</label>
+							<input
+								type="color"
+								value={currentColor}
+								onChange={(e) =>
+									handleColorChange(e.target.value)
+								}
+								className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+							/>
+							<span className="text-xs text-gray-600">
+								{currentColor}
+							</span>
+						</div>
+					)}
 
-				{/* Anchor Properties */}
-				{isAnchor && (
-					<div className="flex items-center gap-3">
-						<label className="text-sm font-medium">
-							Field name:
-						</label>
-						<input
-							type="text"
-							value={currentDbField}
-							onChange={(e) =>
-								handleFieldNameChange(e.target.value)
-							}
-							placeholder="e.g., name, course, date"
-							className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
-						/>
-					</div>
-				)}
+					{/* Anchor Properties */}
+					{isAnchor && (
+						<div className="flex items-center gap-3">
+							<label className="text-sm font-medium">
+								Field name:
+							</label>
+							<input
+								type="text"
+								value={currentDbField}
+								onChange={(e) =>
+									handleFieldNameChange(e.target.value)
+								}
+								placeholder="e.g., name, course, date"
+								className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
+							/>
+						</div>
+					)}
 
-				{/* Text Properties */}
-				{isText && !isAnchor && (
-					<>
-						{/* Font Size */}
+					{/* Text Properties */}
+					{isText && !isAnchor && (
+						<>
+							{/* Font Size */}
+							<div className="flex items-center gap-3">
+								<label className="text-sm font-medium">
+									Size:
+								</label>
+								<select
+									value={currentFontSize}
+									onChange={(e) =>
+										handleFontSizeChange(
+											parseInt(e.target.value)
+										)
+									}
+									className="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
+									<option value={8}>8px</option>
+									<option value={10}>10px</option>
+									<option value={12}>12px</option>
+									<option value={14}>14px</option>
+									<option value={16}>16px</option>
+									<option value={18}>18px</option>
+									<option value={20}>20px</option>
+									<option value={24}>24px</option>
+									<option value={28}>28px</option>
+									<option value={32}>32px</option>
+									<option value={36}>36px</option>
+									<option value={48}>48px</option>
+									<option value={60}>60px</option>
+									<option value={72}>72px</option>
+								</select>
+							</div>
+
+							{/* Text Style Buttons */}
+							<div className="flex items-center gap-2">
+								<button
+									onClick={handleBoldToggle}
+									className={`px-3 py-1 text-sm font-bold border rounded ${
+										isBold
+											? "bg-blue-500 text-white border-blue-500"
+											: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+									}`}>
+									B
+								</button>
+								<button
+									onClick={handleItalicToggle}
+									className={`px-3 py-1 text-sm italic border rounded ${
+										isItalic
+											? "bg-blue-500 text-white border-blue-500"
+											: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+									}`}>
+									I
+								</button>
+							</div>
+						</>
+					)}
+
+					{/* Font size for anchors */}
+					{isAnchor && (
 						<div className="flex items-center gap-3">
 							<label className="text-sm font-medium">Size:</label>
 							<select
@@ -168,69 +241,35 @@ const PropertiesPanel = ({
 								<option value={72}>72px</option>
 							</select>
 						</div>
+					)}
+				</div>
 
-						{/* Text Style Buttons */}
-						<div className="flex items-center gap-2">
-							<button
-								onClick={handleBoldToggle}
-								className={`px-3 py-1 text-sm font-bold border rounded ${
-									isBold
-										? "bg-blue-500 text-white border-blue-500"
-										: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-								}`}>
-								B
-							</button>
-							<button
-								onClick={handleItalicToggle}
-								className={`px-3 py-1 text-sm italic border rounded ${
-									isItalic
-										? "bg-blue-500 text-white border-blue-500"
-										: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-								}`}>
-								I
-							</button>
-						</div>
-					</>
-				)}
-
-				{/* Font size for anchors */}
-				{isAnchor && (
-					<div className="flex items-center gap-3">
-						<label className="text-sm font-medium">Size:</label>
-						<select
-							value={currentFontSize}
-							onChange={(e) =>
-								handleFontSizeChange(parseInt(e.target.value))
-							}
-							className="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
-							<option value={8}>8px</option>
-							<option value={10}>10px</option>
-							<option value={12}>12px</option>
-							<option value={14}>14px</option>
-							<option value={16}>16px</option>
-							<option value={18}>18px</option>
-							<option value={20}>20px</option>
-							<option value={24}>24px</option>
-							<option value={28}>28px</option>
-							<option value={32}>32px</option>
-							<option value={36}>36px</option>
-							<option value={48}>48px</option>
-							<option value={60}>60px</option>
-							<option value={72}>72px</option>
-						</select>
-					</div>
-				)}
+				{/* Right side - Position and Delete Buttons */}
+				<div className="flex items-center gap-2">
+					<button
+						ref={positionButtonRef}
+						onClick={() => setIsPositionModalOpen(true)}
+						className="px-3 py-1 text-sm bg-blue-500 text-white border border-blue-500 rounded hover:bg-blue-600 hover:border-blue-600 hover:shadow-md active:bg-blue-700 active:border-blue-700 active:scale-95 transition-all duration-150">
+						Position
+					</button>
+					<button
+						onClick={onDeleteElement}
+						className="px-3 py-1 text-sm bg-red-500 text-white border border-red-500 rounded hover:bg-red-600 hover:border-red-600 hover:shadow-md active:bg-red-700 active:border-red-700 active:scale-95 transition-all duration-150">
+						Delete
+					</button>
+				</div>
 			</div>
 
-			{/* Right side - Delete Button */}
-			<div className="flex items-center">
-				<button
-					onClick={onDeleteElement}
-					className="px-3 py-1 text-sm bg-red-500 text-white border border-red-500 rounded hover:bg-red-600 transition-colors">
-					Delete
-				</button>
-			</div>
-		</div>
+			<PositionModal
+				visible={isPositionModalOpen}
+				onClose={() => setIsPositionModalOpen(false)}
+				onBringForward={onBringForward || (() => {})}
+				onSendBackward={onSendBackward || (() => {})}
+				onBringToFront={onBringToFront || (() => {})}
+				onSendToBack={onSendToBack || (() => {})}
+				buttonRef={positionButtonRef}
+			/>
+		</>
 	);
 };
 
