@@ -1,35 +1,38 @@
 import { useNavigate } from "react-router-dom";
 import searchIcon from "../../asset/searchIcon.svg";
 import {
-	AllCertTypeResponse,
-	CertType,
-	DeleteCertResponse,
+  AllCertTypeResponse,
+  CertType,
+  DeleteCertResponse,
 } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
 import DeleteModal from "@/components/modal/DeleteModal";
-import { RiEdit2Line } from "react-icons/ri";
+import AiOutlineEllipsis from "../../asset/AiOutlineEllipsis.svg";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [certificateItem, setCertificateItem] = useState<CertType[]>([]);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [selectingShareCert, setSelectingShareCert] = useState<CertType | null>(null);
+  const [selectingShareCert, setSelectingShareCert] = useState<CertType | null>(
+    null
+  );
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectingDeleteCert, setSelectingDeleteCert] = useState<CertType | null>(null);
+  const [selectingDeleteCert, setSelectingDeleteCert] =
+    useState<CertType | null>(null);
 
-	const handleSelectDeleteCert = (cert: CertType) => {
-		setSelectingDeleteCert(cert);
-		setIsDeleteModalOpen(true);
-	};
+  const handleSelectDeleteCert = (cert: CertType) => {
+    setSelectingDeleteCert(cert);
+    setIsDeleteModalOpen(true);
+  };
 
-	const handleDelete = async (id: string) => {
-		setIsDeleteModalOpen(false);
-
-    const response = await Axios.delete<DeleteCertResponse>(`/certificate/${id}`);
-
+  const handleDelete = async (id: string) => {
+    setIsDeleteModalOpen(false);
+    const response = await Axios.delete<DeleteCertResponse>(
+      `/certificate/${id}`
+    );
     if (response.status !== 200) {
       alert(response.data.msg);
       return;
@@ -37,10 +40,10 @@ const HomePage = () => {
     fetchCerts();
   };
 
-	const handleSelectShareCert = (cert: CertType) => {
-		setSelectingShareCert(cert);
-		setIsShareModalOpen(true);
-	};
+  const handleSelectShareCert = (cert: CertType) => {
+    setSelectingShareCert(cert);
+    setIsShareModalOpen(true);
+  };
 
   const handleShare = (certId: string) => {
     setIsShareModalOpen(false);
@@ -51,9 +54,8 @@ const HomePage = () => {
     navigate(`/design/${certId}/edit`);
   };
 
-	const fetchCerts = async () => {
-		const response = await Axios.get<AllCertTypeResponse>("/certificate");
-
+  const fetchCerts = async () => {
+    const response = await Axios.get<AllCertTypeResponse>("/certificate");
     if (response.status !== 200) {
       alert(response.data.data as unknown as string);
       return;
@@ -61,9 +63,9 @@ const HomePage = () => {
     setCertificateItem(response.data.data);
   };
 
-	useEffect(() => {
-		fetchCerts();
-	}, []);
+  useEffect(() => {
+    fetchCerts();
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -75,12 +77,15 @@ const HomePage = () => {
 
         <div className="px-[25px] py-[50px] flex flex-row">
           <div className="flex flex-row items-center">
-            <img className="mr-[10px] w-[24px] h-[24px]" src={searchIcon} alt="searchIcon" />
+            <img
+              className="mr-[10px] w-[24px] h-[24px]"
+              src={searchIcon}
+              alt="searchIcon"
+            />
             <input
               className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
               type="text"
               placeholder="Search designs..."
-              // (optional) wire up search state here
             />
           </div>
           <button
@@ -96,54 +101,13 @@ const HomePage = () => {
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-full min-h-[770px] px-[20px] mt-[25px] py-[20px]">
         <div className="grid grid-cols-3 gap-[20px] w-full h-full">
           {certificateItem.map((cert) => (
-            <div key={cert.id} className="rounded-[10px] w-full aspect-square flex flex-col px-5 py-5 items-center">
-              {/* image wrapper with hover overlay */}
-              <div
-                className="relative group w-full h-[237px] rounded-[10px] overflow-hidden cursor-pointer"
-                onClick={() => handleEdit(cert.id)}
-                role="button"
-                aria-label={`Edit ${cert.name}`}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleEdit(cert.id);
-                  }
-                }}
-              >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500"
-                  alt={`${cert.name} preview`}
-                  className="w-full h-full object-cover"
-                />
-                {/* overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="flex items-center gap-2 text-white">
-                    <RiEdit2Line className="text-3xl" aria-hidden="true" />
-                    <span className="font-medium">Edit</span>
-                  </div>
-                </div>
-              </div>
-
-              <span className="mt-5 font-semibold text-[16px] text-center text-primary_text">
-                {cert.name}
-              </span>
-
-              <div className="mt-[15px] flex flex-row gap-[10px] w-full">
-                <button
-                  className="bg-secondary_button text-white text-sm py-3 rounded-[8px] w-full"
-                  onClick={() => handleSelectDeleteCert(cert)}
-                >
-                  Delete
-                </button>
-                <button
-                  className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full"
-                  onClick={() => handleSelectShareCert(cert)}
-                >
-                  Share
-                </button>
-              </div>
-            </div>
+            <Card
+              key={cert.id}
+              cert={cert}
+              onEdit={() => handleEdit(cert.id)}
+              onDelete={() => handleSelectDeleteCert(cert)}
+              onShare={() => handleSelectShareCert(cert)}
+            />
           ))}
         </div>
       </div>
@@ -155,14 +119,170 @@ const HomePage = () => {
         onConfirm={handleDelete}
       />
 
-			<ShareModal
-				open={isShareModalOpen}
-				cert={selectingShareCert}
-				onClose={() => setIsShareModalOpen(false)}
-				onConfirm={handleShare}
-			/>
-		</div>
-	);
+      <ShareModal
+        open={isShareModalOpen}
+        cert={selectingShareCert}
+        onClose={() => setIsShareModalOpen(false)}
+        onConfirm={handleShare}
+      />
+    </div>
+  );
 };
+
+function Card({
+  cert,
+  onEdit,
+  onDelete,
+  onShare,
+}: {
+  cert: CertType;
+  onEdit: () => void;
+  onDelete: () => void;
+  onShare: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!open) return;
+      const target = e.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        btnRef.current &&
+        !btnRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div className="rounded-[10px] w-full aspect-square flex flex-col px-5 py-5 items-center">
+      {/* image wrapper with top-right kebab menu */}
+      <div className="relative w-full h-[237px] rounded-[10px] overflow-hidden">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500"
+          alt={`${cert.name} preview`}
+          className="w-full h-full object-cover"
+          onClick={onEdit}
+          role="button"
+          aria-label={`Open ${cert.name} editor`}
+        />
+
+        {/* kebab */}
+        <button
+          ref={btnRef}
+          className="absolute top-2 right-2 rounded-full bg-gray-300 hover:bg-gray-400 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Open actions for ${cert.name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+        >
+          <img
+            src={AiOutlineEllipsis}
+            alt=""
+            aria-hidden="true"
+            className="w-5 h-5"
+          />
+        </button>
+
+        {/* dropdown menu */}
+        {open && (
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label="Card actions"
+            className="absolute top-12 right-2 z-10 min-w-[160px] rounded-md bg-white shadow-lg ring-1 ring-black/5  dark:text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem
+              label="Edit"
+              onSelect={() => {
+                setOpen(false);
+                onEdit();
+              }}
+            />
+            <MenuItem
+              label="Delete"
+              variant="danger"
+              onSelect={() => {
+                setOpen(false);
+                onDelete(); // opens your DeleteModal
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      <span className="mt-5 font-semibold text-[16px] text-center text-primary_text">
+        {cert.name}
+      </span>
+
+      {/* Only Share button remains */}
+      <div className="mt-[15px] flex flex-row gap-[10px] w-full">
+        <button
+          className="bg-primary_button text-white text-sm py-3 rounded-[8px] w-full"
+          onClick={onShare}
+        >
+          Share
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MenuItem({
+  label,
+  onSelect,
+  variant,
+}: {
+  label: string;
+  onSelect: () => void;
+  variant?: "default" | "danger";
+}) {
+  const itemRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    itemRef.current?.focus();
+  }, []);
+
+  const base =
+    "w-full flex items-center gap-2 px-3 py-2 text-left text-sm focus:outline-none bg-white rounded-md";
+  const normalHover = " hover:bg-black/5 hover:bg-gray-200 text-black";
+  const danger =
+    " text-red-600 dark:text-red-400 hover:bg-red-100";
+
+  return (
+    <button
+      ref={itemRef}
+      role="menuitem"
+      className={base + (variant === "danger" ? danger : normalHover)}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+    >
+      <span>{label}</span>
+    </button>
+  );
+}
 
 export { HomePage };
