@@ -221,6 +221,18 @@ const SharePage = () => {
     <div className="flex flex-col">
       {/* Header */}
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px]">
+        <button
+					className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
+					onClick={() => void navigate(-1)}>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="currentColor">
+						<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+					</svg>
+					Back
+				</button>
         <div className="absolute left-1/2 transform -translate-x-1/2">
           <p className="font-semibold text-[32px] w-fit">Add Recipients</p>
         </div>
