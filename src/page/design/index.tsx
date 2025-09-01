@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useLocation } from "react-router";
 import * as fabric from "fabric";
 import DesignHeader from "@/components/design/DesignHeader";
 import CertificateCanvas from "@/components/design/CertificateCanvas";
@@ -50,6 +50,7 @@ interface ElementUpdate {
 const DesignPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId?: string }>();
+	const location = useLocation();
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<
@@ -169,6 +170,17 @@ const DesignPage = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	// Update state when URL changes (for redirect after first save)
+	useEffect(() => {
+		const isEditPath = location.pathname.includes("/edit");
+		
+		if (isEditPath && certId && certId !== certificateId) {
+			setIsEditing(true);
+			setCertificateId(certId);
+			setIsDataFetched(false); // Reset to allow fetching new data
+		}
+	}, [location.pathname, certId, certificateId]);
 
 	// Auto-save when certificate name changes (create mode only)
 	useEffect(() => {
@@ -383,12 +395,18 @@ const DesignPage = () => {
 				);
 			} else {
 				response = await Axios.post("/certificate", payload);
+				console.log(response.data.data.id);
 			}
 
 			if (response.status === 200) {
 				// Clear local storage when successfully saved
 				if (!isEditing) {
 					clearLocalStorage();
+					// Redirect to edit mode after first save
+					const newCertId = response.data.data.id;
+					void navigate(`/design/${newCertId}/edit`, {
+						replace: true,
+					});
 				}
 				alert(
 					isEditing
