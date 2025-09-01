@@ -16,11 +16,12 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 	}, [onCanvasReady]);
 
 	useEffect(() => {
-		if (!canvasElRef.current) return;
+		const canvasElement = canvasElRef.current;
+		if (!canvasElement) return;
 
 		if (fabricCanvasRef.current) return;
 
-		const canvas = new fabric.Canvas(canvasElRef.current, {
+		const canvas = new fabric.Canvas(canvasElement, {
 			width: 850,
 			height: 601,
 			backgroundColor: "#f9fafb",

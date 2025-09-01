@@ -644,6 +644,33 @@ const DesignPage = () => {
 				onBackgroundAdd={addBackgroundImage}
 				onBackgroundRemove={removeBackgroundImage}
 				onImageAdd={addImage}
+				onBringForward={() => {
+					if (!selectedElement || !canvasRef.current) return;
+					canvasRef.current.bringObjectForward(selectedElement);
+					canvasRef.current.renderAll();
+				}}
+				onSendBackward={() => {
+					if (!selectedElement || !canvasRef.current) return;
+					if (selectedElement.id === "background-image") return;
+					canvasRef.current.sendObjectBackwards(selectedElement);
+					canvasRef.current.renderAll();
+				}}
+				onBringToFront={() => {
+					if (!selectedElement || !canvasRef.current) return;
+					canvasRef.current.bringObjectToFront(selectedElement);
+					canvasRef.current.renderAll();
+				}}
+				onSendToBack={() => {
+					if (!selectedElement || !canvasRef.current) return;
+					if (selectedElement.id === "background-image") return;
+					canvasRef.current.sendObjectToBack(selectedElement);
+					// Ensure background image stays at the back
+					const backgroundImage = canvasRef.current.getObjects().find(obj => obj.id === "background-image");
+					if (backgroundImage) {
+						canvasRef.current.sendObjectToBack(backgroundImage);
+					}
+					canvasRef.current.renderAll();
+				}}
 			/>
 		</div>
 	);
