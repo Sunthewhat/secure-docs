@@ -15,7 +15,7 @@ export type Participant = {
 		[key: string]: string; // dynamic columns
 	};
 };
-export type GetParticipantResponse = BaseResponse<Participant[]>;
+
 
 export type CertType = {
 	id: string;
@@ -50,12 +50,20 @@ export type BaseResponse<T> = {
 	data: T;
 };
 
+// auth
 export type LoginResponse = BaseResponse<Login>;
+
+// certificate
 export type AllCertTypeResponse = BaseResponse<CertType[]>;
-export type EditParticipantResponse = BaseResponse<Participant>;
-export type AddParticipantResponse = BaseResponse<{ id: string }>;
 export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
 
+//file
 export type UploadResourceResponse = BaseResponse<uploadFileType>;
 export type GetFilesResponse = BaseResponse<getImage>;
+
+// participant
+export type GetParticipantResponse = BaseResponse<Participant[]>;
+export type AddParticipantResponse = BaseResponse<{ id: string }>;
+export type EditParticipantResponse = BaseResponse<Participant>;
+export type DeleteParticipantResponse = BaseResponse<{ id: string }>;
