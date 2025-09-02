@@ -174,7 +174,7 @@ const DesignPage = () => {
 	// Update state when URL changes (for redirect after first save)
 	useEffect(() => {
 		const isEditPath = location.pathname.includes("/edit");
-		
+
 		if (isEditPath && certId && certId !== certificateId) {
 			setIsEditing(true);
 			setCertificateId(certId);
@@ -558,7 +558,7 @@ const DesignPage = () => {
 			hasBorders: false, // Remove selection borders
 			lockRotation: true, // Disable rotation
 			// Custom properties to identify as QR anchor
-			id: `qr-anchor-${Date.now()}`,
+			id: `QRANCHOR`,
 			isQRanchor: true,
 			undeleteable: true,
 		});
