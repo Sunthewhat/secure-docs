@@ -1,39 +1,309 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
+import * as fabric from "fabric";
 import { Axios } from "@/util/axiosInstance";
-import { GetParticipantResponse, Participant } from "@/types/response";
+import {
+	GetParticipantResponse,
+	Participant,
+	GetCertificateResponse,
+	Certificate,
+} from "@/types/response";
 
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
 	const [participants, setParticipants] = useState<Participant[]>([]);
+	const [certificate, setCertificate] = useState<Certificate | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [selectedParticipant, setSelectedParticipant] =
+		useState<Participant | null>(null);
+	const canvasRef = useRef<fabric.Canvas | null>(null);
 
-	// Fetch participants data from API
+	// Fetch certificate and participants data from API
 	useEffect(() => {
-		const fetchParticipants = async () => {
+		const fetchData = async () => {
 			if (!certId) return;
 
 			try {
 				setLoading(true);
-				const response = await Axios.get<GetParticipantResponse>(
-					`/participant/${certId}`
+
+				// Fetch certificate data
+				const certResponse = await Axios.get<GetCertificateResponse>(
+					`/certificate/${certId}`
 				);
-				if (response.status === 200) {
-					setParticipants(response.data.data);
-					// Extract column names from first participant's data object if data exists
+				if (certResponse.status === 200) {
+					setCertificate(certResponse.data.data);
+				} else {
+					console.error("Failed to fetch certificate");
+				}
+
+				// Fetch participants data
+				const participantResponse =
+					await Axios.get<GetParticipantResponse>(
+						`/participant/${certId}`
+					);
+				if (participantResponse.status === 200) {
+					const participantsData = participantResponse.data.data;
+					setParticipants(participantsData);
+					// Select first participant automatically
+					if (participantsData.length > 0) {
+						setSelectedParticipant(participantsData[0]);
+					}
 				} else {
 					console.error("Failed to fetch participants");
 				}
 			} catch (error) {
-				console.error("Error fetching participants:", error);
+				console.error("Error fetching data:", error);
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		void fetchParticipants();
+		void fetchData();
 	}, [certId]);
+
+	// Function to update certificate with participant data
+	const updateCertificateWithParticipantData = (participant: Participant) => {
+		if (!canvasRef.current) {
+			return;
+		}
+
+		const canvas = canvasRef.current;
+		const objects = canvas.getObjects();
+
+		// Find anchor objects and map participant data to them
+		objects.forEach((obj) => {
+			if (obj.isAnchor && obj.id && obj.type === "textbox") {
+				const textbox = obj as fabric.Textbox;
+				// Extract column name from id by removing "PLACEHOLDER-" prefix
+				const columnName = obj.id.replace("PLACEHOLDER-", "");
+				const fieldValue = participant.data[columnName];
+				if (fieldValue) {
+					textbox.set("text", fieldValue);
+				}
+			}
+		});
+
+		canvas.renderAll();
+	};
+
+	// Handle participant row click
+	const handleParticipantClick = (participant: Participant) => {
+		if (selectedParticipant?.id === participant.id) {
+			// If clicking on the same participant, refresh the certificate
+			updateCertificateWithParticipantData(participant);
+		} else {
+			// Select new participant
+			setSelectedParticipant(participant);
+		}
+	};
+
+	// Function to resize canvas to fit container
+	const resizeCanvas = useCallback(() => {
+		if (!canvasRef.current || !certificate?.design) return;
+
+		const containerElement = document.getElementById("certificate-preview");
+		if (!containerElement) return;
+
+		const containerRect = containerElement.getBoundingClientRect();
+		const newWidth = containerRect.width;
+		const newHeight = containerRect.height;
+
+		if (newWidth <= 0 || newHeight <= 0) return;
+
+		const canvas = canvasRef.current;
+
+		// Store original design dimensions
+		const designData = JSON.parse(certificate.design);
+		const originalWidth = designData.width || 800;
+		const originalHeight = designData.height || 600;
+
+		// Calculate scale to fit the design in the current container
+		const scaleX = newWidth / originalWidth;
+		const scaleY = newHeight / originalHeight;
+		const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+
+		// Resize canvas
+		canvas.setDimensions({ width: newWidth, height: newHeight });
+
+		// Reload and scale the certificate design
+		canvas.loadFromJSON(designData).then(() => {
+			canvas.getObjects().forEach((obj) => {
+				obj.set({
+					left: (obj.left || 0) * scale,
+					top: (obj.top || 0) * scale,
+					scaleX: (obj.scaleX || 1) * scale,
+					scaleY: (obj.scaleY || 1) * scale,
+					selectable: false,
+					evented: false,
+				});
+			});
+
+			canvas.renderAll();
+
+			// Re-apply participant data if selected
+			if (selectedParticipant) {
+				setTimeout(() => {
+					updateCertificateWithParticipantData(selectedParticipant);
+				}, 100);
+			}
+		});
+	}, [certificate, selectedParticipant]);
+
+	// Initialize canvas and render certificate design
+	useEffect(() => {
+		if (!certificate?.design) {
+			return;
+		}
+
+		// Cleanup existing canvas first
+		if (canvasRef.current) {
+			canvasRef.current.dispose();
+			canvasRef.current = null;
+		}
+
+		// Use setTimeout to ensure DOM is ready
+		const initCanvas = () => {
+			const canvasElement = document.getElementById(
+				"preview-canvas"
+			) as HTMLCanvasElement;
+			const containerElement = document.getElementById(
+				"certificate-preview"
+			);
+
+			if (!canvasElement || !containerElement) {
+				setTimeout(initCanvas, 100);
+				return;
+			}
+
+			// Check if canvas is already initialized
+			if (canvasRef.current) {
+				return;
+			}
+
+			// Get container dimensions with some padding
+			const containerRect = containerElement.getBoundingClientRect();
+			const containerWidth = containerRect.width;
+			const containerHeight = containerRect.height;
+
+			// Use container dimensions to fit properly
+			const canvasWidth = containerWidth;
+			const canvasHeight = containerHeight;
+
+			// Initialize Fabric canvas
+			const canvas = new fabric.Canvas(canvasElement, {
+				width: canvasWidth,
+				height: canvasHeight,
+				selection: false, // Disable selection in preview mode
+			});
+
+			// Set canvas element CSS to fit container
+			canvasElement.style.maxWidth = "100%";
+			canvasElement.style.maxHeight = "100%";
+			canvasElement.style.width = "auto";
+			canvasElement.style.height = "auto";
+
+			canvasRef.current = canvas;
+
+			// Load and render the certificate design
+			try {
+				const designData = JSON.parse(certificate.design);
+
+				canvas
+					.loadFromJSON(designData)
+					.then(() => {
+						// Scale down the entire canvas content to fit preview
+						const objects = canvas.getObjects();
+						if (objects.length > 0) {
+							// Calculate scale to fit the design in the preview canvas
+							const originalWidth = designData.width || 800;
+							const originalHeight = designData.height || 600;
+							const scaleX = canvasWidth / originalWidth;
+							const scaleY = canvasHeight / originalHeight;
+							const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+
+							// Apply scale to all objects
+							objects.forEach((obj) => {
+								obj.set({
+									left: (obj.left || 0) * scale,
+									top: (obj.top || 0) * scale,
+									scaleX: (obj.scaleX || 1) * scale,
+									scaleY: (obj.scaleY || 1) * scale,
+									selectable: false,
+									evented: false,
+								});
+							});
+						} else {
+							// Disable all object interactions for preview
+							canvas.getObjects().forEach((obj) => {
+								obj.set({
+									selectable: false,
+									evented: false,
+								});
+							});
+						}
+
+						canvas.renderAll();
+
+						// Apply selected participant data if available
+						setTimeout(() => {
+							if (selectedParticipant) {
+								updateCertificateWithParticipantData(
+									selectedParticipant
+								);
+							}
+						}, 100);
+					})
+					.catch((error) => {
+						console.error(
+							"Error loading certificate design:",
+							error
+						);
+					});
+			} catch (error) {
+				console.error("Error parsing certificate design:", error);
+			}
+		};
+
+		// Start initialization
+		setTimeout(initCanvas, 100);
+
+		// Cleanup function
+		return () => {
+			if (canvasRef.current) {
+				canvasRef.current.dispose();
+				canvasRef.current = null;
+			}
+		};
+	}, [certificate, selectedParticipant]);
+
+	// Add resize observer to handle responsive canvas sizing
+	useEffect(() => {
+		const containerElement = document.getElementById("certificate-preview");
+		if (!containerElement) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			resizeCanvas();
+		});
+
+		resizeObserver.observe(containerElement);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
+	}, [resizeCanvas]);
+
+	// Update certificate with selected participant data when participant changes
+	useEffect(() => {
+		if (selectedParticipant && canvasRef.current) {
+			// Small delay to ensure canvas is fully rendered
+			const timer = setTimeout(() => {
+				updateCertificateWithParticipantData(selectedParticipant);
+			}, 200);
+
+			return () => clearTimeout(timer);
+		}
+	}, [selectedParticipant]);
 
 	// Function to handle sending data to next page via navigation state
 	const handleSend = () => {
@@ -77,14 +347,32 @@ const PreviewPage = () => {
 				<div className="flex flex-col xl:flex-row w-full h-full">
 					<div className="flex flex-col w-full xl:w-3/7 flex-shrink-0 items-start">
 						<div className=" border-4 border-black p-2 aspect-[297/210] w-full xl:max-w-[500px] max-w-full">
-							<img
-								src={
-									"https://marketplace.canva.com/EAFlVDzb7sA/3/0/1600w/canva-white-gold-elegant-modern-certificate-of-participation-Qn4Rei141MM.jpg"
-									//TODO
-								}
-								alt="Description"
-								className="w-full h-full object-cover"
-							/>
+							{loading ? (
+								<div className="w-full h-full flex items-center justify-center bg-gray-100">
+									<p className="text-gray-600">
+										Loading certificate...
+									</p>
+								</div>
+							) : certificate ? (
+								<div
+									id="certificate-preview"
+									className="w-full h-full bg-white relative">
+									<canvas
+										id="preview-canvas"
+										className="w-full h-full object-contain"
+										style={{
+											maxWidth: "100%",
+											maxHeight: "100%",
+										}}
+									/>
+								</div>
+							) : (
+								<div className="w-full h-full flex items-center justify-center bg-gray-100">
+									<p className="text-gray-600">
+										No certificate found
+									</p>
+								</div>
+							)}
 						</div>
 
 						{/* Edit Design Button */}
@@ -166,7 +454,17 @@ const PreviewPage = () => {
 										participants.map((recipient) => (
 											<tr
 												key={recipient.id}
-												className="border border-gray-200">
+												className={`border border-gray-200 cursor-pointer hover:bg-gray-50 ${
+													selectedParticipant?.id ===
+													recipient.id
+														? "bg-blue-50 border-blue-200"
+														: ""
+												}`}
+												onClick={() =>
+													handleParticipantClick(
+														recipient
+													)
+												}>
 												{Object.keys(
 													recipient.data
 												).map((col, index) => (
