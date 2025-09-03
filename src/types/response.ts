@@ -9,6 +9,7 @@ export type Participant = {
 	id: string;
 	certificate_id: string;
 	is_revoked: boolean;
+	is_distributed: boolean;
 	created_at: string;
 	updated_at: string;
 	data: {
@@ -57,6 +58,7 @@ export type LoginResponse = BaseResponse<Login>;
 export type AllCertTypeResponse = BaseResponse<CertType[]>;
 export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
+export type DistributeCertResponse = BaseResponse<Participant[]>;
 
 //file
 export type UploadResourceResponse = BaseResponse<uploadFileType>;

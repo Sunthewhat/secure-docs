@@ -36,7 +36,8 @@ const SaveSendPage = () => {
   // union of dynamic columns (match preview behavior)
   const columns = useMemo(() => {
     const set = new Set<string>();
-    for (const p of participants) Object.keys(p.data ?? {}).forEach(k => set.add(k));
+    for (const p of participants)
+      Object.keys(p.data ?? {}).forEach((k) => set.add(k));
     return Array.from(set);
   }, [participants]);
 
@@ -51,6 +52,12 @@ const SaveSendPage = () => {
     URL.revokeObjectURL(url);
   };
 
+  const participantIds = useMemo(
+    () =>
+      participants.map((p) => p.id).filter((id): id is string => Boolean(id)), // keep only valid ids
+    [participants]
+  );
+
   const handleDownload = async () => {
     if (!certId) {
       setError("Missing certificate id.");
@@ -60,7 +67,10 @@ const SaveSendPage = () => {
     setDownloading(true);
     try {
       // If backend needs a subset, send { participantIds: participants.map(p => p.id) }
-      const res = await Axios.post<RenderResponse>(`/certificate/render/${certId}`, {});
+      const res = await Axios.post<RenderResponse>(
+        `/certificate/render/${certId}`,
+        { participantIds }
+      );
       if (!res.data?.success) throw new Error(res.data?.msg || "Render failed");
 
       const { zipFilePath, results } = res.data.data;
@@ -72,8 +82,9 @@ const SaveSendPage = () => {
         const r = await fetch(targetUrl, { credentials: "include" });
         if (!r.ok) throw new Error("Blob fetch failed");
         const blob = await r.blob();
-        const filename =
-          (targetUrl.split("/").pop() || "certificates.zip").split("?")[0];
+        const filename = (
+          targetUrl.split("/").pop() || "certificates.zip"
+        ).split("?")[0];
         downloadBlob(blob, filename);
       } catch {
         window.open(targetUrl, "_blank", "noopener,noreferrer");
@@ -107,7 +118,9 @@ const SaveSendPage = () => {
             onClick={handleDownload}
             disabled={downloading || participants.length === 0}
             className={`text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center ${
-              downloading || participants.length === 0 ? "opacity-60 cursor-not-allowed" : ""
+              downloading || participants.length === 0
+                ? "opacity-60 cursor-not-allowed"
+                : ""
             }`}
           >
             {downloading ? "Rendering…" : "Download"}
@@ -127,7 +140,11 @@ const SaveSendPage = () => {
                     columns.map((col, idx) => (
                       <th
                         key={col}
-                        className={`font-normal px-6 py-2 ${idx < columns.length - 1 ? "border-r border-gray-200" : ""}`}
+                        className={`font-normal px-6 py-2 ${
+                          idx < columns.length - 1
+                            ? "border-r border-gray-200"
+                            : ""
+                        }`}
                       >
                         {col}
                       </th>
@@ -139,12 +156,16 @@ const SaveSendPage = () => {
               </thead>
               <tbody>
                 {participants.length > 0 ? (
-                  participants.map(p => (
+                  participants.map((p) => (
                     <tr key={p.id} className="border border-gray-200">
                       {columns.map((col, idx) => (
                         <td
                           key={col}
-                          className={`px-6 py-2 break-words ${idx < columns.length - 1 ? "border-r border-gray-200" : ""}`}
+                          className={`px-6 py-2 break-words ${
+                            idx < columns.length - 1
+                              ? "border-r border-gray-200"
+                              : ""
+                          }`}
                         >
                           {p.data?.[col] ?? ""}
                         </td>
@@ -153,7 +174,10 @@ const SaveSendPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={Math.max(columns.length, 1)} className="px-6 py-8 text-gray-500">
+                    <td
+                      colSpan={Math.max(columns.length, 1)}
+                      className="px-6 py-8 text-gray-500"
+                    >
                       No participants found
                     </td>
                   </tr>

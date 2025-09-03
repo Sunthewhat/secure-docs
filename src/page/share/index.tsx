@@ -1,3 +1,4 @@
+// src/pages/SharePage.tsx
 import { useNavigate, useParams } from "react-router-dom";
 import {
   RiEdit2Line,
@@ -6,7 +7,7 @@ import {
   RiCheckLine,
   RiCloseLine,
 } from "react-icons/ri";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Axios } from "@/util/axiosInstance";
 import {
   AddParticipantResponse,
@@ -14,6 +15,7 @@ import {
   GetParticipantResponse,
 } from "@/types/response";
 import { useToast } from "@/components/toast/ToastContext";
+import WarningModal from "@/components/modal/WarningModal"; // ✅ import your modal
 
 type Recipient = { [key: string]: string };
 
@@ -26,6 +28,7 @@ const SharePage = () => {
   const certId = useParams().certId as string;
   const navigate = useNavigate();
   const toast = useToast();
+
   const [columns, setColumns] = useState<string[]>(["Recipient Name"]);
   const [recipients, setRecipients] = useState<ParticipantRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -36,6 +39,23 @@ const SharePage = () => {
   const [editColIndex, setEditColIndex] = useState<number | null>(null);
   const [colEditValue, setColEditValue] = useState<string>("");
 
+  // ⚠️ New: modal + lock state (persisted per certificate)
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [columnsLocked, setColumnsLocked] = useState(false);
+  const COL_LOCK_KEY = useMemo(
+    () => `columns-locked:${certId}`,
+    [certId]
+  );
+
+  // Minimal cert object for WarningModal (it only uses cert.id)
+  const certForModal = useMemo(() => ({ id: certId } as any), [certId]);
+
+  // Load persisted lock state
+  useEffect(() => {
+    const saved = localStorage.getItem(COL_LOCK_KEY);
+    if (saved === "true") setColumnsLocked(true);
+  }, [COL_LOCK_KEY]);
+
   // ===== API helpers =====
 
   const fetchParticipants = async () => {
@@ -43,7 +63,7 @@ const SharePage = () => {
       `/participant/${certId}`
     );
     if (response.status !== 200) {
-      alert(response.data.msg);
+      toast.error(response.data.msg);
       return;
     }
 
@@ -77,11 +97,9 @@ const SharePage = () => {
       { data } // matches API: { data: { ... } }
     );
     if (response.status !== 200) {
-      alert(response.data.msg);
+      toast.error(response.data.msg);
       return;
     }
-    // Optionally refetch if the server can mutate columns/values
-    // await fetchParticipants();
   };
 
   const createParticipant = async (certId: string, data: Recipient) => {
@@ -91,12 +109,14 @@ const SharePage = () => {
       { participants: [data] }
     );
     if (response.status !== 200) {
-      alert(response.data.msg);
+      toast.error(response.data.msg);
       return;
     }
     // After creation, refresh so the new row gets its server id
     await fetchParticipants();
   };
+
+  // ===== Next flow with modal =====
 
   const handleNext = () => {
     if (recipients.length === 0) {
@@ -107,7 +127,24 @@ const SharePage = () => {
       toast.error("Please fill at least one field for a recipient.");
       return;
     }
+
+    // If not locked yet, show warning modal; otherwise navigate
+    if (!columnsLocked) {
+      setIsWarningOpen(true);
+      return;
+    }
     navigate(`/preview/${certId}`);
+  };
+
+  // Modal handlers
+  const handleWarningClose = () => setIsWarningOpen(false);
+
+  const handleWarningConfirm = (confirmedCertId: string) => {
+    // lock columns and persist it, then navigate
+    setColumnsLocked(true);
+    localStorage.setItem(COL_LOCK_KEY, "true");
+    setIsWarningOpen(false);
+    navigate(`/preview/${confirmedCertId}`);
   };
 
   // ===== Effects =====
@@ -190,6 +227,10 @@ const SharePage = () => {
   };
 
   const handleAddColumn = () => {
+    if (columnsLocked) {
+      toast.error("Columns are locked and can’t be modified anymore.");
+      return;
+    }
     const newCol = `Column ${columns.length + 1}`;
     setColumns((c) => [...c, newCol]);
     setRecipients((rows) =>
@@ -203,6 +244,12 @@ const SharePage = () => {
   };
 
   const handleSaveColumn = (index: number) => {
+    if (columnsLocked) {
+      toast.error("Columns are locked and can’t be renamed.");
+      setEditColIndex(null);
+      setColEditValue("");
+      return;
+    }
     if (colEditValue.trim() === "") return;
     const oldCol = columns[index];
     const newCol = colEditValue.trim();
@@ -279,10 +326,12 @@ const SharePage = () => {
                             value={colEditValue}
                             onChange={(e) => setColEditValue(e.target.value)}
                             className="border rounded px-2 py-1 w-full"
+                            disabled={columnsLocked}
                           />
                           <button
                             onClick={() => handleSaveColumn(i)}
-                            className="text-green-600 hover:text-green-800"
+                            className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                            disabled={columnsLocked}
                           >
                             <RiCheckLine size={18} />
                           </button>
@@ -298,7 +347,13 @@ const SharePage = () => {
                           <span>{col}</span>
                           <button
                             onClick={() => handleStartEditColumn(i, col)}
-                            className="text-gray-600 hover:text-blue-600"
+                            className="text-gray-600 hover:text-blue-600 disabled:opacity-50"
+                            disabled={columnsLocked}
+                            title={
+                              columnsLocked
+                                ? "Columns are locked"
+                                : "Rename column"
+                            }
                           >
                             <RiEdit2Line size={16} />
                           </button>
@@ -392,12 +447,14 @@ const SharePage = () => {
 
           {/* Right box: add column */}
           <div className="flex flex-col gap-2">
-            <button
-              onClick={handleAddColumn}
-              className="text-noto text-[14px] bg-blue-500 hover:bg-blue-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center mt-2"
-            >
-              <RiAddLine size={18} className="mr-2" /> Add Column
-            </button>
+            {!columnsLocked && ( // ✅ hide after confirm
+              <button
+                onClick={handleAddColumn}
+                className="text-noto text-[14px] bg-blue-500 hover:bg-blue-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center mt-2"
+              >
+                <RiAddLine size={18} className="mr-2" /> Add Column
+              </button>
+            )}
           </div>
         </div>
 
@@ -411,6 +468,14 @@ const SharePage = () => {
           </button>
         </div>
       </div>
+
+      {/* ⚠️ Warning Modal */}
+      <WarningModal
+        open={isWarningOpen}
+        cert={certForModal}
+        onClose={handleWarningClose}
+        onConfirm={handleWarningConfirm}
+      />
     </div>
   );
 };
