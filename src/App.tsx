@@ -3,13 +3,15 @@ import { RouterProvider } from "./routes/routerProvider";
 import { ToastProvider } from "@/components/toast/ToastContext";
 
 function App() {
-  return (
-    <ToastProvider>
-      <AuthProvider>
-        <RouterProvider />
-      </AuthProvider>
-    </ToastProvider>
-  );
+	return (
+		<div className="select-none cursor-default">
+			<ToastProvider>
+				<AuthProvider>
+					<RouterProvider />
+				</AuthProvider>
+			</ToastProvider>
+		</div>
+	);
 }
 
 export default App;
