@@ -40,7 +40,7 @@ const HomePage = () => {
       `/certificate/${id}`
     );
     if (response.status !== 200) {
-      alert(response.data.msg);
+      // alert(response.data.msg);
       return;
     }
     fetchCerts();
@@ -63,7 +63,7 @@ const HomePage = () => {
   const fetchCerts = async () => {
     const response = await Axios.get<AllCertTypeResponse>("/certificate");
     if (response.status !== 200) {
-      alert(response.data.data as unknown as string);
+      // alert(response.data.data as unknown as string);
       return;
     }
     setCertificateItem(response.data.data);

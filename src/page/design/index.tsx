@@ -197,6 +197,14 @@ const DesignPage = () => {
 			const activeObject = canvasRef.current.getActiveObject();
 			if (!activeObject) return;
 
+			// Check if we're editing text - don't delete if user is typing in a textbox
+			if (activeObject.type === 'textbox' || activeObject.type === 'text') {
+				const textObject = activeObject as fabric.Textbox;
+				if (textObject.isEditing) {
+					return; // Allow normal text editing behavior
+				}
+			}
+
 			// Delete with Delete, Backspace, or Ctrl+X
 			if (
 				e.key === "Delete" ||
