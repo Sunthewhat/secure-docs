@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
 import * as fabric from "fabric";
 import { Axios } from "@/util/axiosInstance";
@@ -98,6 +98,58 @@ const PreviewPage = () => {
 		}
 	};
 
+	// Function to resize canvas to fit container
+	const resizeCanvas = useCallback(() => {
+		if (!canvasRef.current || !certificate?.design) return;
+
+		const containerElement = document.getElementById("certificate-preview");
+		if (!containerElement) return;
+
+		const containerRect = containerElement.getBoundingClientRect();
+		const newWidth = containerRect.width;
+		const newHeight = containerRect.height;
+
+		if (newWidth <= 0 || newHeight <= 0) return;
+
+		const canvas = canvasRef.current;
+
+		// Store original design dimensions
+		const designData = JSON.parse(certificate.design);
+		const originalWidth = designData.width || 800;
+		const originalHeight = designData.height || 600;
+
+		// Calculate scale to fit the design in the current container
+		const scaleX = newWidth / originalWidth;
+		const scaleY = newHeight / originalHeight;
+		const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+
+		// Resize canvas
+		canvas.setDimensions({ width: newWidth, height: newHeight });
+
+		// Reload and scale the certificate design
+		canvas.loadFromJSON(designData).then(() => {
+			canvas.getObjects().forEach((obj) => {
+				obj.set({
+					left: (obj.left || 0) * scale,
+					top: (obj.top || 0) * scale,
+					scaleX: (obj.scaleX || 1) * scale,
+					scaleY: (obj.scaleY || 1) * scale,
+					selectable: false,
+					evented: false,
+				});
+			});
+
+			canvas.renderAll();
+
+			// Re-apply participant data if selected
+			if (selectedParticipant) {
+				setTimeout(() => {
+					updateCertificateWithParticipantData(selectedParticipant);
+				}, 100);
+			}
+		});
+	}, [certificate, selectedParticipant]);
+
 	// Initialize canvas and render certificate design
 	useEffect(() => {
 		if (!certificate?.design) {
@@ -192,11 +244,13 @@ const PreviewPage = () => {
 						}
 
 						canvas.renderAll();
-						
+
 						// Apply selected participant data if available
 						setTimeout(() => {
 							if (selectedParticipant) {
-								updateCertificateWithParticipantData(selectedParticipant);
+								updateCertificateWithParticipantData(
+									selectedParticipant
+								);
 							}
 						}, 100);
 					})
@@ -222,6 +276,22 @@ const PreviewPage = () => {
 			}
 		};
 	}, [certificate, selectedParticipant]);
+
+	// Add resize observer to handle responsive canvas sizing
+	useEffect(() => {
+		const containerElement = document.getElementById("certificate-preview");
+		if (!containerElement) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			resizeCanvas();
+		});
+
+		resizeObserver.observe(containerElement);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
+	}, [resizeCanvas]);
 
 	// Update certificate with selected participant data when participant changes
 	useEffect(() => {
