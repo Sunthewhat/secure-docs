@@ -6,6 +6,11 @@ import CertificateCanvas from '@/components/design/CertificateCanvas';
 import { Axios } from '@/util/axiosInstance';
 import { GetCertificateResponse } from '@/types/response';
 import { useToast } from '@/components/toast/ToastContext'; // ✅ NEW
+import { addElement } from './utils/addElement';
+import { handleSaveCertificateUtil } from './utils/handleSaveCertificate';
+import { handleShareUtil } from './utils/handleShareCertificate';
+import { addBackgroundImageUtil } from './utils/addBackgroundImage';
+import { handleCanvasReadyUtil } from './utils/handleCanvasReady';
 
 // Extend fabric.Object to include custom properties
 declare module 'fabric' {
@@ -230,89 +235,8 @@ const DesignPage = () => {
 		return () => document.removeEventListener('keydown', handleKeyDown);
 	}, [isEditing, saveCanvasToLocalStorage, toast]); // ✅ include toast
 
-	const handleShare = async () => {
-		if (!certificateName.trim()) {
-			toast.error('Please enter a certificate name'); // ✅
-			return;
-		}
-
-		if (!canvasRef.current) {
-			toast.error('Canvas not ready'); // ✅
-			return;
-		}
-
-		try {
-			const canvas = canvasRef.current;
-			const fabricDesign = canvas.toJSON();
-
-			const payload = {
-				name: certificateName,
-				design: JSON.stringify(fabricDesign),
-			};
-
-			let response;
-			if (isEditing && certificateId) {
-				response = await Axios.put(`/certificate/${certificateId}`, payload);
-			} else {
-				response = await Axios.post('/certificate', payload);
-			}
-
-			if (response.status === 200) {
-				const newId = isEditing ? certificateId : response.data.data.id;
-				if (!isEditing) clearLocalStorage();
-				void navigate(`/share/${newId}`);
-				toast.success('Certificate saved. Ready to share!'); // ✅ feedback
-			} else {
-				toast.error(response.data?.msg || 'Failed to save certificate'); // ✅
-			}
-		} catch (error) {
-			console.error('Save failed:', error);
-			toast.error('Failed to save certificate. Please try again.'); // ✅
-		}
-	};
-
 	const addBackgroundImage = (imageUrl: string) => {
-		if (!canvasRef.current) return;
-
-		fabric.Image.fromURL(imageUrl, {
-			crossOrigin: 'anonymous', // Handle CORS for external images
-		})
-			.then((img: fabric.Image) => {
-				if (!canvasRef.current) return;
-
-				const canvas = canvasRef.current;
-				const canvasWidth = canvas.width || 800;
-				const canvasHeight = canvas.height || 600;
-
-				// Scale image to fit canvas while maintaining aspect ratio
-				const scaleX = canvasWidth / (img.width || 1);
-				const scaleY = canvasHeight / (img.height || 1);
-				const scale = Math.min(scaleX, scaleY);
-
-				img.set({
-					left: 0,
-					top: 0,
-					scaleX: scale,
-					scaleY: scale,
-					selectable: false, // Background should not be selectable
-					evented: false, // Background should not receive events
-					id: 'background-image',
-				});
-
-				// Remove existing background if any
-				const existingBg = canvas.getObjects().find((obj) => obj.id === 'background-image');
-				if (existingBg) {
-					canvas.remove(existingBg);
-				}
-
-				canvas.add(img);
-				canvas.sendObjectToBack(img); // Send to back to act as background
-				canvas.renderAll();
-			})
-			.catch((error) => {
-				console.error('Error loading image:', error);
-				toast.error('Failed to load background image.'); // ✅
-			});
+		addBackgroundImageUtil(canvasRef, imageUrl, toast);
 	};
 
 	const removeBackgroundImage = () => {
@@ -360,162 +284,12 @@ const DesignPage = () => {
 			});
 	};
 
-	const handleSaveCertificate = async () => {
-		if (!certificateName.trim()) {
-			toast.error('Please enter a certificate name'); // ✅
-			return;
-		}
-
-		if (!canvasRef.current) {
-			toast.error('Canvas not ready'); // ✅
-			return;
-		}
-
-		try {
-			const canvas = canvasRef.current;
-
-			const fabricDesign = canvas.toJSON();
-
-			const payload = {
-				name: certificateName,
-				design: JSON.stringify(fabricDesign),
-			};
-
-			let response;
-			if (isEditing && certificateId) {
-				response = await Axios.put(`/certificate/${certificateId}`, payload);
-			} else {
-				response = await Axios.post('/certificate', payload);
-				console.log(response.data.data.id);
-			}
-
-			if (response.status === 200) {
-				// Clear local storage when successfully saved
-				if (!isEditing) {
-					clearLocalStorage();
-					// Redirect to edit mode after first save
-					const newCertId = response.data.data.id;
-					toast.success('Certificate saved successfully!'); // ✅
-					void navigate(`/design/${newCertId}/edit`, {
-						replace: true,
-					});
-				} else {
-					toast.success('Certificate updated successfully!'); // ✅
-				}
-			} else {
-				toast.error(response.data?.msg || 'Failed to save certificate'); // ✅
-			}
-		} catch (error) {
-			console.error('Save failed:', error);
-			toast.error('Failed to save certificate. Please try again.'); // ✅
-		}
-	};
-
-	const addElement = (type: string) => {
-		if (!canvasRef.current) return;
-
-		let fabricObject: fabric.Object;
-		const color = type === 'text' ? '#000000' : '#3b82f6';
-
-		switch (type) {
-			case 'rectangle':
-				fabricObject = new fabric.Rect({
-					left: 100,
-					top: 100,
-					width: 120,
-					height: 80,
-					fill: color,
-					stroke: '#ccc',
-					strokeWidth: 1,
-				});
-				break;
-			case 'square':
-				fabricObject = new fabric.Rect({
-					left: 100,
-					top: 100,
-					width: 80,
-					height: 80,
-					fill: color,
-					stroke: '#ccc',
-					strokeWidth: 1,
-				});
-				break;
-			case 'circle':
-				fabricObject = new fabric.Circle({
-					left: 100,
-					top: 100,
-					radius: 40,
-					fill: color,
-					stroke: '#ccc',
-					strokeWidth: 1,
-				});
-				break;
-			case 'triangle':
-				fabricObject = new fabric.Triangle({
-					left: 100,
-					top: 100,
-					width: 80,
-					height: 80,
-					fill: color,
-					stroke: '#ccc',
-					strokeWidth: 1,
-				});
-				break;
-			case 'line':
-				fabricObject = new fabric.Line([0, 0, 100, 0], {
-					left: 100,
-					top: 100,
-					stroke: color,
-					strokeWidth: 3,
-					fill: '',
-					originX: 'left',
-					originY: 'top',
-				});
-				break;
-			case 'text':
-				fabricObject = new fabric.Textbox('Sample Text', {
-					left: 100,
-					top: 100,
-					width: 200,
-					fontSize: 18,
-					fill: color,
-					fontFamily: 'Arial',
-				});
-				break;
-			case 'anchor':
-				fabricObject = new fabric.Textbox('COLUMN', {
-					left: 100,
-					top: 100,
-					width: 150,
-					fontSize: 16,
-					fill: '#3b82f6',
-					fontFamily: 'Arial',
-					textAlign: 'center',
-					// Custom properties for database field mapping
-					dbField: 'column',
-					isAnchor: true,
-					// Lock text editing on canvas
-					editable: false,
-					selectable: true,
-					id: 'PLACEHOLDER-COLUMN',
-				});
-				break;
-			default:
-				return;
-		}
-
-		canvasRef.current.add(fabricObject);
-		canvasRef.current.setActiveObject(fabricObject);
-		canvasRef.current.renderAll();
-		setSelectedElement(fabricObject);
-	};
-
 	const handleShapeAdd = (shapeType: string) => {
-		addElement(shapeType);
+		addElement(canvasRef, shapeType, setSelectedElement);
 	};
 
 	const handleTextAdd = () => {
-		addElement('text');
+		addElement(canvasRef, 'text', setSelectedElement);
 	};
 
 	const handleUpdateElement = (updates: ElementUpdate) => {
@@ -562,6 +336,30 @@ const DesignPage = () => {
 		}
 	};
 
+	const handleSaveCertificate = () => {
+		handleSaveCertificateUtil(
+			certificateName,
+			canvasRef,
+			isEditing,
+			certificateId,
+			navigate,
+			clearLocalStorage,
+			toast
+		);
+	};
+
+	const handleShare = () => {
+		handleShareUtil(
+			certificateId,
+			certificateName,
+			canvasRef,
+			isEditing,
+			clearLocalStorage,
+			navigate,
+			toast
+		);
+	};
+
 	const handleDeleteElement = () => {
 		if (!selectedElement || !canvasRef.current) return;
 
@@ -577,101 +375,17 @@ const DesignPage = () => {
 	};
 
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
-		canvasRef.current = canvas;
-
-		// Enable keyboard interactions on canvas
-		canvas.selection = true;
-		canvas.preserveObjectStacking = true;
-
-		// Load design data if it's already available (edit mode)
-		if (isEditing && designData) {
-			canvas.loadFromJSON(designData).then((canvas) => {
-				// Fix background image properties after restoration
-				const backgroundImage = canvas
-					.getObjects()
-					.find((obj) => obj.id === 'background-image');
-				if (backgroundImage) {
-					backgroundImage.set({
-						selectable: false,
-						evented: false,
-					});
-					canvas.sendObjectToBack(backgroundImage);
-				}
-				canvas.requestRenderAll();
-			});
-		} else if (!isEditing) {
-			// Load from local storage for create mode
-			const storedData = loadCanvasFromLocalStorage();
-
-			if (storedData) {
-				setCertificateName(storedData.certificateName || '');
-				if (storedData.canvasData) {
-					canvas.loadFromJSON(storedData.canvasData).then((canvas) => {
-						// Fix background image properties after restoration
-						const backgroundImage = canvas
-							.getObjects()
-							.find((obj) => obj.id === 'background-image');
-						if (backgroundImage) {
-							backgroundImage.set({
-								selectable: false,
-								evented: false,
-							});
-							canvas.sendObjectToBack(backgroundImage);
-						}
-
-						// Check if QR anchor already exists, if not add one
-						const existingQRanchor = canvas.getObjects().find((obj) => obj.isQRanchor);
-						if (!existingQRanchor) {
-							setTimeout(() => addQRanchor(), 100);
-						}
-
-						canvas.requestRenderAll();
-					});
-				} else {
-					// Add QR anchor for new canvas after a short delay
-					setTimeout(() => addQRanchor(), 100);
-				}
-			} else {
-				// First time creating canvas - add QR anchor after a short delay
-				setTimeout(() => addQRanchor(), 100);
-			}
-		}
-
-		// Auto-save to local storage on canvas changes (create mode only)
-		const handleCanvasChange = () => {
-			if (!isEditing) {
-				saveCanvasToLocalStorage();
-			}
-		};
-
-		// Keep QR anchor always on top when objects are added
-		const handleObjectAdded = () => {
-			const qrAnchor = canvas.getObjects().find((obj) => obj.isQRanchor);
-			if (qrAnchor) {
-				canvas.bringObjectToFront(qrAnchor);
-			}
-			handleCanvasChange();
-		};
-
-		// Add event listeners for canvas changes
-		canvas.on('object:added', handleObjectAdded);
-		canvas.on('object:removed', handleCanvasChange);
-		canvas.on('object:modified', handleCanvasChange);
-		canvas.on('path:created', handleCanvasChange);
-
-		canvas.on('selection:created', () => {
-			const activeObject = canvas.getActiveObject();
-			setSelectedElement(activeObject || null);
-		});
-
-		canvas.on('selection:updated', () => {
-			const activeObject = canvas.getActiveObject();
-			setSelectedElement(activeObject || null);
-		});
-
-		canvas.on('selection:cleared', () => {
-			setSelectedElement(null);
-		});
+		handleCanvasReadyUtil(
+			canvas,
+			canvasRef,
+			isEditing,
+			designData,
+			loadCanvasFromLocalStorage,
+			saveCanvasToLocalStorage,
+			setCertificateName,
+			addQRanchor,
+			setSelectedElement
+		);
 	};
 
 	// Show loading state while fetching design data for edit mode

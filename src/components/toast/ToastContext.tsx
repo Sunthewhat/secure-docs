@@ -12,7 +12,7 @@ type ToastItem = {
   message: string;
 };
 
-type ToastContextType = {
+export type ToastContextType = {
   success: (msg: string) => void;
   error: (msg: string) => void;
 };
