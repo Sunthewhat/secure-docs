@@ -29,8 +29,8 @@ export default function Toast({ type, message, duration = 3000, onClose }: Props
 
   const colors =
     type === "success"
-      ? "bg-green-600 text-white"
-      : "bg-red-600 text-white";
+      ? "bg-green-500 text-white"
+      : "bg-red-500 text-white";
 
   const icon = type === "success" ? "✅" : "❌";
 

@@ -13,6 +13,7 @@ import {
   EditParticipantResponse,
   GetParticipantResponse,
 } from "@/types/response";
+import { useToast } from "@/components/toast/ToastContext";
 
 type Recipient = { [key: string]: string };
 
@@ -24,7 +25,7 @@ type ParticipantRow = {
 const SharePage = () => {
   const certId = useParams().certId as string;
   const navigate = useNavigate();
-
+  const toast = useToast();
   const [columns, setColumns] = useState<string[]>(["Recipient Name"]);
   const [recipients, setRecipients] = useState<ParticipantRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -98,7 +99,14 @@ const SharePage = () => {
   };
 
   const handleNext = () => {
-    // New rows were posted already on Save, so just navigate
+    if (recipients.length === 0) {
+      toast.error("Please add at least one recipient before continuing.");
+      return;
+    }
+    if (!hasAtLeastOneFilledRow()) {
+      toast.error("Please fill at least one field for a recipient.");
+      return;
+    }
     navigate(`/preview/${certId}`);
   };
 
@@ -132,6 +140,12 @@ const SharePage = () => {
   const handleSave = async (index: number) => {
     const row = recipients[index];
 
+    // If user tried to save an entirely empty row, show error and keep editing.
+    if (Object.values(editForm).every((v) => (v ?? "").trim() === "")) {
+      toast.error("This row is empty. Please fill at least one field.");
+      return;
+    }
+
     // Optimistic local update
     const updated = [...recipients];
     updated[index] = { ...row, data: { ...editForm } };
@@ -140,14 +154,11 @@ const SharePage = () => {
 
     try {
       if (row.id) {
-        // existing row → PUT
         await editParticipantByParticipantId(row.id, editForm);
       } else {
-        // new row → POST immediately
         await createParticipant(certId, editForm);
       }
     } catch {
-      // fallback to server truth
       fetchParticipants();
     }
   };
@@ -215,24 +226,26 @@ const SharePage = () => {
     setColEditValue("");
   };
 
-  // ===== Render =====
+  // is the whole row empty? (all fields blank or whitespace)
+  const isRowEmpty = (row: ParticipantRow) =>
+    Object.values(row.data).every((v) => (v ?? "").trim() === "");
+
+  // does the table contain at least one non-empty row?
+  const hasAtLeastOneFilledRow = () => recipients.some((r) => !isRowEmpty(r));
 
   return (
     <div className="flex flex-col">
       {/* Header */}
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px]">
         <button
-					className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
-					onClick={() => void navigate(-1)}>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="currentColor">
-						<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-					</svg>
-					Back
-				</button>
+          className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
+          onClick={() => void navigate(-1)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+          </svg>
+          Back
+        </button>
         <div className="absolute left-1/2 transform -translate-x-1/2">
           <p className="font-semibold text-[32px] w-fit">Add Recipients</p>
         </div>
