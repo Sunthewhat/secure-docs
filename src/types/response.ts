@@ -16,11 +16,11 @@ export type Participant = {
 	};
 };
 
-
 export type CertType = {
 	id: string;
 	name: string;
 	design: string;
+	thumbnail_url: string;
 };
 
 export type Certificate = {

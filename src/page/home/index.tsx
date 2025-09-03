@@ -182,7 +182,11 @@ function Card({
       {/* image wrapper with top-right kebab menu */}
       <div className="relative w-full h-[237px] rounded-[10px] overflow-hidden">
         <img
-          src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500"
+          src={
+            cert.thumbnail_url != ""
+              ? cert.thumbnail_url
+              : "https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png?20210521171500"
+          }
           alt={`${cert.name} preview`}
           className="w-full h-full object-cover"
           onClick={onEdit}
