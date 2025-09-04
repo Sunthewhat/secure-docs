@@ -337,9 +337,9 @@ const PreviewPage = () => {
 				{/*div button*/}
 				<div className="ml-auto">
 					<button
-						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
+						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[90px] h-[39px] flex justify-center items-center "
 						onClick={handleSend}>
-						Send
+						Next step
 					</button>
 				</div>
 			</div>
