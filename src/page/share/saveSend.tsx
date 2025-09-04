@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router-dom";
-import type { Participant } from "@/types/response";
+import type { GetCertificateResponse, Participant } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 
 type RenderResponse = {
@@ -144,13 +144,11 @@ const SaveSendPage = () => {
       if (!targetUrl) throw new Error("No file URL returned from renderer.");
 
       try {
-        const r = await fetch(targetUrl, { credentials: "include" });
-        if (!r.ok) throw new Error("Blob fetch failed");
-        const blob = await r.blob();
-        const filename = (
-          targetUrl.split("/").pop() || "certificates.zip"
-        ).split("?")[0];
-        downloadBlob(blob, filename);
+        const certData = await Axios.get<GetCertificateResponse>(
+          `/certificate/${certId}`
+        );
+        const zipfileUrl = certData.data.data.archive_url;
+        window.open(zipfileUrl, "_blank", "noopener,noreferrer");
       } catch {
         // CORS fallback
         window.open(targetUrl, "_blank", "noopener,noreferrer");
