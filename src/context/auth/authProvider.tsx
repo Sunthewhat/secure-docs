@@ -1,10 +1,12 @@
 import { User } from '@/types/context';
 import { ReactNode, useState, FC, useEffect } from 'react';
 import { AuthContext } from './authContext';
-import { startTokenRefresh, stopTokenRefresh } from '@/util/axiosInstance';
+import { Axios, startTokenRefresh, stopTokenRefresh } from '@/util/axiosInstance';
+import { useNavigate } from 'react-router';
 
 // Provider component that wraps the app and makes auth available
 const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
+	const navigator = useNavigate();
 	const [user, setUser] = useState<User | null>(() => {
 		// Initialize user state from localStorage immediately
 		const savedUserData = localStorage.getItem('userData');
@@ -21,10 +23,18 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		return null;
 	});
 
+	const handleVerify = async () => {
+		const response = await Axios.get('/auth/verify');
+		if (response.status != 200) {
+			navigator('/login', { replace: true });
+		}
+	};
+
 	// Start token refresh if user is already logged in
 	useEffect(() => {
+		handleVerify();
 		if (user) {
-			startTokenRefresh();
+			startTokenRefresh(navigator);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -35,7 +45,7 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		// Store token in localStorage for persistence
 		localStorage.setItem('authToken', userData.token);
 		localStorage.setItem('userData', JSON.stringify(userData));
-		startTokenRefresh();
+		startTokenRefresh(navigator);
 		callback();
 	};
 
