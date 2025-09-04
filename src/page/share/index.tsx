@@ -1,5 +1,6 @@
 // src/pages/SharePage.tsx
 import { useNavigate, useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   RiEdit2Line,
   RiDeleteBinLine,
@@ -28,6 +29,8 @@ const SharePage = () => {
   const certId = useParams().certId as string;
   const navigate = useNavigate();
   const toast = useToast();
+  const location = useLocation();
+  const prevRef = useRef(location);
 
   const [columns, setColumns] = useState<string[]>(["Recipient Name"]);
   const [recipients, setRecipients] = useState<ParticipantRow[]>([]);
@@ -46,6 +49,26 @@ const SharePage = () => {
     () => `columns-locked:${certId}`,
     [certId]
   );
+
+  useEffect(() => {
+    // store the previous path on every navigation
+    const prevPath =
+      prevRef.current.pathname +
+      prevRef.current.search +
+      prevRef.current.hash;
+    sessionStorage.setItem("prevPath", prevPath);
+    prevRef.current = location;
+  }, [location]);
+
+  const handleBack = () => {
+  if (window.history.state?.idx > 0) {
+    navigate(-1);
+    return;
+  }
+  const prev = sessionStorage.getItem("prevPath");
+  if (prev) navigate(prev);
+  else navigate("/"); // final fallback
+};
 
   // Minimal cert object for WarningModal (it only uses cert.id)
   const certForModal = useMemo(() => ({ id: certId } as any), [certId]);
@@ -286,7 +309,7 @@ const SharePage = () => {
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px]">
         <button
           className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
-          onClick={() => void navigate(-1)}
+          onClick={handleBack}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
