@@ -84,7 +84,7 @@ const ToolsSidebar = ({
 			}
 		}
 		// Clear the input value to allow uploading the same file again
-		event.target.value = '';
+		event.target.value = "";
 	};
 
 	const handleImageUpload = async (
@@ -103,7 +103,7 @@ const ToolsSidebar = ({
 			}
 		}
 		// Clear the input value to allow uploading the same file again
-		event.target.value = '';
+		event.target.value = "";
 	};
 	return (
 		<div className="flex">
@@ -226,10 +226,10 @@ const ToolsSidebar = ({
 			</div>
 
 			{/* Tools Sidebar */}
-			<div className="w-50 px-3">
+			<div className="w-50 px-3 min-h-full">
 				{activeMenu === "background" && (
 					<div className="bg-white rounded-lg">
-						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
 									src={uploadIcon}
@@ -339,7 +339,7 @@ const ToolsSidebar = ({
 
 				{activeMenu === "image" && (
 					<div className="bg-white rounded-lg">
-						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
 									src={uploadIcon}
