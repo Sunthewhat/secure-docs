@@ -6,19 +6,19 @@ interface DesignHeaderProps {
 	onShare: () => void;
 }
 
-const DesignHeader = ({ 
-	certificateName, 
-	setCertificateName, 
-	isEditing, 
-	onSave, 
-	onShare 
+const DesignHeader = ({
+	certificateName,
+	setCertificateName,
+	isEditing,
+	onSave,
+	onShare,
 }: DesignHeaderProps) => {
 	return (
 		<div className="font-noto bg-secondary_background rounded-[15px] flex  flex-row items-center w-full h-[72px] px-[20px]">
 			{/* div text  */}
 			<div className=" pl-[10px]">
 				<p className="font-semibold text-[25px] w-fit ">
-					Certificate canva
+					Certificate canvas
 				</p>
 			</div>
 			{/*div button*/}
