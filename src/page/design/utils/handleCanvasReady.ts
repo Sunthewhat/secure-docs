@@ -4,6 +4,7 @@ export const handleCanvasReadyUtil = (
 	canvasRef: React.RefObject<fabric.Canvas | null>,
 	isEditing: boolean,
 	designData: object | null,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	loadCanvasFromLocalStorage: () => any,
 	saveCanvasToLocalStorage: () => void,
 	setCertificateName: (value: React.SetStateAction<string>) => void,

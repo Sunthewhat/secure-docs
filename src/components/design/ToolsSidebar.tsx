@@ -35,29 +35,30 @@ const ToolsSidebar = ({
 	const [graphics, setGraphics] = useState<string[]>([]);
 	const [loading, setLoading] = useState(false);
 
-	useEffect(() => {
-		const fetchFiles = async () => {
-			setLoading(true);
-			try {
-				const [backgroundsRes, graphicsRes] = await Promise.all([
-					getBackgrounds(),
-					getGraphics(),
-				]);
+	// Extract fetchFiles function to be reusable
+	const fetchFiles = async () => {
+		setLoading(true);
+		try {
+			const [backgroundsRes, graphicsRes] = await Promise.all([
+				getBackgrounds(),
+				getGraphics(),
+			]);
 
-				if (backgroundsRes.success && backgroundsRes.data) {
-					setBackgrounds(backgroundsRes.data.files || []);
-				}
-
-				if (graphicsRes.success && graphicsRes.data) {
-					setGraphics(graphicsRes.data.files || []);
-				}
-			} catch (error) {
-				console.error("Error fetching files:", error);
-			} finally {
-				setLoading(false);
+			if (backgroundsRes.success && backgroundsRes.data) {
+				setBackgrounds(backgroundsRes.data.files || []);
 			}
-		};
 
+			if (graphicsRes.success && graphicsRes.data) {
+				setGraphics(graphicsRes.data.files || []);
+			}
+		} catch (error) {
+			console.error("Error fetching files:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchFiles();
 	}, []);
 
@@ -75,11 +76,15 @@ const ToolsSidebar = ({
 			try {
 				const response = await uploadBackground(file);
 				onBackgroundAdd(response.data.url);
+				// Refresh the backgrounds list to show the newly uploaded image
+				fetchFiles();
 			} catch (error) {
 				console.error("Error uploading background:", error);
 				alert("Failed to upload background image");
 			}
 		}
+		// Clear the input value to allow uploading the same file again
+		event.target.value = "";
 	};
 
 	const handleImageUpload = async (
@@ -90,11 +95,15 @@ const ToolsSidebar = ({
 			try {
 				const response = await uploadImage(file);
 				onImageAdd(response.data.url);
+				// Refresh the graphics list to show the newly uploaded image
+				fetchFiles();
 			} catch (error) {
 				console.error("Error uploading image:", error);
 				alert("Failed to upload image");
 			}
 		}
+		// Clear the input value to allow uploading the same file again
+		event.target.value = "";
 	};
 	return (
 		<div className="flex">
@@ -217,10 +226,10 @@ const ToolsSidebar = ({
 			</div>
 
 			{/* Tools Sidebar */}
-			<div className="w-50 px-3">
+			<div className="w-50 px-3 min-h-full">
 				{activeMenu === "background" && (
 					<div className="bg-white rounded-lg">
-						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
 									src={uploadIcon}
@@ -330,7 +339,7 @@ const ToolsSidebar = ({
 
 				{activeMenu === "image" && (
 					<div className="bg-white rounded-lg">
-						<div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
 									src={uploadIcon}

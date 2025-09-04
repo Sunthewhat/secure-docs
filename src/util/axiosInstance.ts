@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { NavigateFunction } from 'react-router';
 
 const Axios: AxiosInstance = axios.create({
 	baseURL: `${import.meta.env.VITE_BACKEND_API}/api/v1`,
@@ -40,7 +41,7 @@ Axios.interceptors.response.use(
 
 let refreshInterval: NodeJS.Timeout | null = null;
 
-const startTokenRefresh = () => {
+const startTokenRefresh = (nav: NavigateFunction) => {
 	if (refreshInterval) return; // Already running
 
 	refreshInterval = setInterval(async () => {
@@ -51,10 +52,14 @@ const startTokenRefresh = () => {
 		}
 
 		try {
-			await Axios.get('/auth/verify');
+			const response = await Axios.get('/auth/verify');
+			if (response.status != 200) {
+				throw new Error('Invalid token');
+			}
 		} catch (error) {
 			console.error('Token refresh failed:', error);
 			stopTokenRefresh();
+			nav('/login');
 		}
 	}, 60000); // 1 minute
 };
