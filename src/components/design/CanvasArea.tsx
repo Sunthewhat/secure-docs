@@ -1,5 +1,5 @@
-import * as fabric from "fabric";
-import { useEffect, useRef } from "react";
+import * as fabric from 'fabric';
+import { useEffect, useRef } from 'react';
 
 interface CanvasAreaProps {
 	onCanvasReady: (canvas: fabric.Canvas) => void;
@@ -24,7 +24,7 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 		const canvas = new fabric.Canvas(canvasElement, {
 			width: 850,
 			height: 601,
-			backgroundColor: "#f9fafb",
+			backgroundColor: '#f9fafb',
 			selection: true,
 		});
 
@@ -42,8 +42,8 @@ const CanvasArea = ({ onCanvasReady }: CanvasAreaProps) => {
 	}, []); // No dependencies to prevent canvas recreation
 
 	return (
-		<div className="flex-1 p-4">
-			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden w-fit">
+		<div className='flex-1 p-4'>
+			<div className='mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden w-fit'>
 				<canvas ref={canvasElRef} width={850} height={601} />
 			</div>
 		</div>
