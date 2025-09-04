@@ -56,17 +56,6 @@ const SaveSendPage = () => {
     [columns]
   );
 
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
   const participantIds = useMemo(
     () =>
       participants.map((p) => p.id).filter((id): id is string => Boolean(id)),
