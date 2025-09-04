@@ -7,7 +7,6 @@ type Recipient = {
   name: string;
   email: string;
   issueDate: string;
-  certName: string;
 };
 
 const HistoryPage = () => {
@@ -22,10 +21,10 @@ const HistoryPage = () => {
 
     // For now, mock data
     setRecipients([
-      { name: "John Doe", email: "john@example.com", issueDate: "19/08/2025", certName: "IT4K" },
-      { name: "Jane Smith", email: "jane@example.com", issueDate: "19/08/2025", certName: "IT4K" },
-      { name: "A", email: "a@example.com", issueDate: "19/08/2025", certName: "IT4K" },
-      { name: "B", email: "b@example.com", issueDate: "19/08/2025", certName: "IT4K" },
+      { name: "John Doe", email: "john@example.com", issueDate: "19/08/2025" },
+      { name: "Jane Smith", email: "jane@example.com", issueDate: "19/08/2025" },
+      { name: "A", email: "a@example.com", issueDate: "19/08/2025" },
+      { name: "B", email: "b@example.com", issueDate: "19/08/2025" },
     ]);
   }, [certId]);
 
@@ -69,9 +68,7 @@ const HistoryPage = () => {
                 <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
                   Issue Date
                 </th>
-                <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
-                  Certificate
-                </th>
+          
               </tr>
             </thead>
             <tbody>
@@ -92,9 +89,6 @@ const HistoryPage = () => {
                   </td>
                   <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
                     {recipient.issueDate}
-                  </td>
-                  <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
-                    {recipient.certName}
                   </td>
                 </tr>
               ))}

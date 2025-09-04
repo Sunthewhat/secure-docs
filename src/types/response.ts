@@ -1,53 +1,57 @@
 export type Login = {
-	token: string;
-	username: string;
-	firstname: string;
-	lastname: string;
+  token: string;
+  username: string;
+  firstname: string;
+  lastname: string;
 };
 
 export type Participant = {
-	id: string;
-	certificate_id: string;
-	is_revoked: boolean;
-	created_at: string;
-	updated_at: string;
-	data: {
-		[key: string]: string; // dynamic columns
-	};
+  id: string;
+  certificate_id: string;
+  is_revoked: boolean;
+  is_distributed: boolean;
+  created_at: string;
+  updated_at: string;
+  data: {
+    [key: string]: string; // dynamic columns
+  };
 };
 
 export type CertType = {
-	id: string;
-	name: string;
-	design: string;
-	thumbnail_url: string;
+  id: string;
+  name: string;
+  design: string;
+  thumbnail_url: string;
+  archive_url: string;
 };
 
 export type Certificate = {
-	id: string;
-	name: string;
-	design: string;
-	user_id: string;
-	created_at: string;
-	updated_at: string;
+  id: string;
+  name: string;
+  design: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  archive_url: string;
+  thumbnail_url: string;
 };
 
 type uploadFileType = {
-	filename: string;
-	object_name: string;
-	size: number;
-	url: string;
+  filename: string;
+  object_name: string;
+  size: number;
+  url: string;
 };
 
 type getImage = {
-	count: number;
-	files: string[];
-	type: string;
+  count: number;
+  files: string[];
+  type: string;
 };
 export type BaseResponse<T> = {
-	success: boolean;
-	msg: string;
-	data: T;
+  success: boolean;
+  msg: string;
+  data: T;
 };
 
 // auth
@@ -57,6 +61,7 @@ export type LoginResponse = BaseResponse<Login>;
 export type AllCertTypeResponse = BaseResponse<CertType[]>;
 export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
+export type DistributeCertResponse = BaseResponse<Participant[]>;
 
 //file
 export type UploadResourceResponse = BaseResponse<uploadFileType>;
