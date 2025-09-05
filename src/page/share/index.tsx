@@ -6,11 +6,12 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Axios } from '@/util/axiosInstance';
 import {
 	AddParticipantResponse,
+	CertType,
 	EditParticipantResponse,
 	GetParticipantResponse,
 } from '@/types/response';
 import { useToast } from '@/components/toast/ToastContext';
-import WarningModal from '@/components/modal/WarningModal'; // ✅ import your modal
+import WarningModal from '@/components/modal/WarningModal';
 
 type Recipient = { [key: string]: string };
 
@@ -59,7 +60,7 @@ const SharePage = () => {
 	};
 
 	// Minimal cert object for WarningModal (it only uses cert.id)
-	const certForModal = useMemo(() => ({ id: certId } as any), [certId]);
+	const certForModal = useMemo(() => ({ id: certId } as CertType), [certId]);
 
 	// Load persisted lock state
 	useEffect(() => {
@@ -87,7 +88,7 @@ const SharePage = () => {
 		const mapped: ParticipantRow[] = serverRows.map((p) => {
 			const normalized: Recipient = {};
 			uniqueCols.forEach((col) => {
-				const val = (p.data as any)?.[col];
+				const val = p.data[col];
 				normalized[col] = val !== undefined && val !== null ? String(val) : '';
 			});
 			return { id: p.id, data: normalized };
