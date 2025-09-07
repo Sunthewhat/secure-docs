@@ -1,26 +1,32 @@
-import { Layout } from "@/components/shared/layout/mainLayout";
-import { RequireAuth } from "@/components/shared/requiredAuth";
-import { DesignPage } from "@/page/design";
-import { HistoryPage } from "@/page/history";
-import { HomePage } from "@/page/home";
-import { LoginPage } from "@/page/login";
-import { SharePage } from "@/page/share";
-import { PreviewPage } from "@/page/share/preview";
-import { SaveSendPage } from "@/page/share/saveSend";
-import { FC } from "react";
-import { Routes, Route } from "react-router";
+import { Layout } from '@/components/shared/layout/mainLayout';
+import { RequireAuth } from '@/components/shared/requiredAuth';
+import { DesignPage } from '@/page/design';
+import { HistoryPage } from '@/page/history';
+import { HomePage } from '@/page/home';
+import { LoginPage } from '@/page/login';
+import { SharePage } from '@/page/share';
+import { PreviewPage } from '@/page/share/preview';
+import { SaveSendPage } from '@/page/share/saveSend';
+import { CertificateValidationResultPage } from '@/page/validate/result';
+import { CertificateValidationScanPage } from '@/page/validate/scan';
+import { FC } from 'react';
+import { Routes, Route } from 'react-router';
 
 const RouterProvider: FC = () => {
 	return (
 		<Routes>
-			<Route path="/login" element={<LoginPage />} />
+			<Route path='/login' element={<LoginPage />} />
+			<Route path='/validate'>
+				<Route path='result/:participantId' element={<CertificateValidationResultPage />} />
+				<Route path='scan' element={<CertificateValidationScanPage />} />
+			</Route>
 			<Route element={<Layout />}>
 				{/* Public Routes */}
 				{/* <Route path='/' element={<HomePage />} /> */}
 
 				{/* Protected Routes */}
 				<Route
-					path="/"
+					path='/'
 					element={
 						<RequireAuth>
 							<HomePage />
@@ -28,7 +34,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/design"
+					path='/design'
 					element={
 						<RequireAuth>
 							<DesignPage />
@@ -36,7 +42,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/design/:certId/edit"
+					path='/design/:certId/edit'
 					element={
 						<RequireAuth>
 							<DesignPage />
@@ -44,7 +50,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/share/:certId"
+					path='/share/:certId'
 					element={
 						<RequireAuth>
 							<SharePage />
@@ -52,7 +58,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/preview/:certId"
+					path='/preview/:certId'
 					element={
 						<RequireAuth>
 							<PreviewPage />
@@ -60,7 +66,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/share/preview/send"
+					path='/share/preview/send'
 					element={
 						<RequireAuth>
 							<SaveSendPage />
@@ -68,7 +74,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/history/:certId"
+					path='/history/:certId'
 					element={
 						<RequireAuth>
 							<HistoryPage />
@@ -77,7 +83,7 @@ const RouterProvider: FC = () => {
 				/>
 
 				{/* Fallback for undefined routes */}
-				<Route path="*" element={<p>There's nothing here!</p>} />
+				<Route path='*' element={<p>There's nothing here!</p>} />
 			</Route>
 		</Routes>
 	);

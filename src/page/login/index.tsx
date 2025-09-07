@@ -43,56 +43,58 @@ const LoginPage = () => {
 	return (
 		<div className='h-screen flex items-center justify-center font-noto bg-[#E5E7EB]'>
 			<div className='flex flex-col items-center justify-center w-full max-w-md p-6 rounded-lg mb-25'>
-			<p className='mb-5 text-[64px] font-adlam'>EasyCert</p>
-			<div className='bg-white p-6 rounded-lg shadow-md w-full max-w-md'>
-				<h2 className='text-center text-[25px] mb-4'>Login</h2>
-				{/* <p className="mb-4">You must log in first.</p> */}
+				<p className='mb-5 text-[64px] font-adlam'>EasyCert</p>
+				<div className='bg-white p-6 rounded-lg shadow-md w-full max-w-md'>
+					<h2 className='text-center text-[25px] mb-4'>Login</h2>
+					{/* <p className="mb-4">You must log in first.</p> */}
 
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						void handleSubmit(e);
-					}}
-					className='space-y-4'
-				>
-					<div>
-						<label htmlFor='username' className='block mb-1'>
-							Username
-						</label>
-						<input
-							name='username'
-							type='text'
-							className='w-full border p-2 rounded'
-							placeholder='Enter your username'
-							onChange={(e) => setUsername(e.target.value)}
-							value={username}
-							required
-						/>
-					</div>
-					<div>
-						<label htmlFor='password' className='block mb-1'>
-							Password
-						</label>
-						<input
-							name='password'
-							type='password'
-							placeholder='Enter your password'
-							className='w-full border p-2 rounded'
-							onChange={(e) => setPassword(e.target.value)}
-							value={password}
-							required
-						/>
-					</div>
-					<div className='flex justify-center mt-8'>
-						<button
-							type='submit'
-							className='bg-primary_button text-white px-4 py-2 rounded hover:bg-blue-600'
-						>
-							Login
-						</button>
-					</div>
-				</form>
-			</div>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							void handleSubmit(e);
+						}}
+						className='space-y-4'
+					>
+						<div>
+							<label htmlFor='username' className='block mb-1'>
+								Username
+							</label>
+							<input
+								name='username'
+								type='text'
+								className='w-full border p-2 rounded'
+								placeholder='Enter your username'
+								onChange={(e) => setUsername(e.target.value)}
+								value={username}
+								autoComplete={'username'}
+								required
+							/>
+						</div>
+						<div>
+							<label htmlFor='password' className='block mb-1'>
+								Password
+							</label>
+							<input
+								name='password'
+								type='password'
+								placeholder='Enter your password'
+								className='w-full border p-2 rounded'
+								onChange={(e) => setPassword(e.target.value)}
+								value={password}
+								autoComplete={'current-password'}
+								required
+							/>
+						</div>
+						<div className='flex justify-center mt-8'>
+							<button
+								type='submit'
+								className='bg-primary_button text-white px-4 py-2 rounded hover:bg-blue-600'
+							>
+								Login
+							</button>
+						</div>
+					</form>
+				</div>
 			</div>
 		</div>
 	);

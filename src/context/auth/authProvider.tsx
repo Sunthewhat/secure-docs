@@ -24,6 +24,12 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	});
 
 	const handleVerify = async () => {
+		const path = window.location.pathname;
+
+		if (path.startsWith('/login') || path.startsWith('/validate')) {
+			return;
+		}
+
 		const response = await Axios.get('/auth/verify');
 		if (response.status != 200) {
 			navigator('/login', { replace: true });
