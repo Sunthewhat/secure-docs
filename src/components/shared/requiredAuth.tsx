@@ -13,8 +13,6 @@ const RequireAuth: FC<RequireAuthProps> = ({ children }) => {
 	const auth = useAuth();
 	const location = useLocation();
 
-	console.log(auth.user);
-
 	if (!auth.user) {
 		// Redirect to the login page, but save the current location
 		return <Navigate to='/login' state={{ from: location }} replace />;

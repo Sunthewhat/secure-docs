@@ -3,8 +3,9 @@ import { useNavigate, useParams, useLocation } from 'react-router';
 import * as fabric from 'fabric';
 import DesignHeader from '@/components/design/DesignHeader';
 import CertificateCanvas from '@/components/design/CertificateCanvas';
+import DesignWarning from '@/components/modal/DesignWarning';
 import { Axios } from '@/util/axiosInstance';
-import { GetCertificateResponse } from '@/types/response';
+import { CertType, GetCertificateResponse } from '@/types/response';
 import { useToast } from '@/components/toast/ToastContext'; // ✅ NEW
 import { addElement } from './utils/addElement';
 import { handleSaveCertificateUtil } from './utils/handleSaveCertificate';
@@ -70,6 +71,7 @@ const DesignPage = () => {
 		const isEditPath = window.location.pathname.includes('/edit');
 		return isEditPath && certId ? certId : null;
 	});
+	const [showWarningModal, setShowWarningModal] = useState(false);
 
 	// Local storage key for persisting canvas state in create mode
 	const CANVAS_STORAGE_KEY = 'design-canvas-state';
@@ -349,6 +351,11 @@ const DesignPage = () => {
 	};
 
 	const handleShare = () => {
+		setShowWarningModal(true);
+	};
+
+	const handleConfirmShare = (_certId: string) => {
+		setShowWarningModal(false);
 		handleShareUtil(
 			certificateId,
 			certificateName,
@@ -364,8 +371,8 @@ const DesignPage = () => {
 		if (!selectedElement || !canvasRef.current) return;
 
 		// Check if element is undeleteable (like QR anchors)
-		if ((selectedElement as any).undeleteable || (selectedElement as any).isQRanchor) {
-			toast.error('This QR code anchor cannot be deleted.'); // ✅
+		if (selectedElement.undeleteable || selectedElement.isQRanchor) {
+			toast.error('This QR code anchor cannot be deleted.');
 			return;
 		}
 
@@ -456,6 +463,12 @@ const DesignPage = () => {
 					}
 					canvasRef.current.renderAll();
 				}}
+			/>
+			<DesignWarning
+				open={showWarningModal}
+				cert={{ name: certificateName, id: certificateId || '' } as CertType}
+				onClose={() => setShowWarningModal(false)}
+				onConfirm={handleConfirmShare}
 			/>
 		</div>
 	);
