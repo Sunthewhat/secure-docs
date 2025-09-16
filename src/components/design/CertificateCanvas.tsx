@@ -32,6 +32,9 @@ interface CertificateCanvasProps {
 	onSendBackward?: () => void;
 	onBringToFront?: () => void;
 	onSendToBack?: () => void;
+	showGrid: boolean;
+	snapToGrid: boolean;
+	gridSize: number;
 }
 
 const CertificateCanvas = ({
@@ -50,6 +53,9 @@ const CertificateCanvas = ({
 	onSendBackward,
 	onBringToFront,
 	onSendToBack,
+	showGrid,
+	snapToGrid,
+	gridSize,
 }: CertificateCanvasProps) => {
 	return (
 		<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
@@ -72,7 +78,12 @@ const CertificateCanvas = ({
 					onBringToFront={onBringToFront}
 					onSendToBack={onSendToBack}
 				/>
-				<CanvasArea onCanvasReady={onCanvasReady} />
+				<CanvasArea
+					onCanvasReady={onCanvasReady}
+					showGrid={showGrid}
+					snapToGrid={snapToGrid}
+					gridSize={gridSize}
+				/>
 			</div>
 		</div>
 	);
