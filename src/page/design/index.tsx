@@ -206,6 +206,30 @@ const DesignPage = () => {
 		}
 	}, [certificateName, saveCanvasToLocalStorage, isEditing]);
 
+	// Auto-save to server every 5 seconds when in edit mode
+	useEffect(() => {
+		if (!isEditing || !certificateId || !canvasRef.current) return;
+
+		const autoSaveInterval = setInterval(async () => {
+			try {
+				const canvasData = canvasRef.current?.toJSON();
+				if (!canvasData) return;
+
+				const requestData = {
+					name: certificateName,
+					design: JSON.stringify(canvasData),
+				};
+
+				await Axios.put(`/certificate/${certificateId}`, requestData);
+				console.log("Auto-saved to server");
+			} catch (error) {
+				console.error("Auto-save failed:", error);
+			}
+		}, 5000); // Save every 5 seconds
+
+		return () => clearInterval(autoSaveInterval);
+	}, [isEditing, certificateId, certificateName]);
+
 	// Add keyboard delete functionality
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
