@@ -8,6 +8,7 @@ interface ElementUpdate {
 	fontSize?: number;
 	fontWeight?: "normal" | "bold";
 	fontStyle?: "normal" | "italic";
+	underline?: boolean;
 	text?: string;
 	id?: string;
 }
@@ -83,13 +84,36 @@ const PropertiesPanel = ({
 		onUpdateElement({ fontStyle: newStyle });
 	};
 
+	const handleUnderlineToggle = () => {
+		const currentUnderline =
+			(selectedElement.get("underline") as boolean) || false;
+		onUpdateElement({ underline: !currentUnderline });
+	};
+
 	const handleFieldNameChange = (fieldName: string) => {
 		console.log(fieldName);
 
-		onUpdateElement({
-			text: fieldName,
-			id: `PLACEHOLDER-${fieldName}`,
-		});
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("text", fieldName);
+				selectedElement.set("id", `PLACEHOLDER-${fieldName}`);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({
+					id: `PLACEHOLDER-${fieldName}`,
+				});
+			}
+		} else {
+			// For individual text objects
+			onUpdateElement({
+				text: fieldName,
+				id: `PLACEHOLDER-${fieldName}`,
+			});
+		}
 	};
 
 	const isLine = selectedElement instanceof fabric.Line;
@@ -102,13 +126,25 @@ const PropertiesPanel = ({
 	);
 	const isBold = (selectedElement.get("fontWeight") as string) === "bold";
 	const isItalic = (selectedElement.get("fontStyle") as string) === "italic";
-	const currentDbField = (selectedElement.get("text") as string) || "";
+	const isUnderlined = (selectedElement.get("underline") as boolean) || false;
+	// Get current text - handle both individual text objects and Groups (text anchors)
+	const getCurrentText = () => {
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), find the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox);
+			return textObject ? (textObject.get("text") as string) || "" : "";
+		}
+		return (selectedElement.get("text") as string) || "";
+	};
+	const currentDbField = getCurrentText();
 
 	return (
 		<>
 			<div
 				className="bg-white border border-gray-300 rounded-lg p-4 mb-4 shadow-sm mx-auto flex items-center justify-between"
-				style={{ width: "883px", height: "60px" }}>
+				style={{ width: "854px", height: "60px" }}>
 				{/* Left side controls */}
 				<div className="flex items-center gap-6">
 					{/* QR Anchor Properties */}
@@ -218,6 +254,15 @@ const PropertiesPanel = ({
 											: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
 									}`}>
 									I
+								</button>
+								<button
+									onClick={handleUnderlineToggle}
+									className={`px-3 py-1 text-sm underline border rounded ${
+										isUnderlined
+											? "bg-blue-500 text-white border-blue-500"
+											: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+									}`}>
+									U
 								</button>
 							</div>
 						</>
