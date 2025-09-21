@@ -1,12 +1,13 @@
 // src/pages/SharePage.tsx
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { RiEdit2Line, RiDeleteBinLine, RiAddLine, RiCheckLine, RiCloseLine } from 'react-icons/ri';
+import { RiEdit2Line, RiDeleteBinLine, RiCheckLine, RiCloseLine } from 'react-icons/ri';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Axios } from '@/util/axiosInstance';
 import {
 	AddParticipantResponse,
 	CertType,
+	GetAnchorResponse,
 	EditParticipantResponse,
 	GetParticipantResponse,
 } from '@/types/response';
@@ -70,32 +71,68 @@ const SharePage = () => {
 
 	// ===== API helpers =====
 
-	const fetchParticipants = async () => {
-		const response = await Axios.get<GetParticipantResponse>(`/participant/${certId}`);
-		if (response.status !== 200) {
-			toast.error(response.data.msg);
-			return;
+	const fetchAnchorColumns = async (): Promise<string[]> => {
+		try {
+			const response = await Axios.get<GetAnchorResponse>(`/certificate/anchor/${certId}`);
+			if (response.status !== 200) {
+				toast.error(response.data.msg);
+				return [];
+			}
+
+			const anchors = Array.isArray(response.data.data) ? response.data.data : [];
+			const sanitized = anchors.filter((col) => typeof col === 'string' && col.trim().length > 0);
+
+			if (sanitized.length) setColumns(sanitized);
+
+			return sanitized;
+		} catch {
+			toast.error('Failed to load anchor columns.');
+			return [];
 		}
+	};
 
-		const serverRows = response.data.data ?? [];
+	const fetchParticipants = async (preferredColumns?: string[]) => {
+		try {
+			const response = await Axios.get<GetParticipantResponse>(`/participant/${certId}`);
+			if (response.status !== 200) {
+				toast.error(response.data.msg);
+				return;
+			}
 
-		// Collect all unique columns found in server data
-		const uniqueCols = Array.from(
-			new Set(serverRows.flatMap((p) => Object.keys(p.data ?? {})))
-		);
+			const serverRows = response.data.data ?? [];
+			const serverCols = Array.from(
+				new Set(serverRows.flatMap((p) => Object.keys(p.data ?? {})))
+			);
 
-		// Normalize into local rows
-		const mapped: ParticipantRow[] = serverRows.map((p) => {
-			const normalized: Recipient = {};
-			uniqueCols.forEach((col) => {
-				const val = p.data[col];
-				normalized[col] = val !== undefined && val !== null ? String(val) : '';
+			const baseColumns = preferredColumns && preferredColumns.length ? preferredColumns : columns;
+			let resolvedCols = Array.from(
+				new Set(baseColumns.filter((col) => typeof col === 'string' && col.trim().length > 0))
+			);
+
+			if (!resolvedCols.length) {
+				resolvedCols = serverCols.length ? [...serverCols] : ['name'];
+			} else {
+				serverCols.forEach((col) => {
+					if (!resolvedCols.includes(col)) resolvedCols.push(col);
+				});
+			}
+
+			if (!resolvedCols.length) resolvedCols = ['name'];
+
+			const mapped: ParticipantRow[] = serverRows.map((p) => {
+				const normalized: Recipient = {};
+				resolvedCols.forEach((col) => {
+					const val = p.data?.[col];
+					normalized[col] = val !== undefined && val !== null ? String(val) : '';
+				});
+				return { id: p.id, data: normalized };
 			});
-			return { id: p.id, data: normalized };
-		});
 
-		setColumns(uniqueCols.length ? uniqueCols : ['name']);
-		setRecipients(mapped);
+			setColumns(resolvedCols);
+			setRecipients(mapped);
+		} catch {
+			toast.error('Failed to load recipients.');
+		}
 	};
 
 	const editParticipantByParticipantId = async (participantId: string, data: Recipient) => {
@@ -156,7 +193,11 @@ const SharePage = () => {
 	// ===== Effects =====
 
 	useEffect(() => {
-		fetchParticipants();
+		const loadData = async () => {
+			const anchorCols = await fetchAnchorColumns();
+			await fetchParticipants(anchorCols);
+		};
+		loadData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -218,7 +259,7 @@ const SharePage = () => {
 		setRecipients(recipients.filter((_, i) => i !== index));
 	};
 
-	// ===== Add row/column & rename column =====
+	// ===== Add row & rename column =====
 
 	const handleAddRow = () => {
 		const newData: Recipient = {};
@@ -227,16 +268,6 @@ const SharePage = () => {
 		setRecipients(newRecipients);
 		setEditIndex(newRecipients.length - 1);
 		setEditForm(newData);
-	};
-
-	const handleAddColumn = () => {
-		if (columnsLocked) {
-			toast.error('Columns are locked and can’t be modified anymore.');
-			return;
-		}
-		const newCol = `Column ${columns.length + 1}`;
-		setColumns((c) => [...c, newCol]);
-		setRecipients((rows) => rows.map((r) => ({ ...r, data: { ...r.data, [newCol]: '' } })));
 	};
 
 	const handleStartEditColumn = (index: number, currentName: string) => {
@@ -451,18 +482,6 @@ const SharePage = () => {
 								)}
 							</tbody>
 						</table>
-					</div>
-
-					{/* Right box: add column */}
-					<div className='flex flex-col gap-2'>
-						{!columnsLocked && ( // ✅ hide after confirm
-							<button
-								onClick={handleAddColumn}
-								className='text-noto text-[14px] bg-blue-500 hover:bg-blue-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center mt-2'
-							>
-								<RiAddLine size={18} className='mr-2' /> Add Column
-							</button>
-						)}
 					</div>
 				</div>
 

@@ -7,12 +7,14 @@ import {
 	Participant,
 	GetCertificateResponse,
 	Certificate,
+	GetAnchorResponse,
 } from "@/types/response";
 
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
 	const [participants, setParticipants] = useState<Participant[]>([]);
+	const [columns, setColumns] = useState<string[]>([]);
 	const [certificate, setCertificate] = useState<Certificate | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [selectedParticipant, setSelectedParticipant] =
@@ -37,6 +39,31 @@ const PreviewPage = () => {
 					console.error("Failed to fetch certificate");
 				}
 
+				// Fetch anchor columns for consistent ordering
+				let anchorColumns: string[] = [];
+				try {
+					const anchorResponse = await Axios.get<GetAnchorResponse>(
+						`/certificate/anchor/${certId}`
+					);
+					if (anchorResponse.status === 200) {
+						const anchors = anchorResponse.data.data;
+						if (Array.isArray(anchors)) {
+							anchorColumns = anchors.filter(
+								(col): col is string =>
+									typeof col === "string" && col.trim().length > 0
+							);
+						}
+					} else {
+						console.error("Failed to fetch anchor columns");
+					}
+				} catch (anchorError) {
+					console.error("Error fetching anchor columns:", anchorError);
+				}
+
+				if (anchorColumns.length) {
+					setColumns(anchorColumns);
+				}
+
 				// Fetch participants data
 				const participantResponse =
 					await Axios.get<GetParticipantResponse>(
@@ -44,10 +71,41 @@ const PreviewPage = () => {
 					);
 				if (participantResponse.status === 200) {
 					const participantsData = participantResponse.data.data;
-					setParticipants(participantsData);
-					// Select first participant automatically
-					if (participantsData.length > 0) {
-						setSelectedParticipant(participantsData[0]);
+					const serverColumns = Array.from(
+						new Set(
+							participantsData.flatMap((participant) =>
+								participant?.data ? Object.keys(participant.data) : []
+							)
+						)
+					);
+
+					let resolvedColumns = anchorColumns.length
+						? [...anchorColumns]
+						: [...serverColumns];
+
+					serverColumns.forEach((col) => {
+						if (!resolvedColumns.includes(col)) {
+							resolvedColumns.push(col);
+						}
+					});
+
+					if (!resolvedColumns.length && participantsData[0]?.data) {
+						resolvedColumns = Object.keys(participantsData[0].data);
+					}
+
+					setColumns(resolvedColumns);
+
+					const normalizedParticipants = participantsData.map((participant) => {
+						const normalizedData: Participant["data"] = {};
+						resolvedColumns.forEach((col) => {
+							normalizedData[col] = participant.data?.[col] ?? "";
+						});
+						return { ...participant, data: normalizedData };
+					});
+
+					setParticipants(normalizedParticipants);
+					if (normalizedParticipants.length > 0) {
+						setSelectedParticipant(normalizedParticipants[0]);
 					}
 				} else {
 					console.error("Failed to fetch participants");
@@ -414,38 +472,28 @@ const PreviewPage = () => {
 							<table className="min-w-full border border-gray-200 text-center text-sm table-auto">
 								<thead>
 									<tr className="bg-gray-100">
-										{participants.length > 0 &&
-											Object.keys(
-												participants[0].data
-											).map((col, index) => (
+										{columns.length > 0 ? (
+											columns.map((col, index) => (
 												<th
-													key={index}
+													key={col}
 													className={`font-normal px-6 py-2 ${
-														index <
-														Object.keys(
-															participants[0].data
-														).length -
-															1
+														index < columns.length - 1
 															? "border-r border-gray-200"
 															: ""
 													}`}>
 													{col}
 												</th>
-											))}
+											))
+										) : (
+											<th className="font-normal px-6 py-2">No columns</th>
+										)}
 									</tr>
 								</thead>
 								<tbody>
 									{loading ? (
 										<tr>
 											<td
-												colSpan={
-													participants.length > 0
-														? Object.keys(
-																participants[0]
-																	.data
-														  ).length
-														: 1
-												}
+												colSpan={columns.length > 0 ? columns.length : 1}
 												className="px-6 py-8 text-gray-500">
 												Loading participants...
 											</td>
@@ -465,31 +513,27 @@ const PreviewPage = () => {
 														recipient
 													)
 												}>
-												{Object.keys(
-													recipient.data
-												).map((col, index) => (
-													<td
-														key={index}
-														className={`px-6 py-2 break-words ${
-															index <
-															Object.keys(
-																recipient.data
-															).length -
-																1
+												{columns.length > 0 ? (
+													columns.map((col, index) => (
+														<td
+															key={col}
+															className={`px-6 py-2 break-words ${
+															index < columns.length - 1
 																? "border-r border-gray-200"
 																: ""
-														}`}>
-														{recipient.data[col] ||
-															""}
-													</td>
-												))}
+														}`}
+														>
+															{recipient.data[col] || ""}
+														</td>
+													))
+												) : null}
 											</tr>
 										))
 									) : (
 										<tr>
-											<td
-												colSpan={1}
-												className="px-6 py-8 text-gray-500">
+										<td
+											colSpan={columns.length > 0 ? columns.length : 1}
+											className="px-6 py-8 text-gray-500">
 												No participants found
 											</td>
 										</tr>
