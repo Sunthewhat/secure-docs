@@ -78,7 +78,7 @@ const HomePage = () => {
       {/* top bar */}
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-full h-full px-[20px]">
         <div className="px-[25px] py-[50px]">
-          <p className="font-bold text-lg w-fit">Collections</p>
+          <p className="font-bold text-[25px] w-fit">Collections</p>
         </div>
 
         <div className="px-[25px] py-[50px] flex flex-row">

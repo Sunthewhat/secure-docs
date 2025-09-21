@@ -67,6 +67,7 @@ export type AllCertTypeResponse = BaseResponse<CertType[]>;
 export type DeleteCertResponse = BaseResponse<{ id: string }>;
 export type GetCertificateResponse = BaseResponse<Certificate>;
 export type DistributeCertResponse = BaseResponse<Participant[]>;
+export type GetAnchorResponse = BaseResponse<string[]>;
 
 //file
 export type UploadResourceResponse = BaseResponse<uploadFileType>;
