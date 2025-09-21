@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Axios } from "@/util/axiosInstance";
+import { GetCertificateResponse } from "@/types/response";
 
 // ---- API types ----
 type ApiParticipant = {
@@ -43,8 +44,27 @@ const HistoryPage = () => {
   const [err, setErr] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [revoking, setRevoking] = useState(false);              // bulk revoke
-  const [revokingIds, setRevokingIds] = useState<Set<string>>(new Set()); // per-row revoke
+  const [revoking, setRevoking] = useState(false); // bulk revoke
+  const [certificateName, setCertificateName] = useState<string>("");
+
+  // fetch certificate metadata for header display
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      if (!certId) return;
+      try {
+        const res = await Axios.get<GetCertificateResponse>(
+          `/certificate/${certId}`
+        );
+        if (!ignore) setCertificateName(res.data?.data?.name ?? "");
+      } catch {
+        if (!ignore) setCertificateName("");
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [certId]);
 
   // ---- fetch distributed (exclude revoked) ----
   useEffect(() => {
@@ -60,9 +80,11 @@ const HistoryPage = () => {
         });
 
         // ⬇️ Only keep NOT revoked
-        const participants = (res.data?.data ?? []).filter(p => !toBool(p.is_revoked));
+        const participants = (res.data?.data ?? []).filter(
+          (p) => !toBool(p.is_revoked)
+        );
 
-        const mapped: Recipient[] = participants.map(p => ({
+        const mapped: Recipient[] = participants.map((p) => ({
           id: p.id,
           name:
             p.data?.name && p.data?.surname
@@ -89,7 +111,7 @@ const HistoryPage = () => {
     const q = query.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(
-      r =>
+      (r) =>
         r.name.toLowerCase().includes(q) ||
         r.email.toLowerCase().includes(q) ||
         r.issueDate.toLowerCase().includes(q)
@@ -98,7 +120,7 @@ const HistoryPage = () => {
 
   // ---- selection helpers (bulk) ----
   const toggleOne = (id: string) => {
-    setSelected(prev => {
+    setSelected((prev) => {
       const next = new Set(prev);
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       next.has(id) ? next.delete(id) : next.add(id);
@@ -106,56 +128,31 @@ const HistoryPage = () => {
     });
   };
 
-  const allIds = filtered.map(r => r.id);
-  const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
-  const someSelected = allIds.some(id => selected.has(id));
+  const allIds = filtered.map((r) => r.id);
+  const allSelected =
+    allIds.length > 0 && allIds.every((id) => selected.has(id));
+  const someSelected = allIds.some((id) => selected.has(id));
   const toggleAll = () => {
-    setSelected(prev => {
+    setSelected((prev) => {
       if (allSelected) {
         const next = new Set(prev);
-        allIds.forEach(id => next.delete(id));
+        allIds.forEach((id) => next.delete(id));
         return next;
       } else {
         const next = new Set(prev);
-        allIds.forEach(id => next.add(id));
+        allIds.forEach((id) => next.add(id));
         return next;
       }
     });
-  };
-
-  // ---- revoke ONE row ----
-  const handleRevokeOne = async (id: string) => {
-    const row = rows.find(r => r.id === id);
-    const name = row?.name ?? "this participant";
-    const ok = window.confirm(`Revoke ${name}? Their certificate link will be invalidated.`);
-    if (!ok) return;
-
-    setRevokingIds(prev => new Set(prev).add(id));
-    try {
-      await Axios.put(`/participant/revoke/${id}`);
-      // Optimistic remove (revoked rows are hidden by fetch filter anyway)
-      setRows(prev => prev.filter(r => r.id !== id));
-      setSelected(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    } catch {
-      alert("Failed to revoke this participant. Please try again.");
-    } finally {
-      setRevokingIds(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }
   };
 
   // ---- revoke SELECTED (bulk) ----
   const handleRevoke = async () => {
     if (selected.size === 0) return;
     const confirm = window.confirm(
-      `Revoke ${selected.size} participant${selected.size > 1 ? "s" : ""}? This will invalidate their certificate link.`
+      `Revoke ${selected.size} participant${
+        selected.size > 1 ? "s" : ""
+      }? This will invalidate their certificate link.`
     );
     if (!confirm) return;
 
@@ -163,7 +160,7 @@ const HistoryPage = () => {
     try {
       const ids = Array.from(selected);
       const results = await Promise.allSettled(
-        ids.map(id => Axios.put(`/participant/revoke/${id}`))
+        ids.map((id) => Axios.put(`/participant/revoke/${id}`))
       );
 
       const okIds: string[] = [];
@@ -174,10 +171,10 @@ const HistoryPage = () => {
       });
 
       if (okIds.length) {
-        setRows(prev => prev.filter(r => !okIds.includes(r.id)));
-        setSelected(prev => {
+        setRows((prev) => prev.filter((r) => !okIds.includes(r.id)));
+        setSelected((prev) => {
           const next = new Set(prev);
-          okIds.forEach(id => next.delete(id));
+          okIds.forEach((id) => next.delete(id));
           return next;
         });
       }
@@ -185,7 +182,9 @@ const HistoryPage = () => {
       if (fails.length) {
         alert(`Some revokes failed (${fails.length}). Please try again.`);
       } else {
-        alert(`Revoked ${okIds.length} participant${okIds.length > 1 ? "s" : ""}.`);
+        alert(
+          `Revoked ${okIds.length} participant${okIds.length > 1 ? "s" : ""}.`
+        );
       }
     } finally {
       setRevoking(false);
@@ -194,11 +193,10 @@ const HistoryPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex-col justify-center w-full h-full px-[100px] mt-[25px] py-[48px]">
-        {/* Header */}
-        <div className="flex justify-between h-[120px]">
-          <div className="font-bold text-[22px]">
-            Shared History – Cert ID: {certId}
+      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-full h-full px-[20px]">
+        <div className="px-[25px] py-[50px] flex justify-between w-full h-fit">
+          <div className="font-bold text-[25px] w-fit">
+            Shared History - {certificateName || `Cert ID: ${certId}`}
           </div>
           <div className="w-[360px] flex-col">
             <div className="flex flex-row items-center">
@@ -207,11 +205,11 @@ const HistoryPage = () => {
                 type="text"
                 placeholder="Search recipients..."
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <div className="flex justify-between items-center">
-              <p className="ml-2 font-bold text-[14px]">
+              <p className="ml-10 font-bold text-[14px]">
                 {selected.size} Selected
               </p>
               <button
@@ -228,7 +226,8 @@ const HistoryPage = () => {
             </div>
           </div>
         </div>
-
+      </div>
+      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex-col justify-center w-full h-full px-[100px] mt-[25px] py-[48px]">
         {/* States */}
         {loading && <div className="px-2 py-4">Loading...</div>}
         {err && !loading && <div className="px-2 py-4 text-red-500">{err}</div>}
@@ -246,7 +245,7 @@ const HistoryPage = () => {
                     <input
                       type="checkbox"
                       checked={allSelected}
-                      ref={el => {
+                      ref={(el) => {
                         if (el) el.indeterminate = !allSelected && someSelected;
                       }}
                       onChange={toggleAll}
@@ -261,15 +260,11 @@ const HistoryPage = () => {
                   <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
                     Issue Date
                   </th>
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[140px]">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(r => {
+                {filtered.map((r) => {
                   const checked = selected.has(r.id);
-                  const rowBusy = revokingIds.has(r.id);
                   return (
                     <tr key={r.id} className="hover:bg-gray-50">
                       <td className="p-4 text-gray-800 border border-gray-300 text-center">
@@ -277,7 +272,7 @@ const HistoryPage = () => {
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleOne(r.id)}
-                          disabled={rowBusy}
+                          disabled={revoking}
                         />
                       </td>
                       <td className="p-3 text-sm text-gray-800 border border-gray-300">
@@ -288,20 +283,6 @@ const HistoryPage = () => {
                       </td>
                       <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
                         {r.issueDate}
-                      </td>
-                      <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
-                        <button
-                          onClick={() => handleRevokeOne(r.id)}
-                          disabled={rowBusy}
-                          className={`px-3 py-1 rounded-md border ${
-                            rowBusy
-                              ? "bg-gray-200 text-gray-600 cursor-not-allowed"
-                              : "bg-white hover:bg-gray-100"
-                          }`}
-                          title="Revoke this participant"
-                        >
-                          {rowBusy ? "Revoking…" : "Revoke"}
-                        </button>
                       </td>
                     </tr>
                   );
