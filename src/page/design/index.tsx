@@ -49,6 +49,7 @@ interface ElementUpdate {
 	fontSize?: number;
 	fontWeight?: "normal" | "bold";
 	fontStyle?: "normal" | "italic";
+	underline?: boolean;
 	text?: string;
 	dbField?: string;
 	anchorId?: string;
@@ -235,6 +236,16 @@ const DesignPage = () => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!canvasRef.current) return;
 
+			// Don't trigger delete if user is typing in an input field
+			const target = e.target as HTMLElement;
+			if (
+				target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable
+			) {
+				return;
+			}
+
 			const activeObject = canvasRef.current.getActiveObject();
 			if (!activeObject) return;
 
@@ -377,9 +388,10 @@ const DesignPage = () => {
 		qrAnchor.setControlVisible("mtr", false);
 
 		// Override rotation methods to prevent rotation
-		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate = function () {
-			return this;
-		};
+		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate =
+			function () {
+				return this;
+			};
 
 		// Set angle to 0 and lock it
 		qrAnchor.set("angle", 0);
