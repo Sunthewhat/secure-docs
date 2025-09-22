@@ -41,8 +41,29 @@ const CertificateValidationResultPage: FC = () => {
     const canvas = canvasRef.current;
     const objects = canvas.getObjects();
 
+    // Find anchor objects and map participant data to them
     objects.forEach((obj) => {
-      if (obj.isAnchor && obj.id && obj.type === "textbox") {
+      // Handle grouped anchors (text anchors)
+      if (obj.isAnchor && obj.id && obj.type === "group") {
+        const group = obj as fabric.Group;
+        // Remove Rect objects from the group and keep only textbox
+        const filteredObjects = group.getObjects().filter((subObj) => !(subObj instanceof fabric.Rect));
+        group.removeAll();
+        filteredObjects.forEach((subObj) => group.add(subObj));
+
+        // Find the textbox within the group
+        const textObject = group.getObjects().find((subObj) => subObj instanceof fabric.Textbox) as fabric.Textbox;
+        if (textObject) {
+          // Extract column name from group id by removing "PLACEHOLDER-" prefix
+          const colName = obj.id.replace("PLACEHOLDER-", "");
+          const fieldValue = participantData.participant.data[colName];
+          if (fieldValue) {
+            textObject.set("text", fieldValue);
+          }
+        }
+      }
+      // Handle individual textbox anchors
+      else if (obj.isAnchor && obj.id && obj.type === "textbox") {
         const textbox = obj as fabric.Textbox;
         const colName = obj.id.replace("PLACEHOLDER-", "");
         const fieldValue = participantData.participant.data[colName];
