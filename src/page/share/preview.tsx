@@ -71,7 +71,9 @@ const PreviewPage = () => {
 						const anchors = anchorResponse.data.data;
 						if (Array.isArray(anchors)) {
 							const sanitized = anchors
-								.map((col) => (typeof col === 'string' ? col.trim() : ''))
+								.map((col) =>
+									typeof col === "string" ? col.trim() : ""
+								)
 								.filter((col) => col.length > 0);
 							anchorColumns = ensureEmailColumn(sanitized);
 						}
@@ -79,7 +81,10 @@ const PreviewPage = () => {
 						console.error('Failed to fetch anchor columns');
 					}
 				} catch (anchorError) {
-					console.error('Error fetching anchor columns:', anchorError);
+					console.error(
+						"Error fetching anchor columns:",
+						anchorError
+					);
 				}
 
 				if (!anchorColumns.length) {
@@ -95,23 +100,32 @@ const PreviewPage = () => {
 					const serverColumns = Array.from(
 						new Set(
 							participantsData.flatMap((participant) =>
-								participant?.data ? Object.keys(participant.data) : []
+								participant?.data
+									? Object.keys(participant.data)
+									: []
 							)
 						)
 					);
 
 					const anchorOnlyEmail =
 						anchorColumns.length > 0 &&
-						anchorColumns.every((col) => col.toLowerCase().includes('email'));
+						anchorColumns.every((col) =>
+							col.toLowerCase().includes("email")
+						);
 
 					let resolvedColumns = anchorColumns.length ? [...anchorColumns] : [];
 
 					if (!anchorOnlyEmail) {
 						const serverNormalized = serverColumns
-							.map((col) => (typeof col === 'string' ? col.trim() : ''))
+							.map((col) =>
+								typeof col === "string" ? col.trim() : ""
+							)
 							.filter((col) => col.length > 0);
 
-						if (!resolvedColumns.length && serverNormalized.length) {
+						if (
+							!resolvedColumns.length &&
+							serverNormalized.length
+						) {
 							resolvedColumns = [...serverNormalized];
 						} else {
 							serverNormalized.forEach((col) => {
@@ -129,13 +143,16 @@ const PreviewPage = () => {
 					const orderedColumns = ensureEmailColumn(resolvedColumns);
 					setColumns(orderedColumns);
 
-					const normalizedParticipants = participantsData.map((participant) => {
-						const normalizedData: Participant['data'] = {};
-						orderedColumns.forEach((col) => {
-							normalizedData[col] = participant.data?.[col] ?? '';
-						});
-						return { ...participant, data: normalizedData };
-					});
+					const normalizedParticipants = participantsData.map(
+						(participant) => {
+							const normalizedData: Participant["data"] = {};
+							orderedColumns.forEach((col) => {
+								normalizedData[col] =
+									participant.data?.[col] ?? "";
+							});
+							return { ...participant, data: normalizedData };
+						}
+					);
 
 					setParticipants(normalizedParticipants);
 					if (normalizedParticipants.length > 0) {
@@ -184,7 +201,9 @@ const PreviewPage = () => {
 				// Find the textbox within the group
 				const textObject = group
 					.getObjects()
-					.find((subObj) => subObj instanceof fabric.Textbox) as fabric.Textbox;
+					.find(
+						(subObj) => subObj instanceof fabric.Textbox
+					) as fabric.Textbox;
 				if (textObject) {
 					// Extract column name from group id by removing "PLACEHOLDER-" prefix
 					const columnName = obj.id.replace('PLACEHOLDER-', '');
@@ -451,7 +470,7 @@ const PreviewPage = () => {
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page
-		void navigate(`/design/${certId}/edit`);
+		void navigate(`/design/${certId}`);
 	};
 
 	return (
@@ -566,16 +585,18 @@ const PreviewPage = () => {
 												<th
 													key={col}
 													className={`font-normal px-6 py-2 ${
-														index < columns.length - 1
-															? 'border-r border-gray-200'
-															: ''
-													}`}
-												>
+														index <
+														columns.length - 1
+															? "border-r border-gray-200"
+															: ""
+													}`}>
 													{col}
 												</th>
 											))
 										) : (
-											<th className='font-normal px-6 py-2'>No columns</th>
+											<th className="font-normal px-6 py-2">
+												No columns
+											</th>
 										)}
 									</tr>
 								</thead>
@@ -583,9 +604,12 @@ const PreviewPage = () => {
 									{loading ? (
 										<tr>
 											<td
-												colSpan={columns.length > 0 ? columns.length : 1}
-												className='px-6 py-8 text-gray-500'
-											>
+												colSpan={
+													columns.length > 0
+														? columns.length
+														: 1
+												}
+												className="px-6 py-8 text-gray-500">
 												Loading participants...
 											</td>
 										</tr>
@@ -598,30 +622,42 @@ const PreviewPage = () => {
 														? 'bg-blue-50 border-blue-200'
 														: ''
 												}`}
-												onClick={() => handleParticipantClick(recipient)}
-											>
+												onClick={() =>
+													handleParticipantClick(
+														recipient
+													)
+												}>
 												{columns.length > 0
-													? columns.map((col, index) => (
-															<td
-																key={col}
-																className={`px-6 py-2 break-words ${
-																	index < columns.length - 1
-																		? 'border-r border-gray-200'
-																		: ''
-																}`}
-															>
-																{recipient.data[col] || ''}
-															</td>
-													  ))
+													? columns.map(
+															(col, index) => (
+																<td
+																	key={col}
+																	className={`px-6 py-2 break-words ${
+																		index <
+																		columns.length -
+																			1
+																			? "border-r border-gray-200"
+																			: ""
+																	}`}>
+																	{recipient
+																		.data[
+																		col
+																	] || ""}
+																</td>
+															)
+													  )
 													: null}
 											</tr>
 										))
 									) : (
 										<tr>
 											<td
-												colSpan={columns.length > 0 ? columns.length : 1}
-												className='px-6 py-8 text-gray-500'
-											>
+												colSpan={
+													columns.length > 0
+														? columns.length
+														: 1
+												}
+												className="px-6 py-8 text-gray-500">
 												No participants found
 											</td>
 										</tr>
