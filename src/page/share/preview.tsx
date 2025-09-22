@@ -71,9 +71,7 @@ const PreviewPage = () => {
 						const anchors = anchorResponse.data.data;
 						if (Array.isArray(anchors)) {
 							const sanitized = anchors
-								.map((col) =>
-									typeof col === "string" ? col.trim() : ""
-								)
+								.map((col) => (typeof col === 'string' ? col.trim() : ''))
 								.filter((col) => col.length > 0);
 							anchorColumns = ensureEmailColumn(sanitized);
 						}
@@ -81,10 +79,7 @@ const PreviewPage = () => {
 						console.error('Failed to fetch anchor columns');
 					}
 				} catch (anchorError) {
-					console.error(
-						"Error fetching anchor columns:",
-						anchorError
-					);
+					console.error('Error fetching anchor columns:', anchorError);
 				}
 
 				if (!anchorColumns.length) {
@@ -100,32 +95,23 @@ const PreviewPage = () => {
 					const serverColumns = Array.from(
 						new Set(
 							participantsData.flatMap((participant) =>
-								participant?.data
-									? Object.keys(participant.data)
-									: []
+								participant?.data ? Object.keys(participant.data) : []
 							)
 						)
 					);
 
 					const anchorOnlyEmail =
 						anchorColumns.length > 0 &&
-						anchorColumns.every((col) =>
-							col.toLowerCase().includes("email")
-						);
+						anchorColumns.every((col) => col.toLowerCase().includes('email'));
 
 					let resolvedColumns = anchorColumns.length ? [...anchorColumns] : [];
 
 					if (!anchorOnlyEmail) {
 						const serverNormalized = serverColumns
-							.map((col) =>
-								typeof col === "string" ? col.trim() : ""
-							)
+							.map((col) => (typeof col === 'string' ? col.trim() : ''))
 							.filter((col) => col.length > 0);
 
-						if (
-							!resolvedColumns.length &&
-							serverNormalized.length
-						) {
+						if (!resolvedColumns.length && serverNormalized.length) {
 							resolvedColumns = [...serverNormalized];
 						} else {
 							serverNormalized.forEach((col) => {
@@ -143,16 +129,13 @@ const PreviewPage = () => {
 					const orderedColumns = ensureEmailColumn(resolvedColumns);
 					setColumns(orderedColumns);
 
-					const normalizedParticipants = participantsData.map(
-						(participant) => {
-							const normalizedData: Participant["data"] = {};
-							orderedColumns.forEach((col) => {
-								normalizedData[col] =
-									participant.data?.[col] ?? "";
-							});
-							return { ...participant, data: normalizedData };
-						}
-					);
+					const normalizedParticipants = participantsData.map((participant) => {
+						const normalizedData: Participant['data'] = {};
+						orderedColumns.forEach((col) => {
+							normalizedData[col] = participant.data?.[col] ?? '';
+						});
+						return { ...participant, data: normalizedData };
+					});
 
 					setParticipants(normalizedParticipants);
 					if (normalizedParticipants.length > 0) {
@@ -201,9 +184,7 @@ const PreviewPage = () => {
 				// Find the textbox within the group
 				const textObject = group
 					.getObjects()
-					.find(
-						(subObj) => subObj instanceof fabric.Textbox
-					) as fabric.Textbox;
+					.find((subObj) => subObj instanceof fabric.Textbox) as fabric.Textbox;
 				if (textObject) {
 					// Extract column name from group id by removing "PLACEHOLDER-" prefix
 					const columnName = obj.id.replace('PLACEHOLDER-', '');
@@ -264,21 +245,18 @@ const PreviewPage = () => {
 
 		// Store original design dimensions
 		const designData = JSON.parse(certificate.design);
-		const originalWidth = designData.width || 800;
-		const originalHeight = designData.height || 600;
+		const originalWidth = 850; // Fixed certificate width
+		const originalHeight = 601; // Fixed certificate height
 		const designAspectRatio = originalWidth / originalHeight;
 
-		// Set minimum canvas width to ensure proper rendering
-		const minCanvasWidth = 700;
-
-		// Calculate optimal canvas size maintaining design aspect ratio
-		let newWidth = Math.max(containerWidth, minCanvasWidth);
+		// Calculate canvas size to fit container while maintaining aspect ratio
+		let newWidth = containerWidth;
 		let newHeight = newWidth / designAspectRatio;
 
 		// If height exceeds container, scale by height instead
 		if (newHeight > containerHeight) {
 			newHeight = containerHeight;
-			newWidth = Math.max(containerHeight * designAspectRatio, minCanvasWidth);
+			newWidth = newHeight * designAspectRatio;
 		}
 
 		// Calculate scale to fit the design in the current container
@@ -349,21 +327,18 @@ const PreviewPage = () => {
 
 			// Parse design data to get original dimensions
 			const designData = JSON.parse(certificate.design);
-			const originalWidth = designData.width || 800;
-			const originalHeight = designData.height || 600;
+			const originalWidth = 850; // Fixed certificate width
+			const originalHeight = 601; // Fixed certificate height
 			const designAspectRatio = originalWidth / originalHeight;
 
-			// Set minimum canvas width to ensure proper rendering
-			const minCanvasWidth = 700;
-
-			// Calculate optimal canvas size maintaining design aspect ratio
-			let canvasWidth = Math.max(containerWidth, minCanvasWidth);
+			// Calculate canvas size to fit container while maintaining aspect ratio
+			let canvasWidth = containerWidth;
 			let canvasHeight = canvasWidth / designAspectRatio;
 
 			// If height exceeds container, scale by height instead
 			if (canvasHeight > containerHeight) {
 				canvasHeight = containerHeight;
-				canvasWidth = Math.max(containerHeight * designAspectRatio, minCanvasWidth);
+				canvasWidth = canvasHeight * designAspectRatio;
 			}
 
 			// Initialize Fabric canvas
@@ -504,11 +479,12 @@ const PreviewPage = () => {
 				{/* <div className='flex flex-col xl:flex-row w-full h-full'> */}
 				<div className='flex flex-col w-full h-full'>
 					{/* <div className='flex flex-col w-full xl:w-1/2 2xl:w-3/5 min-w-[700px] flex-shrink-0 items-start'> */}
-					<div className='flex flex-col w-full min-w-[700px] flex-shrink-0 items-start'>
+					<div className='flex flex-col w-full min-w-[750px] flex-shrink-0 items-start'>
 						<div
 							// className='border-4 border-black p-2 w-full'
 							className='border-4p-2 w-full'
-							style={{ minHeight: '400px', height: '60vh', maxHeight: '700px' }}
+							// style={{ minHeight: '400px', height: '60vh', maxHeight: '700px' }}
+							style={{ minHeight: '400px', height: '60vh' }}
 						>
 							{loading ? (
 								<div className='w-full h-full flex items-center justify-center bg-gray-100'>
@@ -517,7 +493,7 @@ const PreviewPage = () => {
 							) : certificate ? (
 								<div
 									id='certificate-preview'
-									className='w-full h-full bg-white relative flex items-center justify-center overflow-auto'
+									className='w-full h-full bg-white relative flex items-center justify-center'
 								>
 									<canvas
 										id='preview-canvas'
@@ -525,7 +501,6 @@ const PreviewPage = () => {
 											display: 'block',
 											margin: '0 auto',
 											border: '2px solid #00000010',
-											minWidth: '700px',
 										}}
 									/>
 								</div>
@@ -585,18 +560,16 @@ const PreviewPage = () => {
 												<th
 													key={col}
 													className={`font-normal px-6 py-2 ${
-														index <
-														columns.length - 1
-															? "border-r border-gray-200"
-															: ""
-													}`}>
+														index < columns.length - 1
+															? 'border-r border-gray-200'
+															: ''
+													}`}
+												>
 													{col}
 												</th>
 											))
 										) : (
-											<th className="font-normal px-6 py-2">
-												No columns
-											</th>
+											<th className='font-normal px-6 py-2'>No columns</th>
 										)}
 									</tr>
 								</thead>
@@ -604,12 +577,9 @@ const PreviewPage = () => {
 									{loading ? (
 										<tr>
 											<td
-												colSpan={
-													columns.length > 0
-														? columns.length
-														: 1
-												}
-												className="px-6 py-8 text-gray-500">
+												colSpan={columns.length > 0 ? columns.length : 1}
+												className='px-6 py-8 text-gray-500'
+											>
 												Loading participants...
 											</td>
 										</tr>
@@ -622,42 +592,30 @@ const PreviewPage = () => {
 														? 'bg-blue-50 border-blue-200'
 														: ''
 												}`}
-												onClick={() =>
-													handleParticipantClick(
-														recipient
-													)
-												}>
+												onClick={() => handleParticipantClick(recipient)}
+											>
 												{columns.length > 0
-													? columns.map(
-															(col, index) => (
-																<td
-																	key={col}
-																	className={`px-6 py-2 break-words ${
-																		index <
-																		columns.length -
-																			1
-																			? "border-r border-gray-200"
-																			: ""
-																	}`}>
-																	{recipient
-																		.data[
-																		col
-																	] || ""}
-																</td>
-															)
-													  )
+													? columns.map((col, index) => (
+															<td
+																key={col}
+																className={`px-6 py-2 break-words ${
+																	index < columns.length - 1
+																		? 'border-r border-gray-200'
+																		: ''
+																}`}
+															>
+																{recipient.data[col] || ''}
+															</td>
+													  ))
 													: null}
 											</tr>
 										))
 									) : (
 										<tr>
 											<td
-												colSpan={
-													columns.length > 0
-														? columns.length
-														: 1
-												}
-												className="px-6 py-8 text-gray-500">
+												colSpan={columns.length > 0 ? columns.length : 1}
+												className='px-6 py-8 text-gray-500'
+											>
 												No participants found
 											</td>
 										</tr>
