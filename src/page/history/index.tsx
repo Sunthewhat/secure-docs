@@ -354,7 +354,9 @@ const HistoryPage = () => {
         {loading && <div className="px-2 py-4">Loading...</div>}
         {err && !loading && <div className="px-2 py-4 text-red-500">{err}</div>}
         {!loading && !err && filtered.length === 0 && (
-          <div className="px-2 py-4">No distributed participants found.</div>
+          <div className="px-2 py-4 text-gray-500 flex justify-center">
+            No participants found.
+          </div>
         )}
 
         {/* Table */}

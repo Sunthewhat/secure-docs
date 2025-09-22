@@ -2,18 +2,16 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { RiEdit2Line, RiDeleteBinLine } from "react-icons/ri";
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Axios } from "@/util/axiosInstance";
 import {
   AddParticipantResponse,
-  CertType,
   GetAnchorResponse,
   EditParticipantResponse,
   GetParticipantResponse,
   DeleteParticipantResponse,
 } from "@/types/response";
 import { useToast } from "@/components/toast/ToastContext";
-import WarningModal from "@/components/modal/WarningModal";
 import { DeleteParticipantModal } from "@/components/modal/DeleteParticipantModal";
 
 type Recipient = { [key: string]: string };
@@ -37,10 +35,6 @@ const SharePage = () => {
   const [editForm, setEditForm] = useState<Recipient>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // ⚠️ New: modal + lock state (persisted per certificate)
-  const [isWarningOpen, setIsWarningOpen] = useState(false);
-  const [columnsLocked, setColumnsLocked] = useState(false);
-  const COL_LOCK_KEY = useMemo(() => `columns-locked:${certId}`, [certId]);
   const [deleteTarget, setDeleteTarget] = useState<{
     index: number;
     participantId?: string;
@@ -88,15 +82,6 @@ const SharePage = () => {
     if (prev) navigate(prev);
     else navigate("/"); // final fallback
   };
-
-  // Minimal cert object for WarningModal (it only uses cert.id)
-  const certForModal = useMemo(() => ({ id: certId } as CertType), [certId]);
-
-  // Load persisted lock state
-  useEffect(() => {
-    const saved = localStorage.getItem(COL_LOCK_KEY);
-    if (saved === "true") setColumnsLocked(true);
-  }, [COL_LOCK_KEY]);
 
   // ===== API helpers =====
 
@@ -239,7 +224,7 @@ const SharePage = () => {
     await fetchParticipants();
   };
 
-  // ===== Next flow with modal =====
+  // ===== Next flow =====
 
   const handleNext = () => {
     if (recipients.length === 0) {
@@ -250,24 +235,7 @@ const SharePage = () => {
       toast.error("Please fill at least one field for a recipient.");
       return;
     }
-
-    // If not locked yet, show warning modal; otherwise navigate
-    if (!columnsLocked) {
-      setIsWarningOpen(true);
-      return;
-    }
     navigate(`/preview/${certId}`);
-  };
-
-  // Modal handlers
-  const handleWarningClose = () => setIsWarningOpen(false);
-
-  const handleWarningConfirm = (confirmedCertId: string) => {
-    // lock columns and persist it, then navigate
-    setColumnsLocked(true);
-    localStorage.setItem(COL_LOCK_KEY, "true");
-    setIsWarningOpen(false);
-    navigate(`/preview/${confirmedCertId}`);
   };
 
   // ===== Effects =====
@@ -594,14 +562,6 @@ const SharePage = () => {
           </button>
         </div>
       </div>
-
-      {/* ⚠️ Warning Modal */}
-      <WarningModal
-        open={isWarningOpen}
-        cert={certForModal}
-        onClose={handleWarningClose}
-        onConfirm={handleWarningConfirm}
-      />
 
       <DeleteParticipantModal
         open={Boolean(deleteTarget)}
