@@ -117,14 +117,18 @@ const DesignPage = () => {
 		}
 	}, [certificateId, isDataFetched, isLoading, toast]);
 
-	// Fetch certificate design on mount
+	// Fetch certificate design when certId or certificateId changes
 	useEffect(() => {
 		if (certId) {
 			setCertificateId(certId);
+		}
+	}, [certId]);
+
+	useEffect(() => {
+		if (certificateId && !isDataFetched && !isLoading) {
 			fetchCertificateDesign();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [certificateId, isDataFetched, isLoading, fetchCertificateDesign]);
 
 	// Update state when URL changes (for redirect after first save)
 	useEffect(() => {
@@ -375,8 +379,8 @@ const DesignPage = () => {
 		);
 	};
 
-	// Show loading state while fetching design data
-	if (isLoading) {
+	// Show loading state while fetching design data or if no certificate ID
+	if (isLoading || (certId && !isDataFetched)) {
 		return (
 			<div className="select-none cursor-default">
 				<DesignHeader
