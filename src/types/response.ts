@@ -12,6 +12,7 @@ export type Participant = {
 	is_distributed: boolean;
 	created_at: string;
 	updated_at: string;
+	certificate_url: string;
 	data: {
 		[key: string]: string; // dynamic columns
 	};

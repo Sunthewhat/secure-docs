@@ -167,8 +167,14 @@ const PreviewPage = () => {
 		const canvas = canvasRef.current;
 		const objects = canvas.getObjects();
 
-		// Find anchor objects and map participant data to them
+		// Process all objects to ensure they are visible and handle anchors
 		objects.forEach((obj) => {
+			// Ensure object is visible and properly configured
+			obj.set({
+				visible: true,
+				opacity: 1
+			});
+
 			// Handle grouped anchors (text anchors)
 			if (obj.isAnchor && obj.id && obj.type === "group") {
 				const group = obj as fabric.Group;
@@ -197,6 +203,14 @@ const PreviewPage = () => {
 				if (fieldValue) {
 					textbox.set("text", fieldValue);
 				}
+			}
+			// Handle non-anchor text objects - ensure they remain visible
+			else if (obj.type === "textbox" || obj.type === "text") {
+				// For non-anchor text objects, just ensure they are visible
+				obj.set({
+					visible: true,
+					opacity: 1
+				});
 			}
 		});
 
@@ -252,6 +266,8 @@ const PreviewPage = () => {
 					scaleY: (obj.scaleY || 1) * scale,
 					selectable: false,
 					evented: false,
+					visible: true,
+					opacity: 1
 				});
 			});
 
@@ -330,34 +346,26 @@ const PreviewPage = () => {
 					.then(() => {
 						// Scale down the entire canvas content to fit preview
 						const objects = canvas.getObjects();
-						if (objects.length > 0) {
-							// Calculate scale to fit the design in the preview canvas
-							const originalWidth = designData.width || 800;
-							const originalHeight = designData.height || 600;
-							const scaleX = canvasWidth / originalWidth;
-							const scaleY = canvasHeight / originalHeight;
-							const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+						// Calculate scale to fit the design in the preview canvas
+						const originalWidth = designData.width || 800;
+						const originalHeight = designData.height || 600;
+						const scaleX = canvasWidth / originalWidth;
+						const scaleY = canvasHeight / originalHeight;
+						const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
 
-							// Apply scale to all objects
-							objects.forEach((obj) => {
-								obj.set({
-									left: (obj.left || 0) * scale,
-									top: (obj.top || 0) * scale,
-									scaleX: (obj.scaleX || 1) * scale,
-									scaleY: (obj.scaleY || 1) * scale,
-									selectable: false,
-									evented: false,
-								});
+						// Apply scale and disable interactions for all objects
+						objects.forEach((obj) => {
+							obj.set({
+								left: (obj.left || 0) * scale,
+								top: (obj.top || 0) * scale,
+								scaleX: (obj.scaleX || 1) * scale,
+								scaleY: (obj.scaleY || 1) * scale,
+								selectable: false,
+								evented: false,
+								visible: true,
+								opacity: 1
 							});
-						} else {
-							// Disable all object interactions for preview
-							canvas.getObjects().forEach((obj) => {
-								obj.set({
-									selectable: false,
-									evented: false,
-								});
-							});
-						}
+						});
 
 						canvas.renderAll();
 
