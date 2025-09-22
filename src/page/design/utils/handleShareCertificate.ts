@@ -20,6 +20,11 @@ export const handleShareUtil = async (
 		return;
 	}
 
+	if (!certificateId) {
+		toast.error("No certificate ID provided for sharing");
+		return;
+	}
+
 	try {
 		const canvas = canvasRef.current;
 		const fabricDesign = canvas.toJSON();
@@ -29,19 +34,13 @@ export const handleShareUtil = async (
 			design: JSON.stringify(fabricDesign),
 		};
 
-		let response;
-		if (certificateId) {
-			response = await Axios.put(
-				`/certificate/${certificateId}`,
-				payload
-			);
-		} else {
-			response = await Axios.post("/certificate", payload);
-		}
+		const response = await Axios.put(
+			`/certificate/${certificateId}`,
+			payload
+		);
 
 		if (response.status === 200) {
-			const newId = certificateId || response.data.data.id;
-			void navigate(`/share/${newId}`);
+			void navigate(`/share/${certificateId}`);
 			toast.success("Certificate saved. Ready to share!");
 		} else {
 			toast.error(response.data?.msg || "Failed to save certificate"); // ✅

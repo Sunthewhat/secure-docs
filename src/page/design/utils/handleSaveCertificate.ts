@@ -18,6 +18,11 @@ export const handleSaveCertificateUtil = async (
 		return;
 	}
 
+	if (!certificateId) {
+		toast.error("No certificate ID provided for update");
+		return;
+	}
+
 	try {
 		const canvas = canvasRef.current;
 
@@ -28,16 +33,11 @@ export const handleSaveCertificateUtil = async (
 			design: JSON.stringify(fabricDesign),
 		};
 
-		let response;
-		if (certificateId) {
-			response = await Axios.put(
-				`/certificate/${certificateId}`,
-				payload
-			);
-		} else {
-			response = await Axios.post("/certificate", payload);
-			console.log(response.data.data.id);
-		}
+		const response = await Axios.put(
+			`/certificate/${certificateId}`,
+			payload
+		);
+		console.log(response.data.data.updated_at);
 
 		if (response.status === 200) {
 			toast.success("Certificate saved successfully!");
