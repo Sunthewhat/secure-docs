@@ -6,14 +6,25 @@ import {
 	DeleteCertResponse,
 } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
 import DeleteModal from "@/components/modal/DeleteModal";
 import AiOutlineEllipsis from "../../asset/AiOutlineEllipsis.svg";
 
+const formatDateTime = (value?: string) => {
+	if (!value) return "-";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return "-";
+	return `${date.toLocaleDateString("en-GB")}, ${date.toLocaleTimeString("en-GB", {
+		hour: "2-digit",
+		minute: "2-digit",
+	})}`;
+};
+
 const HomePage = () => {
 	const navigate = useNavigate();
 	const [certificateItem, setCertificateItem] = useState<CertType[]>([]);
+	const [searchQuery, setSearchQuery] = useState("");
 	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 	const [selectingShareCert, setSelectingShareCert] =
 		useState<CertType | null>(null);
@@ -72,6 +83,16 @@ const HomePage = () => {
 		fetchCerts();
 	}, []);
 
+	const filteredCertificates = useMemo(() => {
+		const query = searchQuery.trim().toLowerCase();
+		if (!query) return certificateItem;
+		return certificateItem.filter((cert) => {
+			const name = cert.name?.toLowerCase() ?? "";
+			const id = cert.id?.toLowerCase() ?? "";
+			return name.includes(query) || id.includes(query);
+		});
+	}, [certificateItem, searchQuery]);
+
 	return (
 		<div className="flex flex-col">
 			{/* top bar */}
@@ -87,11 +108,13 @@ const HomePage = () => {
 							src={searchIcon}
 							alt="searchIcon"
 						/>
-						<input
-							className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
-							type="text"
-							placeholder="Search designs..."
-						/>
+					<input
+						className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
+						type="text"
+						placeholder="Search designs..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+					/>
 					</div>
 					<button
 						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[185px] h-[39px] flex justify-center items-center"
@@ -104,7 +127,7 @@ const HomePage = () => {
 			{/* grid */}
 			<div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-full min-h-[770px] px-[20px] mt-[25px] py-[20px]">
 				<div className="grid grid-cols-3 gap-[20px] w-full h-full">
-					{certificateItem.map((cert) => (
+					{filteredCertificates.map((cert) => (
 						<Card
 							key={cert.id}
 							cert={cert}
@@ -114,6 +137,11 @@ const HomePage = () => {
 							onHistory={() => navigate(`/history/${cert.id}`)}
 						/>
 					))}
+					{filteredCertificates.length === 0 && (
+						<div className="col-span-3 flex justify-center items-center py-10 text-gray-500">
+							No designs found.
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -238,9 +266,14 @@ function Card({
 				)}
 			</div>
 
-			<span className="mt-5 font-semibold text-[16px] text-center text-primary_text">
-				{cert.name}
-			</span>
+			<div className="mt-5 flex flex-col items-center text-center text-primary_text">
+				<span className="font-semibold text-[16px]">
+					{cert.name || "Untitled"}
+				</span>
+				<span className="text-xs text-gray-500 mt-1">
+					Last modified: {formatDateTime(cert.updated_at || cert.created_at)}
+				</span>
+			</div>
 
 			{/* History + Share buttons */}
 			<div className="mt-[15px] flex flex-row gap-[10px] w-full">

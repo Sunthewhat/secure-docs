@@ -23,6 +23,8 @@ export type CertType = {
 	design: string;
 	thumbnail_url: string;
 	archive_url: string;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type Certificate = {
