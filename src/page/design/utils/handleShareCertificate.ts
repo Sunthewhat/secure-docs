@@ -1,24 +1,27 @@
-import { ToastContextType } from '@/components/toast/ToastContext';
-import { Axios } from '@/util/axiosInstance';
-import * as fabric from 'fabric';
-import { NavigateFunction } from 'react-router';
+import { ToastContextType } from "@/components/toast/ToastContext";
+import { Axios } from "@/util/axiosInstance";
+import * as fabric from "fabric";
+import { NavigateFunction } from "react-router";
 
 export const handleShareUtil = async (
 	certificateId: string | null,
 	certificateName: string,
 	canvasRef: React.RefObject<fabric.Canvas | null>,
-	isEditing: boolean,
-	clearLocalStorage: () => void,
 	navigate: NavigateFunction,
 	toast: ToastContextType
 ) => {
 	if (!certificateName.trim()) {
-		toast.error('Please enter a certificate name'); // ✅
+		toast.error("Please enter a certificate name"); // ✅
 		return;
 	}
 
 	if (!canvasRef.current) {
-		toast.error('Canvas not ready'); // ✅
+		toast.error("Canvas not ready"); // ✅
+		return;
+	}
+
+	if (!certificateId) {
+		toast.error("No certificate ID provided for sharing");
 		return;
 	}
 
@@ -31,23 +34,19 @@ export const handleShareUtil = async (
 			design: JSON.stringify(fabricDesign),
 		};
 
-		let response;
-		if (isEditing && certificateId) {
-			response = await Axios.put(`/certificate/${certificateId}`, payload);
-		} else {
-			response = await Axios.post('/certificate', payload);
-		}
+		const response = await Axios.put(
+			`/certificate/${certificateId}`,
+			payload
+		);
 
 		if (response.status === 200) {
-			const newId = isEditing ? certificateId : response.data.data.id;
-			if (!isEditing) clearLocalStorage();
-			void navigate(`/share/${newId}`);
-			toast.success('Certificate saved. Ready to share!'); // ✅ feedback
+			void navigate(`/share/${certificateId}`);
+			toast.success("Certificate saved. Ready to share!");
 		} else {
-			toast.error(response.data?.msg || 'Failed to save certificate'); // ✅
+			toast.error(response.data?.msg || "Failed to save certificate"); // ✅
 		}
 	} catch (error) {
-		console.error('Save failed:', error);
-		toast.error('Failed to save certificate. Please try again.'); // ✅
+		console.error("Save failed:", error);
+		toast.error("Failed to save certificate. Please try again."); // ✅
 	}
 };
