@@ -332,7 +332,6 @@ const DesignPage = () => {
 			certificateName,
 			canvasRef,
 			certificateId,
-			navigate,
 			toast
 		);
 	};
@@ -371,7 +370,6 @@ const DesignPage = () => {
 			canvas,
 			canvasRef,
 			designData,
-			setCertificateName,
 			addQRanchor,
 			setSelectedElement
 		);
