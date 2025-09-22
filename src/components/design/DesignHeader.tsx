@@ -3,6 +3,7 @@ interface DesignHeaderProps {
 	setCertificateName: (name: string) => void;
 	onSave: () => void;
 	onShare: () => void;
+	lastSaved?: string | null;
 }
 
 const DesignHeader = ({
@@ -10,7 +11,17 @@ const DesignHeader = ({
 	setCertificateName,
 	onSave,
 	onShare,
+	lastSaved,
 }: DesignHeaderProps) => {
+	const formatLastSaved = (dateString?: string | null) => {
+		if (!dateString) return null;
+		try {
+			const date = new Date(dateString);
+			return date.toLocaleString();
+		} catch {
+			return null;
+		}
+	};
 	return (
 		<div className="font-noto bg-secondary_background rounded-[15px] flex  flex-row items-center w-full h-[72px] px-[20px]">
 			{/* div text  */}
@@ -22,6 +33,11 @@ const DesignHeader = ({
 			{/*div button*/}
 			<div className="flex flex-row items-center ml-auto gap-3">
 				{/* form here */}
+				{lastSaved && (
+					<p className="text-gray-600 text-[12px] mt-1">
+						Last saved: {formatLastSaved(lastSaved)}
+					</p>
+				)}
 				<input
 					type="text"
 					value={certificateName}

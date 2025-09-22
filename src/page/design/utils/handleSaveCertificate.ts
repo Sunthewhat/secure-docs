@@ -7,20 +7,20 @@ export const handleSaveCertificateUtil = async (
 	canvasRef: React.RefObject<fabric.Canvas | null>,
 	certificateId: string | null,
 	toast: ToastContextType
-) => {
+): Promise<string | null> => {
 	if (!certificateName.trim()) {
 		toast.error("Please enter a certificate name"); // ✅
-		return;
+		return null;
 	}
 
 	if (!canvasRef.current) {
 		toast.error("Canvas not ready"); // ✅
-		return;
+		return null;
 	}
 
 	if (!certificateId) {
 		toast.error("No certificate ID provided for update");
-		return;
+		return null;
 	}
 
 	try {
@@ -37,15 +37,17 @@ export const handleSaveCertificateUtil = async (
 			`/certificate/${certificateId}`,
 			payload
 		);
-		console.log(response.data.data.updated_at);
 
 		if (response.status === 200) {
 			toast.success("Certificate saved successfully!");
+			return response.data?.data?.updated_at || null;
 		} else {
 			toast.error(response.data?.msg || "Failed to save certificate"); // ✅
+			return null;
 		}
 	} catch (error) {
 		console.error("Save failed:", error);
 		toast.error("Failed to save certificate. Please try again."); // ✅
+		return null;
 	}
 };
