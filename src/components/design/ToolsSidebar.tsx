@@ -6,7 +6,10 @@ import circleIcon from "@/asset/design/tools/circle.svg";
 import rectangleIcon from "@/asset/design/tools/rectangle.svg";
 import squareIcon from "@/asset/design/tools/square.svg";
 import triangleIcon from "@/asset/design/tools/triangle.svg";
+import imageIcon from "@/asset/design/image.svg";
+import elementIcon from "@/asset/design/element.svg";
 import uploadIcon from "@/asset/design/tools/upload.svg";
+import anchorIcon from "@/asset/design/anchor.svg";
 import { uploadBackground, uploadImage } from "@/api/file/upload";
 import { getBackgrounds, getGraphics } from "@/api/file/get";
 
@@ -145,7 +148,7 @@ const ToolsSidebar = ({
 						)
 					}>
 					<img
-						src={lineIcon}
+						src={elementIcon}
 						alt="Line"
 						className="w-6 h-6 mb-2"
 						style={{
@@ -167,7 +170,7 @@ const ToolsSidebar = ({
 						setActiveMenu(activeMenu === "image" ? null : "image")
 					}>
 					<img
-						src={uploadIcon}
+						src={imageIcon}
 						alt="Image"
 						className="w-6 h-6 mb-2"
 						style={{
@@ -211,7 +214,7 @@ const ToolsSidebar = ({
 						setActiveMenu(activeMenu === "anchor" ? null : "anchor")
 					}>
 					<img
-						src={textIcon}
+						src={anchorIcon}
 						alt="Anchor"
 						className="w-8 h-8 mb-2"
 						style={{
