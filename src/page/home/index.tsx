@@ -10,15 +10,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
 import DeleteModal from "@/components/modal/DeleteModal";
 import AiOutlineEllipsis from "../../asset/AiOutlineEllipsis.svg";
+import { createDesign } from "@/api/design/create";
 
 const formatDateTime = (value?: string) => {
 	if (!value) return "-";
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return "-";
-	return `${date.toLocaleDateString("en-GB")}, ${date.toLocaleTimeString("en-GB", {
-		hour: "2-digit",
-		minute: "2-digit",
-	})}`;
+	return `${date.toLocaleDateString("en-GB")}, ${date.toLocaleTimeString(
+		"en-GB",
+		{
+			hour: "2-digit",
+			minute: "2-digit",
+		}
+	)}`;
 };
 
 const HomePage = () => {
@@ -33,10 +37,16 @@ const HomePage = () => {
 	const [selectingDeleteCert, setSelectingDeleteCert] =
 		useState<CertType | null>(null);
 
-	const handleCreateDesign = () => {
-		// Clear canvas cache from localStorage to ensure fresh canvas
-		localStorage.removeItem("design-canvas-state");
-		navigate("/design");
+	const handleCreateDesign = async () => {
+		try {
+			const response = await createDesign();
+			if (response.status === 200) {
+				const newCertId = response.data.data.id;
+				navigate(`/design/${newCertId}`);
+			}
+		} catch (error) {
+			console.error("Failed to create design:", error);
+		}
 	};
 
 	const handleSelectDeleteCert = (cert: CertType) => {
@@ -67,7 +77,7 @@ const HomePage = () => {
 	};
 
 	const handleEdit = (certId: string) => {
-		navigate(`/design/${certId}/edit`);
+		navigate(`/design/${certId}`);
 	};
 
 	const fetchCerts = async () => {
@@ -108,13 +118,13 @@ const HomePage = () => {
 							src={searchIcon}
 							alt="searchIcon"
 						/>
-					<input
-						className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
-						type="text"
-						placeholder="Search designs..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-					/>
+						<input
+							className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] mr-[25px] w-[224px] h-[39px]"
+							type="text"
+							placeholder="Search designs..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
 					</div>
 					<button
 						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[185px] h-[39px] flex justify-center items-center"
@@ -271,7 +281,8 @@ function Card({
 					{cert.name || "Untitled"}
 				</span>
 				<span className="text-xs text-gray-500 mt-1">
-					Last modified: {formatDateTime(cert.updated_at || cert.created_at)}
+					Last modified:{" "}
+					{formatDateTime(cert.updated_at || cert.created_at)}
 				</span>
 			</div>
 
