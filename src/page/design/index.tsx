@@ -79,6 +79,7 @@ const DesignPage = () => {
 	const [showGrid] = useState(false);
 	const [snapToGrid] = useState(true);
 	const [gridSize] = useState(20);
+	const [lastSaved, setLastSaved] = useState<string | null>(null);
 
 	// Fetch certificate design
 	const fetchCertificateDesign = useCallback(async () => {
@@ -152,10 +153,14 @@ const DesignPage = () => {
 					design: JSON.stringify(canvasData),
 				};
 
-				await Axios.put(
+				const response = await Axios.put(
 					`/certificate/${certificateId}?autosave=true`,
 					requestData
 				);
+
+				if (response.status === 200 && response.data?.data?.updated_at) {
+					setLastSaved(response.data.data.updated_at);
+				}
 				console.log("Auto-saved to server");
 			} catch (error) {
 				console.error("Auto-save failed:", error);
@@ -331,13 +336,16 @@ const DesignPage = () => {
 		canvasRef.current.renderAll();
 	};
 
-	const handleSaveCertificate = () => {
-		handleSaveCertificateUtil(
+	const handleSaveCertificate = async () => {
+		const updatedAt = await handleSaveCertificateUtil(
 			certificateName,
 			canvasRef,
 			certificateId,
 			toast
 		);
+		if (updatedAt) {
+			setLastSaved(updatedAt);
+		}
 	};
 
 	const handleShare = () => {
@@ -388,6 +396,7 @@ const DesignPage = () => {
 					setCertificateName={setCertificateName}
 					onSave={handleSaveCertificate}
 					onShare={handleShare}
+					lastSaved={lastSaved}
 				/>
 				<div className="flex items-center justify-center h-96">
 					<p className="text-lg">Loading design...</p>
@@ -403,6 +412,7 @@ const DesignPage = () => {
 				setCertificateName={setCertificateName}
 				onSave={handleSaveCertificate}
 				onShare={handleShare}
+				lastSaved={lastSaved}
 			/>
 			<CertificateCanvas
 				activeMenu={activeMenu}
