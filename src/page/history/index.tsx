@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Axios } from "@/util/axiosInstance";
-import { GetCertificateResponse } from "@/types/response";
+import { GetCertificateResponse, GetAnchorResponse } from "@/types/response";
 
 // ---- API types ----
 type ApiParticipant = {
@@ -21,12 +21,36 @@ type ApiResponse = {
   data: ApiParticipant[];
 };
 
-type Recipient = {
+type RecipientRow = {
   id: string;
-  name: string;
-  email: string;
+  data: Record<string, string>;
   issueDate: string;
   certificateUrl?: string;
+  status: "Validated" | "Revoked";
+};
+
+const ensureEmailColumn = (cols: string[]): string[] => {
+  if (!cols.length) return ["email"];
+  const filtered = cols
+    .map((col) => (typeof col === "string" ? col.trim() : ""))
+    .filter((col) => col.length > 0);
+  if (!filtered.length) return ["email"];
+  const normalized = filtered.map((col) => col.toLowerCase());
+  let emailIndex = normalized.findIndex((col) => col === "email");
+  if (emailIndex === -1) {
+    emailIndex = normalized.findIndex((col) => col.includes("email"));
+  }
+  const reordered = [...filtered];
+  if (emailIndex === -1) {
+    reordered.push("email");
+    return reordered;
+  }
+  if (emailIndex === reordered.length - 1) {
+    return reordered;
+  }
+  const [emailCol] = reordered.splice(emailIndex, 1);
+  reordered.push(emailCol);
+  return reordered;
 };
 
 const toBool = (v: any) => v === true || v === "true" || v === 1 || v === "1";
@@ -34,12 +58,20 @@ const toBool = (v: any) => v === true || v === "true" || v === 1 || v === "1";
 function formatDate(iso?: string) {
   if (!iso) return "-";
   const d = new Date(iso);
-  return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("en-GB");
+  if (isNaN(d.getTime())) return "-";
+  const datePart = d.toLocaleDateString("en-GB");
+  const timePart = d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${datePart} - ${timePart}`;
 }
 
 const HistoryPage = () => {
   const { certId } = useParams<{ certId: string }>();
-  const [rows, setRows] = useState<Recipient[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
+  const [rows, setRows] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -75,26 +107,74 @@ const HistoryPage = () => {
       setErr(null);
       setSelected(new Set());
       try {
+        let anchorColumns: string[] = [];
+        try {
+          const anchorRes = await Axios.get<GetAnchorResponse>(
+            `/certificate/anchor/${certId}`
+          );
+          if (anchorRes.status === 200) {
+            const anchors = Array.isArray(anchorRes.data.data)
+              ? anchorRes.data.data
+              : [];
+            anchorColumns = ensureEmailColumn(anchors as string[]);
+          }
+        } catch (anchorError) {
+          console.error("Failed to fetch anchor columns:", anchorError);
+        }
+
+        if (!anchorColumns.length) {
+          anchorColumns = ensureEmailColumn([]);
+        }
+
         const res = await Axios.get<ApiResponse>(`/participant/${certId}`, {
           params: { status: "distributed" },
         });
 
-        // ⬇️ Only keep NOT revoked
-        const participants = (res.data?.data ?? []).filter(
-          (p) => !toBool(p.is_revoked)
-        );
+        const participants = res.data?.data ?? [];
 
-        const mapped: Recipient[] = participants.map((p) => ({
-          id: p.id,
-          name:
-            p.data?.name && p.data?.surname
-              ? `${p.data.name} ${p.data.surname}`
-              : p.data?.name || p.data?.fullname || "-",
-          email: p.data?.email ?? "-",
-          issueDate: formatDate(p.updated_at || p.created_at),
-          certificateUrl: p.certificate_url ?? undefined,
-        }));
-        if (!ignore) setRows(mapped);
+        const serverColumns = Array.from(
+          new Set(
+            participants.flatMap((participant) =>
+              Object.keys(participant?.data ?? {})
+            )
+          )
+        )
+          .map((col) => (typeof col === "string" ? col.trim() : ""))
+          .filter((col) => col.length > 0);
+
+        let resolvedColumns = anchorColumns.length ? [...anchorColumns] : [];
+
+        if (!anchorColumns.length) {
+          if (serverColumns.length) {
+            resolvedColumns = serverColumns;
+          }
+        }
+
+        if (!resolvedColumns.length) {
+          resolvedColumns = ensureEmailColumn([]);
+        }
+
+        const orderedColumns = ensureEmailColumn(resolvedColumns);
+
+        const mapped: RecipientRow[] = participants.map((p) => {
+          const rowData: Record<string, string> = {};
+          orderedColumns.forEach((col) => {
+            rowData[col] = p.data?.[col] ?? "";
+          });
+          const isRevoked = toBool(p.is_revoked);
+          return {
+            id: p.id,
+            data: rowData,
+            issueDate: formatDate(p.updated_at || p.created_at),
+            certificateUrl: p.certificate_url ?? undefined,
+            status: isRevoked ? "Revoked" : "Validated",
+          };
+        });
+
+        if (!ignore) {
+          setColumns(orderedColumns);
+          setRows(mapped);
+        }
       } catch (e: any) {
         if (!ignore) setErr(e?.response?.data?.msg || "Failed to load history");
       } finally {
@@ -112,14 +192,15 @@ const HistoryPage = () => {
     if (!q) return rows;
     return rows.filter(
       (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q) ||
+        columns.some((col) => r.data[col]?.toLowerCase().includes(q)) ||
         r.issueDate.toLowerCase().includes(q)
     );
-  }, [rows, query]);
+  }, [rows, query, columns]);
 
   // ---- selection helpers (bulk) ----
   const toggleOne = (id: string) => {
+    const target = rows.find((r) => r.id === id);
+    if (!target || target.status === "Revoked") return;
     setSelected((prev) => {
       const next = new Set(prev);
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -128,7 +209,8 @@ const HistoryPage = () => {
     });
   };
 
-  const allIds = filtered.map((r) => r.id);
+  const selectableRows = filtered.filter((r) => r.status !== "Revoked");
+  const allIds = selectableRows.map((r) => r.id);
   const allSelected =
     allIds.length > 0 && allIds.every((id) => selected.has(id));
   const someSelected = allIds.some((id) => selected.has(id));
@@ -171,7 +253,11 @@ const HistoryPage = () => {
       });
 
       if (okIds.length) {
-        setRows((prev) => prev.filter((r) => !okIds.includes(r.id)));
+        setRows((prev) =>
+          prev.map((r) =>
+            okIds.includes(r.id) ? { ...r, status: "Revoked" } : r
+          )
+        );
         setSelected((prev) => {
           const next = new Set(prev);
           okIds.forEach((id) => next.delete(id));
@@ -191,17 +277,53 @@ const HistoryPage = () => {
     }
   };
 
+  const handleExportCsv = () => {
+    if (filtered.length === 0) {
+      alert("No history records to export.");
+      return;
+    }
+
+    const escapeCsvValue = (value: string): string => {
+      const prepared = value?.toString() ?? "";
+      return `"${prepared.replace(/"/g, '""')}"`;
+    };
+
+    const header = [...columns, "Issue Date & Time", "Status"];
+    const csvLines = [header.map(escapeCsvValue).join(",")];
+
+    filtered.forEach((row) => {
+      const values = columns.map((col) => row.data[col] ?? "");
+      values.push(row.issueDate);
+      values.push(row.status);
+      csvLines.push(values.map(escapeCsvValue).join(","));
+    });
+
+    const csvContent = csvLines.join("\r\n");
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeCertId = certId ?? "history";
+    link.download = `history-${safeCertId}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col">
       <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-full h-full px-[20px]">
-        <div className="px-[25px] py-[50px] flex justify-between w-full h-fit">
+        <div className="px-[25px] py-[50px] flex justify-between w-full h-[140px] items-center">
           <div className="font-bold text-[25px] w-fit">
             Shared History - {certificateName || `Cert ID: ${certId}`}
           </div>
-          <div className="w-[360px] flex-col">
+          <div className="w-[550px] flex justify-between ">
             <div className="flex flex-row items-center">
               <input
-                className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] w-full h-[39px] mb-4"
+                className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] w-[224px] h-[39px]"
                 type="text"
                 placeholder="Search recipients..."
                 value={query}
@@ -209,7 +331,7 @@ const HistoryPage = () => {
               />
             </div>
             <div className="flex justify-between items-center">
-              <p className="ml-10 font-bold text-[14px]">
+              <p className="ml-10 mr-10 font-bold text-[14px]">
                 {selected.size} Selected
               </p>
               <button
@@ -237,13 +359,14 @@ const HistoryPage = () => {
 
         {/* Table */}
         {!loading && !err && filtered.length > 0 && (
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse border border-gray-300">
-              <thead className="bg-[#f3f3f3]">
-                <tr>
-                  <th className="w-[60px] text-gray-700 border border-gray-300 text-center">
-                    <input
-                      type="checkbox"
+          <>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left border-collapse border border-gray-300">
+                <thead className="bg-[#f3f3f3]">
+                  <tr>
+                    <th className="w-[60px] text-gray-700 border border-gray-300 text-center">
+                      <input
+                        type="checkbox"
                       checked={allSelected}
                       ref={(el) => {
                         if (el) el.indeterminate = !allSelected && someSelected;
@@ -251,14 +374,19 @@ const HistoryPage = () => {
                       onChange={toggleAll}
                     />
                   </th>
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300">
-                    Recipient Name
-                  </th>
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300">
-                    Recipient Email
+                  {columns.map((col) => (
+                    <th
+                      key={col}
+                      className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300"
+                    >
+                      {col}
+                    </th>
+                  ))}
+                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[150px]">
+                    Issue Date & Time
                   </th>
                   <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
-                    Issue Date
+                    Status
                   </th>
                 </tr>
               </thead>
@@ -272,24 +400,38 @@ const HistoryPage = () => {
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleOne(r.id)}
-                          disabled={revoking}
+                          disabled={revoking || r.status === "Revoked"}
                         />
                       </td>
-                      <td className="p-3 text-sm text-gray-800 border border-gray-300">
-                        {r.name}
-                      </td>
-                      <td className="p-3 text-sm text-gray-800 border border-gray-300">
-                        {r.email}
-                      </td>
+                      {columns.map((col) => (
+                        <td
+                          key={col}
+                          className="p-3 text-sm text-gray-800 border border-gray-300"
+                        >
+                          {r.data[col] || ""}
+                        </td>
+                      ))}
                       <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
                         {r.issueDate}
+                      </td>
+                      <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
+                        {r.status}
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleExportCsv}
+                className="rounded-md bg-primary_button px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Download CSV
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

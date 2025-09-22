@@ -10,6 +10,29 @@ import {
 	GetAnchorResponse,
 } from "@/types/response";
 
+const ensureEmailColumn = (cols: string[]): string[] => {
+	if (!cols.length) return ["email"];
+	const filtered = cols.filter(
+		(col): col is string => typeof col === "string" && col.trim().length > 0
+	);
+	const normalized = filtered.map((col) => col.trim().toLowerCase());
+	let targetIndex = normalized.findIndex((col) => col === "email");
+	if (targetIndex === -1) {
+		targetIndex = normalized.findIndex((col) => col.includes("email"));
+	}
+	const reordered = [...filtered];
+	if (targetIndex === -1) {
+		reordered.push("email");
+		return reordered;
+	}
+	if (targetIndex === reordered.length - 1) {
+		return reordered;
+	}
+	const [emailCol] = reordered.splice(targetIndex, 1);
+	reordered.push(emailCol);
+	return reordered;
+};
+
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
@@ -48,10 +71,10 @@ const PreviewPage = () => {
 					if (anchorResponse.status === 200) {
 						const anchors = anchorResponse.data.data;
 						if (Array.isArray(anchors)) {
-							anchorColumns = anchors.filter(
-								(col): col is string =>
-									typeof col === "string" && col.trim().length > 0
-							);
+							const sanitized = anchors
+								.map((col) => (typeof col === "string" ? col.trim() : ""))
+								.filter((col) => col.length > 0);
+							anchorColumns = ensureEmailColumn(sanitized);
 						}
 					} else {
 						console.error("Failed to fetch anchor columns");
@@ -60,8 +83,8 @@ const PreviewPage = () => {
 					console.error("Error fetching anchor columns:", anchorError);
 				}
 
-				if (anchorColumns.length) {
-					setColumns(anchorColumns);
+				if (!anchorColumns.length) {
+					anchorColumns = ensureEmailColumn([]);
 				}
 
 				// Fetch participants data
@@ -79,25 +102,40 @@ const PreviewPage = () => {
 						)
 					);
 
+					const anchorOnlyEmail =
+						anchorColumns.length > 0 &&
+						anchorColumns.every((col) => col.toLowerCase().includes("email"));
+
 					let resolvedColumns = anchorColumns.length
 						? [...anchorColumns]
-						: [...serverColumns];
+						: [];
 
-					serverColumns.forEach((col) => {
-						if (!resolvedColumns.includes(col)) {
-							resolvedColumns.push(col);
+					if (!anchorOnlyEmail) {
+						const serverNormalized = serverColumns
+							.map((col) => (typeof col === "string" ? col.trim() : ""))
+							.filter((col) => col.length > 0);
+
+						if (!resolvedColumns.length && serverNormalized.length) {
+							resolvedColumns = [...serverNormalized];
+						} else {
+							serverNormalized.forEach((col) => {
+								if (!resolvedColumns.includes(col)) {
+									resolvedColumns.push(col);
+								}
+							});
 						}
-					});
-
-					if (!resolvedColumns.length && participantsData[0]?.data) {
-						resolvedColumns = Object.keys(participantsData[0].data);
 					}
 
-					setColumns(resolvedColumns);
+					if (!resolvedColumns.length) {
+						resolvedColumns = ["email"];
+					}
+
+					const orderedColumns = ensureEmailColumn(resolvedColumns);
+					setColumns(orderedColumns);
 
 					const normalizedParticipants = participantsData.map((participant) => {
 						const normalizedData: Participant["data"] = {};
-						resolvedColumns.forEach((col) => {
+						orderedColumns.forEach((col) => {
 							normalizedData[col] = participant.data?.[col] ?? "";
 						});
 						return { ...participant, data: normalizedData };
@@ -390,7 +428,7 @@ const PreviewPage = () => {
 				</button>
 				{/* div text  */}
 				<div className="absolute left-1/2 transform  -translate-x-1/2">
-					<p className="font-semibold text-[32px] w-fit ">Preview</p>
+					<p className="font-semibold text-[25px] w-fit ">Preview</p>
 				</div>
 				{/*div button*/}
 				<div className="ml-auto">
