@@ -477,7 +477,7 @@ const PreviewPage = () => {
 			</div>
 			<div className='font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full px-[40px] mt-[25px] py-[48px] '>
 				{/* <div className='flex flex-col xl:flex-row w-full h-full'> */}
-				<div className='flex flex-col w-full h-full'>
+				<div className='flex flex-col w-full h-full gap-10'>
 					{/* <div className='flex flex-col w-full xl:w-1/2 2xl:w-3/5 min-w-[700px] flex-shrink-0 items-start'> */}
 					<div className='flex flex-col w-full min-w-[750px] flex-shrink-0 items-start'>
 						<div
