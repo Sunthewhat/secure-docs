@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Axios } from "@/util/axiosInstance";
+import { EmptyState } from "@/components/EmptyState";
 import { GetCertificateResponse, GetAnchorResponse } from "@/types/response";
 
 // ---- API types ----
@@ -197,6 +198,11 @@ const HistoryPage = () => {
     );
   }, [rows, query, columns]);
 
+  const isSearching = query.trim().length > 0;
+  const emptyDescription = isSearching
+    ? "Try adjusting your search terms or clear the search box."
+    : "Participants will appear here after certificates are distributed.";
+
   // ---- selection helpers (bulk) ----
   const toggleOne = (id: string) => {
     const target = rows.find((r) => r.id === id);
@@ -354,9 +360,10 @@ const HistoryPage = () => {
         {loading && <div className="px-2 py-4">Loading...</div>}
         {err && !loading && <div className="px-2 py-4 text-red-500">{err}</div>}
         {!loading && !err && filtered.length === 0 && (
-          <div className="px-2 py-4 text-gray-500 flex justify-center">
-            No participants found.
-          </div>
+          <EmptyState
+            title="No participants found."
+            description={emptyDescription}
+          />
         )}
 
         {/* Table */}

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ShareModal from "@/components/modal/ShareModal";
 import DeleteModal from "@/components/modal/DeleteModal";
 import AiOutlineEllipsis from "../../asset/AiOutlineEllipsis.svg";
+import { EmptyState } from "@/components/EmptyState";
 
 const formatDateTime = (value?: string) => {
 	if (!value) return "-";
@@ -93,6 +94,12 @@ const HomePage = () => {
 		});
 	}, [certificateItem, searchQuery]);
 
+	const isSearching = searchQuery.trim().length > 0;
+	const emptyTitle = isSearching ? "No designs found." : "No collections yet.";
+	const emptyDescription = isSearching
+		? "Try a different keyword or clear the search to view all collections."
+		: "Create a new design to start building your collection.";
+
 	return (
 		<div className="flex flex-col">
 			{/* top bar */}
@@ -127,19 +134,23 @@ const HomePage = () => {
 			{/* grid */}
 			<div className="font-noto bg-secondary_background rounded-[15px] flex flex-col items-center w-full min-h-[770px] px-[20px] mt-[25px] py-[20px]">
 				<div className="grid grid-cols-3 gap-[20px] w-full h-full">
-					{filteredCertificates.map((cert) => (
-						<Card
-							key={cert.id}
-							cert={cert}
-							onEdit={() => handleEdit(cert.id)}
-							onDelete={() => handleSelectDeleteCert(cert)}
-							onShare={() => handleSelectShareCert(cert)}
-							onHistory={() => navigate(`/history/${cert.id}`)}
-						/>
-					))}
-					{filteredCertificates.length === 0 && (
-						<div className="col-span-3 flex justify-center items-center py-10 text-gray-500">
-							No designs found.
+					{filteredCertificates.length > 0 ? (
+						filteredCertificates.map((cert) => (
+							<Card
+								key={cert.id}
+								cert={cert}
+								onEdit={() => handleEdit(cert.id)}
+								onDelete={() => handleSelectDeleteCert(cert)}
+								onShare={() => handleSelectShareCert(cert)}
+								onHistory={() => navigate(`/history/${cert.id}`)}
+							/>
+						))
+					) : (
+						<div className="col-span-3">
+							<EmptyState
+								title={emptyTitle}
+								description={emptyDescription}
+							/>
 						</div>
 					)}
 				</div>
