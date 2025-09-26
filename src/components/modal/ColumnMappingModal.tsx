@@ -10,6 +10,7 @@ type ColumnMappingModalProps = {
   onChange: (anchor: string, header: string) => void;
   onClose: () => void;
   onConfirm: () => void;
+  confirmLoading?: boolean;
 };
 
 const ColumnMappingModal: FC<ColumnMappingModalProps> = ({
@@ -22,6 +23,7 @@ const ColumnMappingModal: FC<ColumnMappingModalProps> = ({
   onChange,
   onClose,
   onConfirm,
+  confirmLoading = false,
 }) => {
   if (!open) return null;
 
@@ -64,14 +66,16 @@ const ColumnMappingModal: FC<ColumnMappingModalProps> = ({
           <button
             className="flex-1 rounded-md bg-gray-200 py-2 text-gray-800"
             onClick={onClose}
+            disabled={confirmLoading}
           >
             Cancel
           </button>
           <button
             className="flex-1 rounded-md bg-primary_button py-2 text-white"
             onClick={onConfirm}
+            disabled={confirmLoading}
           >
-            Confirm
+            {confirmLoading ? "Importing..." : "Confirm"}
           </button>
         </div>
       </div>

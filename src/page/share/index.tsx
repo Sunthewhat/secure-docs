@@ -54,6 +54,7 @@ const SharePage = () => {
   const [csvRows, setCsvRows] = useState<string[][]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [csvFilename, setCsvFilename] = useState<string>("");
+  const [csvImporting, setCsvImporting] = useState(false);
 
   const ensureEmailBeforeActions = useCallback((cols: string[]): string[] => {
     if (!cols.length) return ["email"];
@@ -387,11 +388,12 @@ const SharePage = () => {
   };
 
   const handleCloseMappingModal = () => {
+    if (csvImporting) return;
     setIsMappingModalOpen(false);
     resetCsvImportState();
   };
 
-  const handleConfirmMapping = () => {
+  const handleConfirmMapping = async () => {
     if (!columns.length) {
       toast.error("Anchors are not ready yet.");
       return;
@@ -419,12 +421,37 @@ const SharePage = () => {
       return { id: undefined, data, isDistributed: false };
     });
 
-    setRecipients((prev) => [...prev, ...mappedRows]);
-    setEditIndex(null);
-    setEditForm({});
-    setIsMappingModalOpen(false);
-    resetCsvImportState();
-    toast.success("CSV data added to the table.");
+    const filledRows = mappedRows.filter((row) => !isRowEmpty(row));
+    if (!filledRows.length) {
+      toast.error("No usable rows found in the CSV file.");
+      return;
+    }
+
+    setCsvImporting(true);
+    try {
+      const payload = filledRows.map((row) => ({ ...row.data }));
+      const response = await Axios.post(`/participant/add/${certId}`, {
+        participants: payload,
+      });
+
+      if (response.status !== 200 || !response.data?.success) {
+        throw new Error(response.data?.msg || "Failed to import participants.");
+      }
+
+      await fetchParticipants();
+
+      toast.success(
+        `Imported ${filledRows.length} participant${
+          filledRows.length === 1 ? "" : "s"
+        } from CSV.`
+      );
+      setIsMappingModalOpen(false);
+      resetCsvImportState();
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to import participants.");
+    } finally {
+      setCsvImporting(false);
+    }
   };
 
 
@@ -825,6 +852,7 @@ const SharePage = () => {
         onChange={handleMappingChange}
         onClose={handleCloseMappingModal}
         onConfirm={handleConfirmMapping}
+        confirmLoading={csvImporting}
       />
     </div>
   );

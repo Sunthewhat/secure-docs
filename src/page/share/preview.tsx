@@ -412,13 +412,9 @@ const PreviewPage = () => {
 				// Force coordinate calculation
 				obj.setCoords();
 
-				// Special handling for non-anchor objects
-				if (!obj.isAnchor) {
-					obj.dirty = true;
-					if (obj.type === "image") {
-						(obj as any)._render = (obj as any)._render;
+					if (!obj.isAnchor) {
+						obj.dirty = true;
 					}
-				}
 			});
 
 			// Force complete canvas refresh with multiple renders
@@ -551,14 +547,9 @@ const PreviewPage = () => {
 							// Force coordinate calculation
 							obj.setCoords();
 
-							// For non-anchor objects, ensure they're properly rendered
-							if (!obj.isAnchor) {
-								obj.dirty = true;
-								if (obj.type === "image") {
-									// Force image re-render
-									(obj as any)._render = (obj as any)._render;
+								if (!obj.isAnchor) {
+									obj.dirty = true;
 								}
-							}
 						});
 
 						// Force complete canvas refresh
@@ -657,7 +648,13 @@ const PreviewPage = () => {
 
 	// Function to handle sending data to next page via navigation state
 	const handleSend = () => {
-		void navigate("/share/preview/send", { state: { participants } });
+		void navigate("/share/preview/send", {
+			state: {
+				participants,
+				certId,
+				columns,
+			},
+		});
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page
