@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router-dom";
-import type { GetCertificateResponse, Participant } from "@/types/response";
+import type {
+  GetCertificateResponse,
+  GetParticipantResponse,
+  Participant,
+} from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 import { useToast } from "@/components/toast/ToastContext";
 
@@ -28,6 +32,10 @@ const SaveSendPage = () => {
   const location = useLocation() as { state: LocationState | null };
   const navigate = useNavigate();
   const toast = useToast();
+  const locationState = useMemo(
+    () => (location.state as LocationState | null) ?? null,
+    [location.state]
+  );
 
   // UI states
   const [rendering, setRendering] = useState(false);
@@ -42,9 +50,88 @@ const SaveSendPage = () => {
   >({});
 
   useEffect(() => {
-    setParticipants(location.state?.participants ?? []);
-    setCertId(location.state?.certId ?? participants[0]?.certificate_id);
-  }, [location.state?.certId, location.state?.participants, participants]);
+    if (!locationState) return;
+
+    if (Array.isArray(locationState.participants)) {
+      setParticipants(locationState.participants);
+    }
+
+    if (locationState.certId) {
+      setCertId(locationState.certId);
+    }
+  }, [locationState]);
+
+  useEffect(() => {
+    if (certId || participants.length === 0) return;
+    const withCertId = participants.find(
+      (participant) => participant.certificate_id
+    );
+    if (withCertId?.certificate_id) {
+      setCertId(withCertId.certificate_id);
+    }
+  }, [certId, participants]);
+
+  useEffect(() => {
+    if (participants.length > 0) return;
+    if (locationState?.participants?.length) return;
+    if (!certId) return;
+
+    let ignore = false;
+
+    const fetchParticipants = async () => {
+      try {
+        const response = await Axios.get<GetParticipantResponse>(
+          `/participant/${certId}`
+        );
+        if (response.status === 200 && Array.isArray(response.data?.data)) {
+          if (!ignore) {
+            setParticipants(response.data.data);
+          }
+        }
+      } catch {
+        if (!ignore) {
+          toast.error("Failed to load participants.");
+        }
+      }
+    };
+
+    void fetchParticipants();
+
+    return () => {
+      ignore = true;
+    };
+  }, [certId, locationState, participants.length, toast]);
+
+  useEffect(() => {
+    if (!certId) return;
+    const missingIds = participants.some((participant) => !participant.id);
+    if (!missingIds) return;
+
+    let ignore = false;
+
+    const hydrateParticipants = async () => {
+      try {
+        const response = await Axios.get<GetParticipantResponse>(
+          `/participant/${certId}`
+        );
+        if (response.status === 200 && Array.isArray(response.data?.data)) {
+          if (!ignore) {
+            setParticipants(response.data.data);
+          }
+        }
+      } catch {
+        if (!ignore) {
+          toast.error("Failed to sync participants with the server.");
+        }
+      }
+    };
+
+    void hydrateParticipants();
+
+    return () => {
+      ignore = true;
+    };
+  }, [certId, participants, toast]);
 
   useEffect(() => {
     setMailStatusMap((prev) => {
