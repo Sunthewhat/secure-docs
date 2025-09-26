@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useLocation } from "react-router";
 import * as fabric from "fabric";
 import { Axios } from "@/util/axiosInstance";
 import {
@@ -9,6 +9,18 @@ import {
 	Certificate,
 	GetAnchorResponse,
 } from "@/types/response";
+
+type SharePreviewParticipant = {
+	id?: string;
+	data: Record<string, string>;
+	isDistributed?: boolean;
+};
+
+type SharePreviewState = {
+	fromShare?: boolean;
+	columns?: string[];
+	participants?: SharePreviewParticipant[];
+};
 
 const ensureEmailColumn = (cols: string[]): string[] => {
 	if (!cols.length) return ["email"];
@@ -36,6 +48,8 @@ const ensureEmailColumn = (cols: string[]): string[] => {
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
+	const location = useLocation();
+	const shareState = location.state as SharePreviewState | undefined;
 	const [participants, setParticipants] = useState<Participant[]>([]);
 	const [columns, setColumns] = useState<string[]>([]);
 	const [certificate, setCertificate] = useState<Certificate | null>(null);
@@ -43,11 +57,61 @@ const PreviewPage = () => {
 	const [selectedParticipant, setSelectedParticipant] =
 		useState<Participant | null>(null);
 	const canvasRef = useRef<fabric.Canvas | null>(null);
+	const [initializedFromShare, setInitializedFromShare] = useState(false);
+
+	useEffect(() => {
+		if (initializedFromShare) return;
+
+		const shareParticipants = shareState?.participants ?? [];
+		if (!shareParticipants.length) return;
+
+		const sanitizedColumns = (shareState?.columns ?? [])
+			.map((col) => (typeof col === 'string' ? col.trim() : ''))
+			.filter((col) => col.length > 0);
+
+		const derivedColumns = sanitizedColumns.length
+			? sanitizedColumns
+			: Array.from(
+				new Set(
+					shareParticipants.flatMap((participant) =>
+						participant?.data ? Object.keys(participant.data) : []
+					)
+				)
+			);
+
+		const uniqueColumns = Array.from(new Set(derivedColumns));
+		const orderedColumns = ensureEmailColumn(uniqueColumns);
+		setColumns(orderedColumns);
+
+		const timestamp = Date.now();
+		const normalizedParticipants = shareParticipants.map((participant, index) => {
+			const normalizedData: Participant['data'] = {};
+			orderedColumns.forEach((col) => {
+				normalizedData[col] = participant.data?.[col] ?? '';
+			});
+
+			return {
+				id: participant.id ?? `local-${timestamp}-${index}`,
+				certificate_id: certId ?? '',
+				is_revoked: false,
+				is_distributed: Boolean(participant.isDistributed),
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				certificate_url: '',
+				data: normalizedData,
+			};
+		});
+
+		setParticipants(normalizedParticipants);
+		setSelectedParticipant(normalizedParticipants[0] ?? null);
+		setInitializedFromShare(true);
+	}, [shareState, initializedFromShare, certId]);
 
 	// Fetch certificate and participants data from API
 	useEffect(() => {
 		const fetchData = async () => {
 			if (!certId) return;
+			const shareParticipantsProvided = Boolean(shareState?.participants?.length);
 
 			try {
 				setLoading(true);
@@ -60,6 +124,10 @@ const PreviewPage = () => {
 					setCertificate(certResponse.data.data);
 				} else {
 					console.error("Failed to fetch certificate");
+				}
+
+				if (shareParticipantsProvided) {
+					return;
 				}
 
 				// Fetch anchor columns for consistent ordering
@@ -173,7 +241,7 @@ const PreviewPage = () => {
 		};
 
 		void fetchData();
-	}, [certId]);
+	}, [certId, shareState]);
 
 	// Function to update certificate with participant data
 	const updateCertificateWithParticipantData = (participant: Participant) => {

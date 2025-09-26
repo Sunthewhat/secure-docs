@@ -2,7 +2,13 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { RiEdit2Line, RiDeleteBinLine } from "react-icons/ri";
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type ChangeEvent,
+} from "react";
 import { Axios } from "@/util/axiosInstance";
 import {
   AddParticipantResponse,
@@ -13,6 +19,7 @@ import {
 } from "@/types/response";
 import { useToast } from "@/components/toast/ToastContext";
 import { DeleteParticipantModal } from "@/components/modal/DeleteParticipantModal";
+import { ColumnMappingModal } from "@/components/modal/ColumnMappingModal";
 
 type Recipient = { [key: string]: string };
 
@@ -34,6 +41,7 @@ const SharePage = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Recipient>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<{
     index: number;
@@ -41,6 +49,11 @@ const SharePage = () => {
     name?: string;
   } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isMappingModalOpen, setIsMappingModalOpen] = useState(false);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvRows, setCsvRows] = useState<string[][]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [csvFilename, setCsvFilename] = useState<string>("");
 
   const ensureEmailBeforeActions = useCallback((cols: string[]): string[] => {
     if (!cols.length) return ["email"];
@@ -224,9 +237,205 @@ const SharePage = () => {
     await fetchParticipants();
   };
 
+  const parseCsvText = (csvText: string) => {
+    const rows: string[][] = [];
+    let currentField = "";
+    let currentRow: string[] = [];
+    let inQuotes = false;
+
+    const pushField = () => {
+      currentRow.push(currentField.trim());
+      currentField = "";
+    };
+
+    const commitRow = () => {
+      if (currentRow.some((cell) => cell !== "")) {
+        rows.push(currentRow);
+      }
+      currentRow = [];
+    };
+
+    for (let i = 0; i < csvText.length; i += 1) {
+      const char = csvText[i];
+
+      if (char === "\"") {
+        if (inQuotes && csvText[i + 1] === "\"") {
+          currentField += "\"";
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === "," && !inQuotes) {
+        pushField();
+      } else if ((char === "\n" || char === "\r") && !inQuotes) {
+        if (char === "\r" && csvText[i + 1] === "\n") {
+          i += 1;
+        }
+        pushField();
+        commitRow();
+      } else {
+        currentField += char;
+      }
+    }
+
+    if (currentField.length > 0 || currentRow.length) {
+      pushField();
+      commitRow();
+    }
+
+    if (!rows.length) {
+      return { headers: [] as string[], rows: [] as string[][] };
+    }
+
+    const [headerRow, ...dataRows] = rows;
+    const headers = headerRow.map((header) => header.trim());
+    const normalizedRows = dataRows.map((row) =>
+      row.length < headers.length
+        ? [...row, ...Array(headers.length - row.length).fill("")]
+        : row.slice(0, headers.length)
+    );
+
+    return { headers, rows: normalizedRows };
+  };
+
+  const deriveInitialMapping = (
+    anchors: string[],
+    headers: string[]
+  ): Record<string, string> => {
+    const mapping: Record<string, string> = {};
+    const normalizedHeaders = headers.map((header) => header.trim());
+
+    const normalize = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+    anchors.forEach((anchor) => {
+      const normalizedAnchor = normalize(anchor);
+      let match = normalizedHeaders.find(
+        (header) => normalize(header) === normalizedAnchor
+      );
+
+      if (!match) {
+        match = normalizedHeaders.find((header) =>
+          normalize(header).includes(normalizedAnchor)
+        );
+      }
+
+      mapping[anchor] = match ?? "";
+    });
+
+    return mapping;
+  };
+
+  const resetCsvImportState = () => {
+    setCsvHeaders([]);
+    setCsvRows([]);
+    setColumnMapping({});
+    setCsvFilename("");
+  };
+
+  const handleUploadButtonClick = () => {
+    if (!columns.length) {
+      toast.error("Anchors are not ready yet. Please try again in a moment.");
+      return;
+    }
+    uploadInputRef.current?.click();
+  };
+
+  const handleCsvFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please choose a CSV file.");
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const { headers, rows: parsedRows } = parseCsvText(text);
+
+      if (!headers.length) {
+        toast.error("The selected CSV does not contain a header row.");
+        return;
+      }
+
+      if (!parsedRows.length) {
+        toast.error("No data rows found in the CSV file.");
+        return;
+      }
+
+      setCsvHeaders(headers);
+      setCsvRows(parsedRows);
+      setColumnMapping(deriveInitialMapping(columns, headers));
+      setCsvFilename(file.name);
+      setIsMappingModalOpen(true);
+    } catch (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _error
+    ) {
+      toast.error("Failed to read the CSV file. Please try again.");
+    }
+  };
+
+  const handleMappingChange = (anchor: string, header: string) => {
+    setColumnMapping((prev) => ({ ...prev, [anchor]: header }));
+  };
+
+  const handleCloseMappingModal = () => {
+    setIsMappingModalOpen(false);
+    resetCsvImportState();
+  };
+
+  const handleConfirmMapping = () => {
+    if (!columns.length) {
+      toast.error("Anchors are not ready yet.");
+      return;
+    }
+
+    const missingAnchor = columns.find((anchor) => !columnMapping[anchor]);
+    if (missingAnchor) {
+      toast.error(`Please map a CSV column to "${missingAnchor}".`);
+      return;
+    }
+
+    const headerIndexMap = new Map<string, number>();
+    csvHeaders.forEach((header, index) => {
+      headerIndexMap.set(header, index);
+    });
+
+    const mappedRows: ParticipantRow[] = csvRows.map((row) => {
+      const data: Recipient = {};
+      columns.forEach((anchor) => {
+        const header = columnMapping[anchor];
+        const headerIndex = header ? headerIndexMap.get(header) ?? -1 : -1;
+        const value = headerIndex >= 0 ? row[headerIndex] ?? "" : "";
+        data[anchor] = value;
+      });
+      return { id: undefined, data, isDistributed: false };
+    });
+
+    setRecipients((prev) => [...prev, ...mappedRows]);
+    setEditIndex(null);
+    setEditForm({});
+    setIsMappingModalOpen(false);
+    resetCsvImportState();
+    toast.success("CSV data added to the table.");
+  };
+
+
   // ===== Next flow =====
 
   const handleNext = () => {
+    if (editIndex !== null) {
+      toast.error("Please finish editing the current row before continuing.");
+      return;
+    }
+
     if (recipients.length === 0) {
       toast.error("Please add at least one recipient before continuing.");
       return;
@@ -235,7 +444,19 @@ const SharePage = () => {
       toast.error("Please fill at least one field for a recipient.");
       return;
     }
-    navigate(`/preview/${certId}`);
+    const previewParticipants = buildPreviewParticipants();
+    if (!previewParticipants.length) {
+      toast.error("Please fill at least one field for a recipient.");
+      return;
+    }
+
+    navigate(`/preview/${certId}`, {
+      state: {
+        fromShare: true,
+        columns: [...columns],
+        participants: previewParticipants,
+      },
+    });
   };
 
   // ===== Effects =====
@@ -267,10 +488,7 @@ const SharePage = () => {
     setEditForm({ ...row.data });
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    col: string
-  ) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>, col: string) => {
     setEditForm((prev) => ({ ...prev, [col]: e.target.value }));
   };
 
@@ -400,6 +618,17 @@ const SharePage = () => {
   // is the whole row empty? (all fields blank or whitespace)
   const isRowEmpty = (row: ParticipantRow) =>
     Object.values(row.data).every((v) => (v ?? "").trim() === "");
+
+  const buildPreviewParticipants = () => {
+    const timestamp = Date.now();
+    return recipients
+      .filter((row) => !isRowEmpty(row))
+      .map((row, index) => ({
+        id: row.id ?? `local-${timestamp}-${index}`,
+        data: { ...row.data },
+        isDistributed: Boolean(row.isDistributed),
+      }));
+  };
 
   // does the table contain at least one non-empty row?
   const hasAtLeastOneFilledRow = () => recipients.some((r) => !isRowEmpty(r));
@@ -555,6 +784,19 @@ const SharePage = () => {
         {/* Add Recipient */}
         <div className="flex gap-4 mt-6">
           <button
+            onClick={handleUploadButtonClick}
+            className="text-noto text-[14px] bg-blue-500 hover:bg-blue-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center"
+          >
+            Upload CSV
+          </button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvFileChange}
+          />
+          <button
             onClick={handleAddRow}
             className="text-noto text-[14px] bg-green-500 hover:bg-green-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center"
           >
@@ -572,6 +814,17 @@ const SharePage = () => {
         }}
         onConfirm={handleConfirmDelete}
         loading={deleteLoading}
+      />
+      <ColumnMappingModal
+        open={isMappingModalOpen}
+        anchors={columns}
+        headers={csvHeaders}
+        mapping={columnMapping}
+        filename={csvFilename}
+        sampleRow={csvRows[0] ?? []}
+        onChange={handleMappingChange}
+        onClose={handleCloseMappingModal}
+        onConfirm={handleConfirmMapping}
       />
     </div>
   );
