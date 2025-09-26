@@ -190,7 +190,7 @@ const PreviewPage = () => {
 		const objects = canvas.getObjects();
 
 		// Process all objects to ensure they are visible and handle anchors
-		objects.forEach((obj, index) => {
+		objects.forEach((obj) => {
 			// Force object to be dirty and require re-render
 			obj.dirty = true;
 			obj.canvas = canvas;
@@ -347,7 +347,7 @@ const PreviewPage = () => {
 				// Special handling for non-anchor objects
 				if (!obj.isAnchor) {
 					obj.dirty = true;
-					if (obj.type === 'image') {
+					if (obj.type === "image") {
 						(obj as any)._render = (obj as any)._render;
 					}
 				}
@@ -486,7 +486,7 @@ const PreviewPage = () => {
 							// For non-anchor objects, ensure they're properly rendered
 							if (!obj.isAnchor) {
 								obj.dirty = true;
-								if (obj.type === 'image') {
+								if (obj.type === "image") {
 									// Force image re-render
 									(obj as any)._render = (obj as any)._render;
 								}
