@@ -57,7 +57,19 @@ const PropertiesPanel = ({
 
 	const handleColorChange = (color: string) => {
 		const isLine = selectedElement instanceof fabric.Line;
-		if (isLine) {
+
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("fill", color);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({ fill: color });
+			}
+		} else if (isLine) {
 			onUpdateElement({ stroke: color });
 		} else {
 			onUpdateElement({ fill: color });
@@ -66,38 +78,109 @@ const PropertiesPanel = ({
 
 	const handleFontSizeChange = (fontSize: number) => {
 		if (fontSize >= 8 && fontSize <= 72) {
-			onUpdateElement({ fontSize });
+			// Handle Groups (text anchors) differently than individual text objects
+			if (selectedElement instanceof fabric.Group && isAnchor) {
+				// For text anchors (Groups), update the text object within the group
+				const textObject = selectedElement
+					.getObjects()
+					.find(
+						(obj) => obj instanceof fabric.Textbox
+					) as fabric.Textbox;
+				if (textObject) {
+					textObject.set("fontSize", fontSize);
+					// Use onUpdateElement to trigger proper re-render
+					onUpdateElement({ fontSize });
+				}
+			} else {
+				onUpdateElement({ fontSize });
+			}
 		}
 	};
 
 	const handleBoldToggle = () => {
-		const currentWeight =
-			(selectedElement.get("fontWeight") as string) || "normal";
+		const currentWeight = getFontProperty("fontWeight", "normal");
 		const newWeight = currentWeight === "bold" ? "normal" : "bold";
-		onUpdateElement({ fontWeight: newWeight });
+
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("fontWeight", newWeight);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({ fontWeight: newWeight });
+			}
+		} else {
+			onUpdateElement({ fontWeight: newWeight });
+		}
 	};
 
 	const handleItalicToggle = () => {
-		const currentStyle =
-			(selectedElement.get("fontStyle") as string) || "normal";
+		const currentStyle = getFontProperty("fontStyle", "normal");
 		const newStyle = currentStyle === "italic" ? "normal" : "italic";
-		onUpdateElement({ fontStyle: newStyle });
+
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("fontStyle", newStyle);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({ fontStyle: newStyle });
+			}
+		} else {
+			onUpdateElement({ fontStyle: newStyle });
+		}
 	};
 
 	const handleUnderlineToggle = () => {
-		const currentUnderline =
-			(selectedElement.get("underline") as boolean) || false;
-		onUpdateElement({ underline: !currentUnderline });
+		const currentUnderline = getFontProperty("underline", false);
+
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("underline", !currentUnderline);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({ underline: !currentUnderline });
+			}
+		} else {
+			onUpdateElement({ underline: !currentUnderline });
+		}
 	};
 
 	const handleFontFamilyChange = (fontFamily: string) => {
-		onUpdateElement({ fontFamily });
+		// Handle Groups (text anchors) differently than individual text objects
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), update the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
+			if (textObject) {
+				textObject.set("fontFamily", fontFamily);
+				// Use onUpdateElement to trigger proper re-render
+				onUpdateElement({ fontFamily });
+			}
+		} else {
+			onUpdateElement({ fontFamily });
+		}
 	};
 
 	const handleBorderWidthChange = (strokeWidth: number) => {
 		if (strokeWidth >= 0 && strokeWidth <= 50) {
 			onUpdateElement({ strokeWidth });
 		}
+	};
+
+	const handleBorderColorChange = (color: string) => {
+		onUpdateElement({ stroke: color });
 	};
 
 	const handleFieldNameChange = (fieldName: string) => {
@@ -128,20 +211,49 @@ const PropertiesPanel = ({
 	};
 
 	const isLine = selectedElement instanceof fabric.Line;
-	const currentColor =
-		((isLine
-			? selectedElement.get("stroke")
-			: selectedElement.get("fill")) as string) || "#000000";
+
+	// Get current color - handle both individual elements and Groups (text anchors)
+	const getCurrentColor = () => {
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), find the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox);
+			return textObject
+				? (textObject.get("fill") as string) || "#000000"
+				: "#000000";
+		}
+		return (
+			((isLine
+				? selectedElement.get("stroke")
+				: selectedElement.get("fill")) as string) || "#000000"
+		);
+	};
+
+	const currentColor = getCurrentColor();
 	const currentStrokeWidth =
-		(selectedElement.get("strokeWidth") as number) || 1;
-	const currentFontSize = Math.round(
-		(selectedElement.get("fontSize") as number) || 16
-	);
-	const isBold = (selectedElement.get("fontWeight") as string) === "bold";
-	const isItalic = (selectedElement.get("fontStyle") as string) === "italic";
-	const isUnderlined = (selectedElement.get("underline") as boolean) || false;
-	const currentFontFamily =
-		(selectedElement.get("fontFamily") as string) || "Arial";
+		(selectedElement.get("strokeWidth") as number) ?? 1;
+	const currentBorderColor =
+		(selectedElement.get("stroke") as string) || "#000000";
+	// Get font properties - handle both individual text objects and Groups (text anchors)
+	const getFontProperty = (property: string, defaultValue: any) => {
+		if (selectedElement instanceof fabric.Group && isAnchor) {
+			// For text anchors (Groups), find the text object within the group
+			const textObject = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Textbox);
+			return textObject
+				? textObject.get(property) || defaultValue
+				: defaultValue;
+		}
+		return selectedElement.get(property) || defaultValue;
+	};
+
+	const currentFontSize = Math.round(getFontProperty("fontSize", 16));
+	const isBold = getFontProperty("fontWeight", "normal") === "bold";
+	const isItalic = getFontProperty("fontStyle", "normal") === "italic";
+	const isUnderlined = getFontProperty("underline", false);
+	const currentFontFamily = getFontProperty("fontFamily", "Arial");
 	// Get current text - handle both individual text objects and Groups (text anchors)
 	const getCurrentText = () => {
 		if (selectedElement instanceof fabric.Group && isAnchor) {
@@ -195,7 +307,11 @@ const PropertiesPanel = ({
 					)}
 
 					{/* Border Width - For lines and shapes with strokes */}
-					{(isLine || (selectedElement.get("stroke") && !isText && !isImage && !isQRanchor)) && (
+					{(isLine ||
+						(selectedElement.get("stroke") &&
+							!isText &&
+							!isImage &&
+							!isQRanchor)) && (
 						<div className="flex items-center gap-3">
 							<label className="text-sm font-medium">
 								Border:
@@ -227,6 +343,27 @@ const PropertiesPanel = ({
 							</select>
 						</div>
 					)}
+
+					{/* Border Color - For elements with strokes (but not lines) */}
+					{!isLine &&
+						selectedElement.get("stroke") &&
+						!isText &&
+						!isImage &&
+						!isQRanchor && (
+							<div className="flex items-center gap-3">
+								<label className="text-sm font-medium">
+									Border:
+								</label>
+								<input
+									type="color"
+									value={currentBorderColor}
+									onChange={(e) =>
+										handleBorderColorChange(e.target.value)
+									}
+									className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+								/>
+							</div>
+						)}
 
 					{/* Anchor Properties */}
 					{isAnchor && (
