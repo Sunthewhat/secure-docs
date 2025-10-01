@@ -5,6 +5,7 @@ import PositionModal from "./PositionModal";
 interface ElementUpdate {
 	fill?: string;
 	stroke?: string;
+	strokeWidth?: number;
 	fontSize?: number;
 	fontWeight?: "normal" | "bold";
 	fontStyle?: "normal" | "italic";
@@ -93,6 +94,12 @@ const PropertiesPanel = ({
 		onUpdateElement({ fontFamily });
 	};
 
+	const handleBorderWidthChange = (strokeWidth: number) => {
+		if (strokeWidth >= 0 && strokeWidth <= 50) {
+			onUpdateElement({ strokeWidth });
+		}
+	};
+
 	const handleFieldNameChange = (fieldName: string) => {
 		console.log(fieldName);
 
@@ -125,6 +132,8 @@ const PropertiesPanel = ({
 		((isLine
 			? selectedElement.get("stroke")
 			: selectedElement.get("fill")) as string) || "#000000";
+	const currentStrokeWidth =
+		(selectedElement.get("strokeWidth") as number) || 1;
 	const currentFontSize = Math.round(
 		(selectedElement.get("fontSize") as number) || 16
 	);
@@ -182,6 +191,40 @@ const PropertiesPanel = ({
 								}
 								className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
 							/>
+						</div>
+					)}
+
+					{/* Border Width - For lines and shapes with strokes */}
+					{(isLine || (selectedElement.get("stroke") && !isText && !isImage && !isQRanchor)) && (
+						<div className="flex items-center gap-3">
+							<label className="text-sm font-medium">
+								Border:
+							</label>
+							<select
+								value={currentStrokeWidth}
+								onChange={(e) =>
+									handleBorderWidthChange(
+										parseInt(e.target.value)
+									)
+								}
+								className="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
+								<option value={0}>0px</option>
+								<option value={1}>1px</option>
+								<option value={2}>2px</option>
+								<option value={3}>3px</option>
+								<option value={4}>4px</option>
+								<option value={5}>5px</option>
+								<option value={6}>6px</option>
+								<option value={8}>8px</option>
+								<option value={10}>10px</option>
+								<option value={12}>12px</option>
+								<option value={15}>15px</option>
+								<option value={20}>20px</option>
+								<option value={25}>25px</option>
+								<option value={30}>30px</option>
+								<option value={40}>40px</option>
+								<option value={50}>50px</option>
+							</select>
 						</div>
 					)}
 
