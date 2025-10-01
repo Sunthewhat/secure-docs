@@ -80,7 +80,7 @@ const LoginPage = () => {
               e.preventDefault();
               void handleSubmit(e);
             }}
-            className="space-y-8"
+            className="space-y-8 text-white"
           >
             <div>
               <input
@@ -107,7 +107,10 @@ const LoginPage = () => {
               />
             </div>
             <div className="flex justify-center mt-8">
-              <button type="submit" className="bg-white w-full px-4 py-2 rounded-2xl">
+              <button
+                type="submit"
+                className="bg-white w-full px-4 py-2 rounded-2xl text-black"
+              >
                 Login
               </button>
             </div>
