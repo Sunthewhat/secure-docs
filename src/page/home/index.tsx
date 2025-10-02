@@ -264,7 +264,7 @@ function Card({
 				{/* kebab */}
 				<button
 					ref={btnRef}
-					className="absolute top-2 right-2 rounded-full bg-gray-300 hover:bg-gray-400 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+					className="absolute top-2 right-2 rounded-full bg-[#bcbcbc9f] hover:bg-gray-400 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
 					aria-haspopup="menu"
 					aria-expanded={open}
 					aria-label={`Open actions for ${cert.name}`}
