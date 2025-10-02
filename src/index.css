@@ -1,50 +1,50 @@
-@import url("https://fonts.googleapis.com/css2?family=ADLaM+Display&family=Noto+Sans+Thai:wdth,wght@62.5..100,100..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=ADLaM+Display&family=Noto+Sans+Thai:wdth,wght@62.5..100,100..900&display=swap');
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-noto: "Noto Sans Thai", sans-serif;
-  --font-adlam: "ADLaM Display", system-ui;
-  --color-primary_text: #000000;
-  --color-secondary_text: #ffffff;
-  --color-logo_text: #ffffff;
-  --color-background: #e5e7eb;
-  --color-secondary_background: #ffffff;
-  --color-primary_button: #326295;
-  --color-secondary_button: #9ca3af;
-  /* --color-primary_background: #00000040; */
-  --color-primary_background: #d1d5dce0;
+	--font-noto: 'Noto Sans Thai', sans-serif;
+	--font-adlam: 'ADLaM Display', system-ui;
+	--color-primary_text: #000000;
+	--color-secondary_text: #ffffff;
+	--color-logo_text: #ffffff;
+	/* --color-background: #e5e7eb; */
+	--color-primary_button: #244dad;
+	--color-secondary_button: #9aa3b0;
+	/* --color-primary_background: #00000040; */
+	--color-primary_background: #e5e7eb;
+	--color-secondary_background: #d5d8de;
 }
 
 /* === Toast animation + utilities === */
 @keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(100%) translateY(0);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(100%) translateY(0);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0) translateY(0);
+	}
 }
 
 @keyframes toast-out {
-  from {
-    opacity: 1;
-    transform: translateX(0) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(100%) translateY(0);
-  }
+	from {
+		opacity: 1;
+		transform: translateX(0) translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(100%) translateY(0);
+	}
 }
 
 /* Tailwind v4 custom utilities */
 @layer utilities {
-  .toast-enter {
-    animation: toast-in 0.28s ease-out both;
-  }
-  .toast-exit {
-    animation: toast-out 0.2s ease-in forwards;
-  }
+	.toast-enter {
+		animation: toast-in 0.28s ease-out both;
+	}
+	.toast-exit {
+		animation: toast-out 0.2s ease-in forwards;
+	}
 }
