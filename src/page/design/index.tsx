@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useParams, useLocation } from "react-router";
+import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
+import { useNavigate, useParams, useLocation, useOutletContext } from "react-router";
 import * as fabric from "fabric";
 import DesignHeader from "@/components/design/DesignHeader";
 import CertificateCanvas from "@/components/design/CertificateCanvas";
@@ -26,16 +26,8 @@ declare module "fabric" {
 
 // Ensure custom properties are registered
 if (fabric.FabricObject) {
-	fabric.FabricObject.customProperties =
-		fabric.FabricObject.customProperties || [];
-	const customProps = [
-		"name",
-		"id",
-		"dbField",
-		"isAnchor",
-		"isQRanchor",
-		"undeleteable",
-	];
+	fabric.FabricObject.customProperties = fabric.FabricObject.customProperties || [];
+	const customProps = ["name", "id", "dbField", "isAnchor", "isQRanchor", "undeleteable"];
 	customProps.forEach((prop) => {
 		if (!fabric.FabricObject.customProperties.includes(prop)) {
 			fabric.FabricObject.customProperties.push(prop);
@@ -64,22 +56,23 @@ const DesignPage = () => {
 	const [activeMenu, setActiveMenu] = useState<
 		"background" | "element" | "image" | "text" | "anchor" | null
 	>("element");
-	const [selectedElement, setSelectedElement] =
-		useState<fabric.Object | null>(null);
+	const [selectedElement, setSelectedElement] = useState<fabric.Object | null>(null);
 	const [, setForceUpdate] = useState({});
 	const toast = useToast(); // ✅ NEW
 
 	const [isDataFetched, setIsDataFetched] = useState(false);
 	const [designData, setDesignData] = useState<object | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
-	const [certificateId, setCertificateId] = useState<string | null>(
-		certId || null
-	);
+	const [certificateId, setCertificateId] = useState<string | null>(certId || null);
 	const [showWarningModal, setShowWarningModal] = useState(false);
 	const [showGrid] = useState(false);
 	const [snapToGrid] = useState(true);
 	const [gridSize] = useState(20);
 	const [lastSaved, setLastSaved] = useState<string | null>(null);
+
+	const { setPageTopBarProps } = useOutletContext<{
+		setPageTopBarProps: (props: { content: ReactNode } | null) => void;
+	}>();
 
 	// Fetch certificate design
 	const fetchCertificateDesign = useCallback(async () => {
@@ -188,10 +181,7 @@ const DesignPage = () => {
 			const activeObject = canvasRef.current.getActiveObject();
 			if (!activeObject) return;
 
-			if (
-				activeObject.type === "textbox" ||
-				activeObject.type === "text"
-			) {
+			if (activeObject.type === "textbox" || activeObject.type === "text") {
 				const textObject = activeObject as fabric.Textbox;
 				if (textObject.isEditing) {
 					return;
@@ -232,9 +222,7 @@ const DesignPage = () => {
 		if (!canvasRef.current) return;
 
 		const canvas = canvasRef.current;
-		const existingBg = canvas
-			.getObjects()
-			.find((obj) => obj.id === "background-image");
+		const existingBg = canvas.getObjects().find((obj) => obj.id === "background-image");
 
 		if (existingBg) {
 			canvas.remove(existingBg);
@@ -323,10 +311,9 @@ const DesignPage = () => {
 		qrAnchor.setControlVisible("mtr", false);
 
 		// Override rotation methods to prevent rotation
-		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate =
-			function () {
-				return this;
-			};
+		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate = function () {
+			return this;
+		};
 
 		// Set angle to 0 and lock it
 		qrAnchor.set("angle", 0);
@@ -346,6 +333,7 @@ const DesignPage = () => {
 		if (updatedAt) {
 			setLastSaved(updatedAt);
 		}
+		return true;
 	};
 
 	const handleShare = () => {
@@ -354,13 +342,7 @@ const DesignPage = () => {
 
 	const handleConfirmShare = (_certId: string) => {
 		setShowWarningModal(false);
-		handleShareUtil(
-			certificateId,
-			certificateName,
-			canvasRef,
-			navigate,
-			toast
-		);
+		handleShareUtil(certificateId, certificateName, canvasRef, navigate, toast);
 	};
 
 	const handleDeleteElement = () => {
@@ -378,14 +360,24 @@ const DesignPage = () => {
 	};
 
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
-		handleCanvasReadyUtil(
-			canvas,
-			canvasRef,
-			designData,
-			addQRanchor,
-			setSelectedElement
-		);
+		handleCanvasReadyUtil(canvas, canvasRef, designData, addQRanchor, setSelectedElement);
 	};
+
+	useEffect(() => {
+		setPageTopBarProps({
+			content: (
+				<DesignHeader
+					certificateName={certificateName}
+					setCertificateName={setCertificateName}
+					onSave={handleSaveCertificate}
+					onShare={handleShare}
+					lastSaved={lastSaved}
+				/>
+			),
+		});
+		return () => setPageTopBarProps(null);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [certificateName, lastSaved, setPageTopBarProps]);
 
 	// Show loading state while fetching design data or if no certificate ID
 	if (isLoading || (certId && !isDataFetched)) {
@@ -407,13 +399,6 @@ const DesignPage = () => {
 
 	return (
 		<div className="select-none cursor-default">
-			<DesignHeader
-				certificateName={certificateName}
-				setCertificateName={setCertificateName}
-				onSave={handleSaveCertificate}
-				onShare={handleShare}
-				lastSaved={lastSaved}
-			/>
 			<CertificateCanvas
 				activeMenu={activeMenu}
 				setActiveMenu={setActiveMenu}
