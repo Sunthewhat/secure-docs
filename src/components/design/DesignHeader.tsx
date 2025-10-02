@@ -1,7 +1,12 @@
+import { useState } from "react";
+import SaveIcon from "@/asset/SaveIcon.svg";
+import SaveSuccessIcon from "@/asset/SaveSuccessIcon.svg";
+import ShareIcon from "@/asset/ShareIcon.svg";
+
 interface DesignHeaderProps {
 	certificateName: string;
 	setCertificateName: (name: string) => void;
-	onSave: () => void;
+	onSave: () => Promise<boolean>;
 	onShare: () => void;
 	lastSaved?: string | null;
 }
@@ -13,6 +18,8 @@ const DesignHeader = ({
 	onShare,
 	lastSaved,
 }: DesignHeaderProps) => {
+	const [isSaveSuccess, setIsSaveSuccess] = useState(false);
+
 	const formatLastSaved = (dateString?: string | null) => {
 		if (!dateString) return null;
 		try {
@@ -22,40 +29,52 @@ const DesignHeader = ({
 			return null;
 		}
 	};
+
+	const handleSave = async () => {
+		const result = await onSave();
+		if (result) {
+			setIsSaveSuccess(true);
+			setTimeout(() => {
+				setIsSaveSuccess(false);
+			}, 5000);
+		}
+	};
+
 	return (
-		<div className="font-noto bg-secondary_background rounded-[15px] flex  flex-row items-center w-full h-[72px] px-[20px]">
-			{/* div text  */}
-			<div className=" pl-[10px]">
-				<p className="font-semibold text-[25px] w-fit ">
-					Certificate canvas
+		<div className="flex flex-row items-center ml-auto gap-3">
+			{/* form here */}
+			{lastSaved && (
+				<p className="text-gray-200 text-sm mt-1">
+					Last saved: {formatLastSaved(lastSaved)}
 				</p>
-			</div>
-			{/*div button*/}
-			<div className="flex flex-row items-center ml-auto gap-3">
-				{/* form here */}
-				{lastSaved && (
-					<p className="text-gray-600 text-[12px] mt-1">
-						Last saved: {formatLastSaved(lastSaved)}
-					</p>
-				)}
-				<input
-					type="text"
-					value={certificateName}
-					onChange={(e) => setCertificateName(e.target.value)}
-					placeholder="Enter certificate name"
-					className="font-noto text-[14px] px-3 py-2 border border-gray-300 rounded-[7px] w-[200px] h-[39px] focus:outline-none focus:border-blue-500"
+			)}
+			<input
+				type="text"
+				value={certificateName}
+				onChange={(e) => setCertificateName(e.target.value)}
+				placeholder="Enter certificate name"
+				className="font-noto text-base text-white accent-white px-3 border border-white rounded-full w-[200px] h-10 focus:outline-none"
+			/>
+			<button
+				className={`text-noto text-base text-secondary_text rounded-full w-32 h-10 flex justify-center items-center gap-2 transition-colors duration-300 ${
+					isSaveSuccess ? "bg-green-500" : "bg-secondary_button"
+				}`}
+				onClick={handleSave}
+			>
+				<img
+					src={isSaveSuccess ? SaveSuccessIcon : SaveIcon}
+					className="h-5 w-5"
+					alt="Save"
 				/>
-				<button
-					className="text-noto text-[14px] bg-black text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
-					onClick={onSave}>
-					Save
-				</button>
-				<button
-					className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center "
-					onClick={onShare}>
-					Share
-				</button>
-			</div>
+				Save
+			</button>
+			<button
+				className="text-noto text-base bg-primary_button text-secondary_text rounded-full w-32 h-10 flex justify-center items-center gap-2"
+				onClick={onShare}
+			>
+				<img src={ShareIcon} className="h-5 w-5" alt="Share" />
+				Share
+			</button>
 		</div>
 	);
 };

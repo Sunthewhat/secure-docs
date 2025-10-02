@@ -2,7 +2,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import searchIcon from '../../asset/searchIcon.svg';
 import { AllCertTypeResponse, CertType, DeleteCertResponse } from '@/types/response';
 import { Axios } from '@/util/axiosInstance';
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ShareModal from '@/components/modal/ShareModal';
 import DeleteModal from '@/components/modal/DeleteModal';
 import AiOutlineEllipsis from '../../asset/AiOutlineEllipsis.svg';
@@ -25,7 +25,7 @@ const formatDateTime = (value?: string) => {
 const HomePage: FC = () => {
 	const navigate = useNavigate();
 	const { setPageTopBarProps } = useOutletContext<{
-		setPageTopBarProps: (props: any) => void;
+		setPageTopBarProps: (props: { content: ReactNode } | null) => void;
 	}>();
 	const [certificateItem, setCertificateItem] = useState<CertType[]>([]);
 	const [searchQuery, setSearchQuery] = useState('');
