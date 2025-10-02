@@ -1,86 +1,88 @@
-import { FC } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { IoDocumentTextOutline } from "react-icons/io5";
-import clsx from "clsx";
-import { useAuth } from "@/context/auth/useAuth";
+import { FC, useState, useRef, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/auth/useAuth';
+import UserIcon from '@/asset/User.svg';
+import EasyCertIcon from '@/asset/EasyCertLogo.svg';
 
-const TopBar: FC = () => {
-  const auth = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+interface PageTopBarProps {
+	content?: ReactNode;
+}
 
-  const isActive = (path: string) => location.pathname === path;
+const TopBar: FC<{ pageTopBarProps?: PageTopBarProps | null }> = ({ pageTopBarProps }) => {
+	const auth = useAuth();
+	const navigate = useNavigate();
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const dropdownRef = useRef<HTMLDivElement>(null);
 
-  
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setIsDropdownOpen(false);
+			}
+		};
 
-  return (
-    <div className="bg-black px-6 h-20 flex flex-row justify-between">
-      {/* Left: Logo + nav */}
-      <div className="flex flex-row items-center gap-2">
-        <IoDocumentTextOutline size={30} className="text-white" />
-        <h1
-          className="text-2xl font-bold text-white font-adlam cursor-pointer text-[25px]"
-          onClick={() => {
-            void navigate("/");
-          }}
-        >
-          EasyCert
-        </h1>
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
 
-        {/* Nav Links */}
-        <div className="flex flex-row px-18 gap-15">
-          {[
-            // { path: "/", label: "Home" },
-            // { path: "/design", label: "Design" },
-        
-            // { path: "/history", label: "History" },
-          ].map(({ path, label }) => (
-            <button
-              key={path}
-              // variant="link"
-              className={clsx(
-                "hover:underline p-0 h-auto font-noto font-semibold text-[18px]",
-                isActive(path) ? "text-white" : "text-gray-400"
-              )}
-              onClick={() => void navigate(path)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+	return (
+		<div className='px-30 h-20 flex flex-row justify-between items-center'>
+			{/* Left: Logo + nav */}
+			<button className='flex justify-center items-center' onClick={() => void navigate('/')}>
+				<img src={EasyCertIcon} alt='Logo' className='h-15' />
+			</button>
+			<div className='w-full flex justify-end pr-40'>
+				{/* Middle: Page-specific content */}
+				{pageTopBarProps?.content}
+				<div />
+			</div>
 
-      {/* Right: Auth status */}
-      <div className="flex flex-row items-center gap-2">
-        {auth.user ? (
-          <>
-            <span className="text-white">
-              Logged in as {auth.user.username}
-            </span>
-            <button
-              onClick={() => {
-                auth.signout(() => {
-                  void navigate("/");
-                });
-              }}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            >
-              Sign out
-            </button>
-          </>
-        ) : (
-          <button
-            className="text-white"
-            onClick={() => {
-              void navigate("/login");
-            }}
-          >
-            Log in
-          </button>
-        )}
-      </div>
-    </div>
-  );
+			{/* Right: User dropdown */}
+			<div className='relative flex justify-center z-50' ref={dropdownRef}>
+				<button
+					onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+					className='hover:opacity-80 transition-opacity'
+				>
+					<img src={UserIcon} className='h-10 w-10' alt='User' />
+				</button>
+
+				{isDropdownOpen && (
+					<div className='absolute right-0 mt-16 w-48 bg-white rounded-lg shadow-lg py-2'>
+						{auth.user ? (
+							<>
+								<div className='px-4 py-2 border-b border-gray-200'>
+									<p className='text-sm font-semibold text-gray-800'>
+										{auth.user.username}
+									</p>
+								</div>
+								<button
+									onClick={() => {
+										auth.signout(() => {
+											void navigate('/');
+										});
+										setIsDropdownOpen(false);
+									}}
+									className='w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors'
+								>
+									Logout
+								</button>
+							</>
+						) : (
+							<button
+								onClick={() => {
+									void navigate('/login');
+									setIsDropdownOpen(false);
+								}}
+								className='w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition-colors'
+							>
+								Log in
+							</button>
+						)}
+					</div>
+				)}
+			</div>
+		</div>
+	);
 };
 
 export { TopBar };

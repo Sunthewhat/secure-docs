@@ -423,7 +423,11 @@ const HistoryPage = () => {
                       <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
                         {r.issueDate}
                       </td>
-                      <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
+                      <td
+                        className={`p-3 text-sm border border-gray-300 text-center font-semibold ${
+                          r.status === "Revoked" ? "text-red-600" : "text-green-600"
+                        }`}
+                      >
                         {r.status}
                       </td>
                     </tr>

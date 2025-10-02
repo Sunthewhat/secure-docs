@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { getParticipantData } from '@/api/participant/validation';
 import { ValidateParticipantData } from '@/types/response';
 import { IoDocumentTextOutline } from 'react-icons/io5';
+import { HiBadgeCheck, HiXCircle } from 'react-icons/hi';
 
 const CertificateValidationResultPage: FC = () => {
 	const participantId = useParams()['participantId'] ?? '';
@@ -32,6 +33,30 @@ const CertificateValidationResultPage: FC = () => {
 		fetchData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	const statusConfig = participantData
+		? participantData.participant.is_revoked
+			? {
+				label: 'Certificate Revoked',
+				message:
+					'This certificate can no longer be trusted. If you believe this is a mistake, please contact the issuer for clarification.',
+				container: 'bg-red-50 border border-red-200 text-red-700',
+				badge: 'bg-red-100 text-red-700',
+				textColor: 'text-red-600',
+				Icon: HiXCircle,
+				badgeLabel: 'Revoked',
+			}
+			: {
+				label: 'Certificate Valid',
+				message:
+					'This certificate has been issued and remains in good standing. You can confidently rely on its authenticity.',
+				container: 'bg-green-50 border border-green-200 text-green-700',
+				badge: 'bg-green-100 text-green-700',
+				textColor: 'text-green-600',
+				Icon: HiBadgeCheck,
+				badgeLabel: 'Validated',
+			}
+		: null;
 
 	if (isLoading) {
 		return (
@@ -87,7 +112,24 @@ const CertificateValidationResultPage: FC = () => {
 			</div>
 			<div className='font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-center items-center w-full h-full px-[40px] pb-[48px]'>
 				{participantData ? (
-					<div className='flex flex-col items-center w-full max-w-4xl'>
+					<div className='flex flex-col items-center w-full max-w-4xl gap-8'>
+						{statusConfig && (
+							<div
+								role='status'
+								className={`w-full max-w-[600px] rounded-[15px] p-5 shadow-lg flex gap-4 items-start ${statusConfig.container}`}
+							>
+								<statusConfig.Icon size={32} className='flex-shrink-0 mt-1' />
+								<div className='flex-1'>
+									<span
+										className={`inline-flex items-center uppercase tracking-[0.14em] text-[10px] font-semibold px-3 py-1 rounded-full ${statusConfig.badge}`}
+									>
+										{statusConfig.badgeLabel}
+									</span>
+									<h2 className='text-2xl font-bold mt-3'>{statusConfig.label}</h2>
+									<p className='text-sm mt-2 leading-relaxed opacity-90'>{statusConfig.message}</p>
+								</div>
+							</div>
+						)}
 						{/* Certificate Display */}
 						<div className='border-4 border-black aspect-[297/212] w-full max-w-[700px] mb-8'>
 							<iframe
