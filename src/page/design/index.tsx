@@ -399,6 +399,9 @@ const DesignPage = () => {
 
 	return (
 		<div className="select-none cursor-default">
+			<div className="text-4xl font-semibold text-white">
+				<h1>Certificate Canvas</h1>
+			</div>
 			<CertificateCanvas
 				activeMenu={activeMenu}
 				setActiveMenu={setActiveMenu}
