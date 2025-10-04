@@ -20,7 +20,7 @@ const Layout = () => {
 				className='fixed top-0 left-0 w-dvw h-dvh pointer-events-none'
 			/>
 
-			<div className='relative z-10 flex min-h-screen flex-col gap-20'>
+			<div className='relative z-10 flex min-h-screen flex-col 2xl:gap-20'>
 				{/* Header */}
 				<TopBar pageTopBarProps={pageTopBarProps} />
 				{/* Main content */}

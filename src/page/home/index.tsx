@@ -247,7 +247,7 @@ function Card({
 	return (
 		<div className="bg-[#d9d9d933] rounded-[30px] w-full aspect-square flex flex-col px-5 py-5 items-center border-1 border-white/70">
 			{/* image wrapper with top-right kebab menu */}
-			<div className="relative w-full rounded-[10px] overflow-hidden">
+			<div className="relative w-full rounded-[10px] overflow-hidden bg-white">
 				<img
 					src={
 						cert.thumbnail_url != ""
