@@ -8,12 +8,7 @@ interface CanvasAreaProps {
 	gridSize: number;
 }
 
-const CanvasArea = ({
-	onCanvasReady,
-	showGrid,
-	snapToGrid,
-	gridSize,
-}: CanvasAreaProps) => {
+const CanvasArea = ({ onCanvasReady, showGrid, snapToGrid, gridSize }: CanvasAreaProps) => {
 	const canvasElRef = useRef<HTMLCanvasElement>(null);
 	const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
 	const onCanvasReadyRef = useRef(onCanvasReady);
@@ -63,34 +58,28 @@ const CanvasArea = ({
 			}
 
 			// Add center lines separately to ensure they're exactly centered
-			const verticalCenterLine = new fabric.Line(
-				[centerX, 0, centerX, canvasHeight],
-				{
-					stroke: "#7c3aed",
-					strokeWidth: 2,
-					opacity: 1,
-					selectable: false,
-					evented: false,
-					excludeFromExport: true,
-					hoverCursor: "default",
-					moveCursor: "default",
-				}
-			);
+			const verticalCenterLine = new fabric.Line([centerX, 0, centerX, canvasHeight], {
+				stroke: "#7c3aed",
+				strokeWidth: 2,
+				opacity: 1,
+				selectable: false,
+				evented: false,
+				excludeFromExport: true,
+				hoverCursor: "default",
+				moveCursor: "default",
+			});
 			lines.push(verticalCenterLine);
 
-			const horizontalCenterLine = new fabric.Line(
-				[0, centerY, canvasWidth, centerY],
-				{
-					stroke: "#7c3aed",
-					strokeWidth: 2,
-					opacity: 1,
-					selectable: false,
-					evented: false,
-					excludeFromExport: true,
-					hoverCursor: "default",
-					moveCursor: "default",
-				}
-			);
+			const horizontalCenterLine = new fabric.Line([0, centerY, canvasWidth, centerY], {
+				stroke: "#7c3aed",
+				strokeWidth: 2,
+				opacity: 1,
+				selectable: false,
+				evented: false,
+				excludeFromExport: true,
+				hoverCursor: "default",
+				moveCursor: "default",
+			});
 			lines.push(horizontalCenterLine);
 
 			const grid = new fabric.Group(lines, {
@@ -108,54 +97,51 @@ const CanvasArea = ({
 	);
 
 	// Function to snap object to center lines when near
-	const snapToCenterLines = useCallback(
-		(obj: fabric.Object, canvas: fabric.Canvas) => {
-			const canvasWidth = canvas.getWidth();
-			const canvasHeight = canvas.getHeight();
-			const centerX = canvasWidth / 2;
-			const centerY = canvasHeight / 2;
-			const snapThreshold = 10; // Snap when within 10 pixels of center lines
+	const snapToCenterLines = useCallback((obj: fabric.Object, canvas: fabric.Canvas) => {
+		const canvasWidth = canvas.getWidth();
+		const canvasHeight = canvas.getHeight();
+		const centerX = canvasWidth / 2;
+		const centerY = canvasHeight / 2;
+		const snapThreshold = 10; // Snap when within 10 pixels of center lines
 
-			const objLeft = obj.left || 0;
-			const objTop = obj.top || 0;
-			const objWidth = obj.getScaledWidth();
-			const objHeight = obj.getScaledHeight();
-			const objCenterX = objLeft + objWidth / 2;
-			const objCenterY = objTop + objHeight / 2;
-			const objRight = objLeft + objWidth;
-			const objBottom = objTop + objHeight;
+		const objLeft = obj.left || 0;
+		const objTop = obj.top || 0;
+		const objWidth = obj.getScaledWidth();
+		const objHeight = obj.getScaledHeight();
+		const objCenterX = objLeft + objWidth / 2;
+		const objCenterY = objTop + objHeight / 2;
+		const objRight = objLeft + objWidth;
+		const objBottom = objTop + objHeight;
 
-			let snappedLeft = objLeft;
-			let snappedTop = objTop;
+		let snappedLeft = objLeft;
+		let snappedTop = objTop;
 
-			// Snap to vertical center line (check left edge, center, and right edge)
-			if (Math.abs(objLeft - centerX) <= snapThreshold) {
-				// Left edge to center
-				snappedLeft = centerX;
-			} else if (Math.abs(objCenterX - centerX) <= snapThreshold) {
-				// Object center to center
-				snappedLeft = centerX - objWidth / 2;
-			} else if (Math.abs(objRight - centerX) <= snapThreshold) {
-				// Right edge to center
-				snappedLeft = centerX - objWidth;
-			}
+		// Snap to vertical center line (check left edge, center, and right edge)
+		if (Math.abs(objLeft - centerX) <= snapThreshold) {
+			// Left edge to center
+			snappedLeft = centerX;
+		} else if (Math.abs(objCenterX - centerX) <= snapThreshold) {
+			// Object center to center
+			snappedLeft = centerX - objWidth / 2;
+		} else if (Math.abs(objRight - centerX) <= snapThreshold) {
+			// Right edge to center
+			snappedLeft = centerX - objWidth;
+		}
 
-			// Snap to horizontal center line (check top edge, center, and bottom edge)
-			if (Math.abs(objTop - centerY) <= snapThreshold) {
-				// Top edge to center
-				snappedTop = centerY;
-			} else if (Math.abs(objCenterY - centerY) <= snapThreshold) {
-				// Object center to center
-				snappedTop = centerY - objHeight / 2;
-			} else if (Math.abs(objBottom - centerY) <= snapThreshold) {
-				// Bottom edge to center
-				snappedTop = centerY - objHeight;
-			}
+		// Snap to horizontal center line (check top edge, center, and bottom edge)
+		if (Math.abs(objTop - centerY) <= snapThreshold) {
+			// Top edge to center
+			snappedTop = centerY;
+		} else if (Math.abs(objCenterY - centerY) <= snapThreshold) {
+			// Object center to center
+			snappedTop = centerY - objHeight / 2;
+		} else if (Math.abs(objBottom - centerY) <= snapThreshold) {
+			// Bottom edge to center
+			snappedTop = centerY - objHeight;
+		}
 
-			return { left: snappedLeft, top: snappedTop };
-		},
-		[]
-	);
+		return { left: snappedLeft, top: snappedTop };
+	}, []);
 
 	useEffect(() => {
 		const canvasElement = canvasElRef.current;
@@ -166,9 +152,12 @@ const CanvasArea = ({
 		const canvas = new fabric.Canvas(canvasElement, {
 			width: 850,
 			height: 601,
-			backgroundColor: "#f9fafb",
 			selection: true,
 		});
+
+		// Set white background color - using set() method for better compatibility
+		canvas.set("backgroundColor", "#ffffff").requestRenderAll();
+		canvas.renderAll();
 
 		// Store current values for event handlers
 		const currentSnapToGrid = snapToGrid;
@@ -209,14 +198,8 @@ const CanvasArea = ({
 
 		return () => {
 			if (fabricCanvasRef.current) {
-				fabricCanvasRef.current.off(
-					"object:moving",
-					handleObjectMoving
-				);
-				fabricCanvasRef.current.off(
-					"object:scaling",
-					handleObjectScaling
-				);
+				fabricCanvasRef.current.off("object:moving", handleObjectMoving);
+				fabricCanvasRef.current.off("object:scaling", handleObjectScaling);
 				void fabricCanvasRef.current.dispose();
 				fabricCanvasRef.current = null;
 			}
@@ -256,7 +239,7 @@ const CanvasArea = ({
 
 	return (
 		<div className="flex-1 p-4">
-			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden w-fit">
+			<div className="mx-auto shadow-lg border-2 border-gray-300 rounded-lg overflow-hidden w-fit bg-white">
 				<canvas ref={canvasElRef} width={850} height={601} />
 			</div>
 		</div>

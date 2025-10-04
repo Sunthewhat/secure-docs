@@ -16,9 +16,7 @@ interface ElementUpdate {
 
 interface CertificateCanvasProps {
 	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
-	setActiveMenu: (
-		menu: "background" | "element" | "image" | "text" | "anchor" | null
-	) => void;
+	setActiveMenu: (menu: "background" | "element" | "image" | "text" | "anchor" | null) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
@@ -58,7 +56,7 @@ const CertificateCanvas = ({
 	gridSize,
 }: CertificateCanvasProps) => {
 	return (
-		<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
+		<div className="font-noto bg-designcanvas_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full pl-[10px] mt-[25px] py-[30px] ">
 			<ToolsSidebar
 				activeMenu={activeMenu}
 				setActiveMenu={setActiveMenu}

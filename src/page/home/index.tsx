@@ -247,7 +247,7 @@ function Card({
 	return (
 		<div className="bg-[#d9d9d933] rounded-[30px] w-full aspect-square flex flex-col px-5 py-5 items-center border-1 border-white/70">
 			{/* image wrapper with top-right kebab menu */}
-			<div className="relative w-full rounded-[10px] overflow-hidden">
+			<div className="relative w-full rounded-[10px] overflow-hidden bg-white">
 				<img
 					src={
 						cert.thumbnail_url != ""
@@ -264,7 +264,7 @@ function Card({
 				{/* kebab */}
 				<button
 					ref={btnRef}
-					className="absolute top-2 right-2 rounded-full bg-gray-300 hover:bg-gray-400 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+					className="absolute top-2 right-2 rounded-full bg-[#bcbcbc9f] hover:bg-gray-400 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
 					aria-haspopup="menu"
 					aria-expanded={open}
 					aria-label={`Open actions for ${cert.name}`}
