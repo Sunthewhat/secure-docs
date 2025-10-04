@@ -6,6 +6,7 @@ import { Axios } from "@/util/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth/useAuth";
 import EasyCertLogo from "../../asset/EasyCertLogo.svg";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 
 // Login page (public)
 
@@ -15,6 +16,7 @@ const BACKGROUND_VIDEO_URL =
 const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const auth = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -94,17 +96,25 @@ const LoginPage = () => {
                 required
               />
             </div>
-            <div>
+            <div className="relative">
               <input
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
-                className="w-full border p-3 rounded-xl bg-[rgb(255,255,255,0.2)] placeholder-[#C8C8C8]"
+                className="w-full border p-3 pr-12 rounded-xl bg-[rgb(255,255,255,0.2)] placeholder-[#C8C8C8]"
                 onChange={(e) => setPassword(e.target.value)}
                 value={password}
                 autoComplete={"current-password"}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-white/80 hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+              </button>
             </div>
             <div className="flex justify-center mt-8">
               <button

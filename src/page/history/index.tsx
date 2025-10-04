@@ -27,7 +27,7 @@ type RecipientRow = {
   data: Record<string, string>;
   issueDate: string;
   certificateUrl?: string;
-  status: "Validated" | "Revoked";
+  status: "Valid" | "Revoked";
 };
 
 const ensureEmailColumn = (cols: string[]): string[] => {
@@ -168,7 +168,7 @@ const HistoryPage = () => {
             data: rowData,
             issueDate: formatDate(p.updated_at || p.created_at),
             certificateUrl: p.certificate_url ?? undefined,
-            status: isRevoked ? "Revoked" : "Validated",
+            status: isRevoked ? "Revoked" : "Valid",
           };
         });
 
@@ -311,8 +311,12 @@ const HistoryPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    const safeCertId = certId ?? "history";
-    link.download = `history-${safeCertId}.csv`;
+    const safeName = (certificateName || certId || "history")
+      .replace(/[^a-z0-9\-_/ ]/gi, "")
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const filename = safeName ? `history-${safeName}.csv` : "history.csv";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
