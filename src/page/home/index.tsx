@@ -1,4 +1,4 @@
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import searchIcon from "../../asset/searchIcon.svg";
 import { AllCertTypeResponse, CertType, DeleteCertResponse } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
@@ -11,6 +11,7 @@ import { createDesign } from "@/api/design/create";
 import AddIcon from "@/asset/AddIcon.svg";
 import HistoryIcon from "@/asset/HistoryIcon.svg";
 import ShareIcon from "@/asset/ShareIcon.svg";
+import { RiEdit2Line, RiDeleteBin6Line } from "react-icons/ri";
 
 const formatDateTime = (value?: string) => {
 	if (!value) return "-";
@@ -24,9 +25,6 @@ const formatDateTime = (value?: string) => {
 
 const HomePage: FC = () => {
 	const navigate = useNavigate();
-	const { setPageTopBarProps } = useOutletContext<{
-		setPageTopBarProps: (props: { content: ReactNode } | null) => void;
-	}>();
 	const [certificateItem, setCertificateItem] = useState<CertType[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -100,49 +98,6 @@ const HomePage: FC = () => {
 		}
 	}, [isSearchOpen, searchQuery]);
 
-	useEffect(() => {
-		setPageTopBarProps({
-			content: (
-				<>
-					<div className="flex flex-row gap-8">
-						<div className="flex relative overflow-hidden">
-							<input
-								className={`text-noto text-white accent-white -mr-10 text-[14px] border-2 border-white rounded-full px-[20px] py-[15px] h-10 transition-all duration-300 ease-in-out focus:outline-none ${
-									isSearchOpen
-										? "w-64 opacity-100"
-										: "w-0 opacity-0 pointer-events-none"
-								}`}
-								type="text"
-								id="search"
-								placeholder="Search designs..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-							/>
-							<button
-								className="border-2 border-white bg-[#b9b9b921] rounded-full h-10 w-10"
-								onClick={() => setIsSearchOpen(!isSearchOpen)}
-							>
-								<img
-									className="h-4 w-4 mx-auto"
-									src={searchIcon}
-									alt="searchIcon"
-								/>
-							</button>
-						</div>
-						<button
-							className="text-noto text-base bg-[#b9b9b921] border-2 text-secondary_text rounded-full w-48 h-10 flex justify-center items-center"
-							onClick={handleCreateDesign}
-						>
-							<img src={AddIcon} alt="Create Design" className="h-5 w-5 mr-3"></img>
-							Create design
-						</button>
-					</div>
-				</>
-			),
-		});
-		return () => setPageTopBarProps(null);
-	}, [setPageTopBarProps, searchQuery, handleCreateDesign, isSearchOpen]);
-
 	const filteredCertificates = useMemo(() => {
 		const query = searchQuery.trim().toLowerCase();
 		if (!query) return certificateItem;
@@ -160,13 +115,49 @@ const HomePage: FC = () => {
 		: "Create a new design to start building your collection.";
 
 	return (
-		<div className="flex flex-col gap-20">
-			<div className="text-4xl font-semibold text-white">
-				<h1>Collection</h1>
-			</div>
-			{/* grid */}
-			<div className="font-noto rounded-[15px] flex flex-col items-center w-full min-h-[770px]">
-				<div className="grid grid-cols-3 2xl:grid-cols-4 gap-10 w-full h-full">
+		<div className="select-none cursor-default flex flex-col gap-12 text-white">
+			<header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+				<div className="flex flex-col gap-4">
+					<span className="text-sm uppercase tracking-[0.35em] text-white/60">Collection</span>
+					<div className="space-y-2">
+						<h1 className="text-4xl font-semibold">Collection</h1>
+						<p className="max-w-2xl text-base text-white/70">Browse, create, and maintain your certificate templates from one place.</p>
+					</div>
+				</div>
+				<div className="flex flex-wrap items-center gap-4">
+					<div className="flex items-center gap-2">
+						<input
+							className={`h-10 rounded-full border transition-all duration-300 ease-in-out focus:outline-none bg-white/10 border-white/20 text-sm text-white placeholder:text-white/60 ${
+								isSearchOpen
+									? 'w-64 px-4 opacity-100'
+									: 'w-0 px-0 opacity-0 pointer-events-none border-transparent'
+							}`}
+							type="text"
+							id="search"
+							placeholder="Search designs..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
+						<button
+							className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+							onClick={() => setIsSearchOpen(!isSearchOpen)}
+							aria-label={isSearchOpen ? 'Close search' : 'Open search'}
+						>
+							<img className="h-4 w-4" src={searchIcon} alt="searchIcon" />
+						</button>
+					</div>
+					<button
+						className="inline-flex items-center gap-3 rounded-full bg-primary_button px-6 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01]"
+						onClick={handleCreateDesign}
+					>
+						<img src={AddIcon} alt="Create design" className="h-5 w-5" />
+						<span>Create design</span>
+					</button>
+				</div>
+			</header>
+
+			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+				<div className="grid w-full gap-10 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 					{filteredCertificates.length > 0 ? (
 						filteredCertificates.map((cert) => (
 							<Card
@@ -179,12 +170,12 @@ const HomePage: FC = () => {
 							/>
 						))
 					) : (
-						<div className="col-span-3">
+						<div className="col-span-full">
 							<EmptyState title={emptyTitle} description={emptyDescription} />
 						</div>
 					)}
 				</div>
-			</div>
+			</section>
 
 			<DeleteModal
 				open={isDeleteModalOpen}
@@ -282,22 +273,24 @@ function Card({
 						ref={menuRef}
 						role="menu"
 						aria-label="Card actions"
-						className="absolute top-12 right-2 z-10 min-w-[160px] rounded-md bg-white shadow-lg ring-1 ring-black/5  dark:text-white"
+						className="absolute top-12 right-2 z-20 min-w-[190px] rounded-2xl bg-black/70 p-2 text-white shadow-2xl backdrop-blur-xl"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<MenuItem
-							label="Edit"
+							label="Edit design"
+							icon={<RiEdit2Line className="h-5 w-5" />}
 							onSelect={() => {
 								setOpen(false);
 								onEdit();
 							}}
 						/>
 						<MenuItem
-							label="Delete"
+							label="Delete design"
+							icon={<RiDeleteBin6Line className="h-5 w-5" />}
 							variant="danger"
 							onSelect={() => {
 								setOpen(false);
-								onDelete(); // opens your DeleteModal
+								onDelete();
 							}}
 						/>
 					</div>
@@ -338,10 +331,12 @@ function MenuItem({
 	label,
 	onSelect,
 	variant,
+	icon,
 }: {
 	label: string;
 	onSelect: () => void;
 	variant?: "default" | "danger";
+	icon?: ReactNode;
 }) {
 	const itemRef = useRef<HTMLButtonElement | null>(null);
 
@@ -350,9 +345,9 @@ function MenuItem({
 	}, []);
 
 	const base =
-		"w-full flex items-center gap-2 px-3 py-2 text-left text-sm focus:outline-none bg-white rounded-md";
-	const normalHover = " hover:bg-black/5 hover:bg-gray-200 text-black";
-	const danger = " text-red-600 dark:text-red-400 hover:bg-red-100";
+		"w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition focus:outline-none bg-white/5";
+	const normalHover = " bg-white/5 text-white hover:bg-white/15";
+	const danger = " text-red-300 hover:bg-red-500/20";
 
 	return (
 		<button
@@ -367,6 +362,15 @@ function MenuItem({
 				}
 			}}
 		>
+		{icon && (
+			<span
+				className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/10 ${
+					variant === "danger" ? "text-red-300" : "text-white"
+				}`}
+			>
+				{icon}
+			</span>
+		)}
 			<span>{label}</span>
 		</button>
 	);

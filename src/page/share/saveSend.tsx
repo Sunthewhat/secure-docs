@@ -353,166 +353,182 @@ const SaveSendPage = () => {
   };
 
   return (
-    <div className="select-none cursor-default">
-      {/* Header */}
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px] relative">
-        <button
-          className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center underline"
-          onClick={() => void navigate(-1)}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
-          Preview
-        </button>
-
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <p className="font-semibold text-[25px] w-fit">
-            Distribute Certificate
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full px-[40px] mt-[25px] py-[48px]">
-        <div className="flex flex-col w-full h-full px-[20px]">
-          {error && <div className="mb-3 text-red-600 text-sm">{error}</div>}
-          {notice && !error && (
-            <div className="mb-3 text-green-700 text-sm">{notice}</div>
-          )}
-
-          <div className="overflow-y-scroll max-h-[600px]">
-            <table className="w-full border border-gray-200 text-center text-sm table-auto">
-              <thead>
-                <tr className="bg-gray-100 h-[46px]">
-                  {columns.length > 0 ? (
-                    columns.map((col, idx) => (
-                      <th
-                        key={col}
-                        className={`font-normal px-6 py-2 ${
-                          idx < columns.length - 1
-                            ? "border-r border-gray-200"
-                            : ""
-                        }`}
-                      >
-                        {col}
-                      </th>
-                    ))
-                  ) : (
-                    <th className="font-normal px-6 py-2">No columns</th>
-                  )}
-                  <th className="font-normal px-6 py-2 border-l border-gray-200 w-[130px]">
-                    Email status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {participants.length > 0 ? (
-                  participants.map((p) => {
-                    const mailStatus = p.id ? mailStatusMap[p.id] : undefined;
-                    const renderStatus = p.id
-                      ? renderStatusMap.get(p.id)
-                      : undefined;
-                    const status = mailStatus ?? renderStatus;
-                    return (
-                      <tr key={p.id} className="border border-gray-200">
-                        {columns.map((col, idx) => (
-                          <td
-                            key={col}
-                            className={`px-6 py-2 break-words ${
-                              idx < columns.length - 1
-                                ? "border-r border-gray-200"
-                                : ""
-                            }`}
-                          >
-                            {p.data?.[col] ?? ""}
-                          </td>
-                        ))}
-                        <td className="px-6 py-2 border-l border-gray-200">
-                          {status === "success" ? (
-                            <span className="inline-flex items-center justify-center text-green-600">
-                              <svg
-                                className="h-5 w-5"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                                aria-label="Success"
-                              >
-                                <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm-1 15-4-4 1.414-1.414L11 13.172l5.586-5.586L18 9Z" />
-                              </svg>
-                            </span>
-                          ) : status === "failed" ? (
-                            <span className="inline-flex items-center justify-center text-red-600">
-                              <svg
-                                className="h-5 w-5"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                                aria-label="Failed"
-                              >
-                                <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm3.707 12.293-1.414 1.414L12 13.414l-2.293 2.293-1.414-1.414L10.586 12 8.293 9.707l1.414-1.414L12 10.586l2.293-2.293 1.414 1.414L13.414 12Z" />
-                              </svg>
-                            </span>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={Math.max(columns.length, 1) + 1}
-                      className="px-6 py-8 text-gray-500"
-                    >
-                      No participants found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            {/* ACTIONS AREA — centered */}
-            <div className="w-full flex justify-center mt-6">
-              {!renderData ? (
-                <button
-                  onClick={handleGenerate}
-                  disabled={rendering || participants.length === 0}
-                  className={`text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[160px] h-[42px] flex justify-center items-center ${
-                    rendering || participants.length === 0
-                      ? "opacity-60 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  {rendering ? "Rendering…" : "Generate"}
-                </button>
-              ) : (
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDownload}
-                    disabled={downloading}
-                    className={`text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[160px] h-[42px] flex justify-center items-center ${
-                      downloading ? "opacity-60 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {downloading ? "Preparing…" : "Download"}
-                  </button>
-
-                  <button
-                    onClick={handleSend}
-                    disabled={sending}
-                    className={`text-noto text-[14px] bg-white text-primary_text rounded-[7px] border border-gray-300 w-[220px] h-[42px] flex justify-center items-center ${
-                      sending ? "opacity-60 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {sending ? "Sending…" : "Send to participant email"}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* END ACTIONS AREA */}
+    <div className="select-none cursor-default flex flex-col gap-12 text-white">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => void navigate(-1)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+              </svg>
+              Preview
+            </button>
+            <span className="text-sm uppercase tracking-[0.35em] text-white/60">
+              Collection
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold">Distribute certificates</h1>
+            <p className="max-w-2xl text-base text-white/70">
+              Generate participant files or deliver them directly through email.
+            </p>
           </div>
         </div>
-      </div>
+        <span
+          className={`inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold shadow-lg ${
+            renderData
+              ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-100'
+              : 'border-white/20 bg-white/10 text-white/70'
+          }`}
+        >
+          <span className="inline-flex h-2 w-2 rounded-full bg-current" />
+          {renderData ? 'Render complete' : 'Awaiting render'}
+        </span>
+      </header>
+
+      <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-8">
+          {error ? (
+            <div className="rounded-2xl border border-red-500/40 bg-red-500/20 px-5 py-4 text-sm text-red-100 shadow-lg">
+              {error}
+            </div>
+          ) : notice ? (
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/20 px-5 py-4 text-sm text-emerald-100 shadow-lg">
+              {notice}
+            </div>
+          ) : null}
+
+          <div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
+              <h2 className="text-lg font-semibold text-primary_text">Recipients</h2>
+              <span className="text-sm text-gray-500">{participants.length} total</span>
+            </div>
+            <div className="max-h-[520px] overflow-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  <tr>
+                    {columns.length > 0 ? (
+                      columns.map((col) => (
+                        <th key={col} className="px-5 py-3">
+                          {col}
+                        </th>
+                      ))
+                    ) : (
+                      <th className="px-5 py-3">No columns</th>
+                    )}
+                    <th className="px-5 py-3 text-right">Email status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                  {participants.length > 0 ? (
+                    participants.map((participant, index) => {
+                      const mailStatus = participant.id ? mailStatusMap[participant.id] : undefined;
+                      const renderStatus = participant.id
+                        ? renderStatusMap.get(participant.id)
+                        : undefined;
+                      const status = mailStatus ?? renderStatus;
+
+                      return (
+                        <tr
+                          key={participant.id ?? `participant-${index}`}
+                          className="transition hover:bg-primary_button/5"
+                        >
+                          {columns.map((col) => (
+                            <td key={col} className="px-5 py-3 text-left">
+                              {participant.data?.[col] ?? ''}
+                            </td>
+                          ))}
+                          <td className="px-5 py-3 text-right">
+                            {status === 'success' ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600">
+                                <svg
+                                  className="h-4 w-4"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm-1 15-4-4 1.414-1.414L11 13.172l5.586-5.586L18 9Z" />
+                                </svg>
+                                Delivered
+                              </span>
+                            ) : status === 'failed' ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-600">
+                                <svg
+                                  className="h-4 w-4"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm3.707 12.293-1.414 1.414L12 13.414l-2.293 2.293-1.414-1.414L10.586 12 8.293 9.707l1.414-1.414L12 10.586l2.293-2.293 1.414 1.414L13.414 12Z" />
+                                </svg>
+                                Failed
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">Pending</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={Math.max(columns.length, 1) + 1}
+                        className="px-6 py-10 text-center text-gray-500"
+                      >
+                        No participants found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3 pt-2">
+            {!renderData ? (
+              <button
+                onClick={handleGenerate}
+                disabled={rendering || participants.length === 0}
+                className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
+                  rendering || participants.length === 0
+                    ? 'cursor-not-allowed opacity-60'
+                    : ''
+                }`}
+              >
+                {rendering ? 'Rendering…' : 'Generate'}
+              </button>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
+                    downloading ? 'cursor-not-allowed opacity-60' : ''
+                  }`}
+                >
+                  {downloading ? 'Preparing…' : 'Download'}
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={sending}
+                  className={`inline-flex items-center justify-center rounded-full border border-white/40 bg-white/90 px-6 py-3 text-sm font-semibold text-primary_button shadow-lg transition hover:scale-[1.01] ${
+                    sending ? 'cursor-not-allowed opacity-60' : ''
+                  }`}
+                >
+                  {sending ? 'Sending…' : 'Send to participant email'}
+                </button>
+              </div>
+            )}
+            <p className="text-center text-xs uppercase tracking-[0.25em] text-white/50">
+              {renderData ? 'Ready to distribute' : 'Generate certificates before sharing'}
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

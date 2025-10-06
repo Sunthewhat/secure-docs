@@ -661,176 +661,181 @@ const SharePage = () => {
   const hasAtLeastOneFilledRow = () => recipients.some((r) => !isRowEmpty(r));
 
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px]">
-        <button
-          className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
-          onClick={handleBack}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
-          Back
-        </button>
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <p className="font-semibold text-[25px] w-fit">Add Participants</p>
-        </div>
-        <div className="ml-auto">
-          <button
-            className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[92px] h-[39px] flex justify-center items-center"
-            onClick={handleNext}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-
-      {/* Table + side actions */}
-      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex flex-col items-center w-full h-full px-[50px] mt-[25px] py-[48px]">
-        <div className="w-full flex gap-4">
-          {/* Table */}
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse border border-gray-300">
-              <thead className="bg-[#f3f3f3]">
-                <tr>
-                  {columns.map((col, i) => (
-                    <th
-                      key={i}
-                      className="p-3 text-center min-w-[200px] text-[14px] font-semibold text-gray-700 border border-gray-300"
-                    >
-                      
-                        <div className="flex items-center justify-center gap-2">
-                          <span>{col}</span>
-                          
-                        </div>
-                    </th>
-                  ))}
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {recipients.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={columns.length + 1}
-                      className="text-center text-gray-500 p-4 border border-gray-300"
-                    >
-                      No recipients yet. Click <b>+ Add Recipient</b> to start.
-                    </td>
-                  </tr>
-                ) : (
-                  recipients.map((row, index) => {
-                    const isDistributed = Boolean(row.isDistributed);
-                    return (
-                      <tr key={row.id ?? `new-${index}`}>
-                      {columns.map((col, i) => (
-                        <td
-                          key={i}
-                          className="p-3 text-sm text-gray-800 border border-gray-300"
-                        >
-                          {editIndex === index ? (
-                            <input
-                              ref={i === 0 ? inputRef : null}
-                              type="text"
-                              value={editForm[col] || ""}
-                              onChange={(e) => handleChange(e, col)}
-                              className="border rounded px-2 py-1 w-full"
-                              placeholder={`Enter ${col}`}
-                            />
-                          ) : (
-                            row.data[col] || ""
-                          )}
-                        </td>
-                      ))}
-
-                      <td className="p-3 border border-gray-300 w-[120px]">
-                        <div className="flex gap-4 justify-center">
-                          {editIndex === index ? (
-                            <>
-                              <button
-                                onClick={() => handleSave(index)}
-                                className="text-green-600 hover:text-green-800"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={handleCancel}
-                                className="text-gray-600 hover:text-gray-800"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                           ) : (
-                             <>
-                              <button
-                                className={`text-black ${
-                                  isDistributed
-                                    ? 'opacity-40 cursor-not-allowed'
-                                    : 'hover:text-blue-600'
-                                }`}
-                                onClick={() => handleEdit(index)}
-                                title={
-                                 isDistributed
-                                    ? 'Editing disabled for distributed participants'
-                                    : row.id
-                                    ? 'Edit (PUT)'
-                                    : 'Edit (POST on Save)'
-                                }
-                                disabled={isDistributed}
-                              >
-                                <RiEdit2Line size={20} />
-                              </button>
-                              <button
-                                className={`text-black ${
-                                  isDistributed
-                                    ? 'opacity-40 cursor-not-allowed'
-                                    : 'hover:text-red-600'
-                                }`}
-                                onClick={() => handleDelete(index)}
-                                disabled={isDistributed}
-                              >
-                                <RiDeleteBinLine size={20} />
-                             </button>
-                           </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    );
-                  })
-                )}
-             </tbody>
-           </table>
+    <div className="select-none cursor-default flex flex-col gap-12 text-white">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={handleBack}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+              </svg>
+              Back
+            </button>
+            <span className="text-sm uppercase tracking-[0.35em] text-white/60">
+              Collection
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold">Add participants</h1>
+            <p className="max-w-2xl text-base text-white/70">
+              Import recipients from CSV or add them manually before sharing
+              your certificate collection.
+            </p>
           </div>
         </div>
+        <button
+          onClick={handleNext}
+          className="inline-flex items-center justify-center rounded-full bg-primary_button px-8 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+        >
+          Next
+        </button>
+      </header>
 
-        {/* Add Recipient */}
-        <div className="flex gap-4 mt-6">
-          <button
-            onClick={handleUploadButtonClick}
-            className="text-noto text-[14px] bg-blue-500 hover:bg-blue-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center"
-          >
-            Upload CSV
-          </button>
-          <input
-            ref={uploadInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleCsvFileChange}
-          />
-          <button
-            onClick={handleAddRow}
-            className="text-noto text-[14px] bg-green-500 hover:bg-green-600 text-white rounded-[7px] w-[142px] h-[39px] flex justify-center items-center"
-          >
-            + Add Recipient
-          </button>
+      <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold">Recipients</h2>
+              <p className="text-sm text-white/70">
+                Review and manage everyone who will receive this certificate.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleUploadButtonClick}
+                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-6 py-2 text-sm font-semibold text-primary_button shadow-lg transition hover:bg-white"
+              >
+                Upload CSV
+              </button>
+              <button
+                onClick={handleAddRow}
+                className="inline-flex items-center gap-2 rounded-full bg-primary_button px-6 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01]"
+              >
+                + Add recipient
+              </button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleCsvFileChange}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
+            <div className="max-h-[520px] overflow-auto">
+              <table className="min-w-full table-fixed">
+                <thead className="bg-transparent border-b-1 border-gray-300 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  <tr >
+                    {columns.map((col) => (
+                      <th key={col} className="min-w-[200px] px-6 py-4">
+                        {col}
+                      </th>
+                    ))}
+                    <th className="w-[160px] px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                  {recipients.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={columns.length + 1}
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        No recipients yet. Use the buttons above to get
+                        started.
+                      </td>
+                    </tr>
+                  ) : (
+                    recipients.map((row, index) => {
+                      const isDistributed = Boolean(row.isDistributed);
+
+                      return (
+                        <tr key={row.id ?? `new-${index}`} className="align-top">
+                          {columns.map((col, colIndex) => (
+                            <td key={col} className="px-6 py-4 align-top">
+                              {editIndex === index ? (
+                                <input
+                                  ref={colIndex === 0 ? inputRef : null}
+                                  type="text"
+                                  value={editForm[col] || ""}
+                                  onChange={(event) => handleChange(event, col)}
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary_button focus:outline-none focus:ring-2 focus:ring-primary_button/20"
+                                  placeholder={`Enter ${col}`}
+                                />
+                              ) : (
+                                <span className="break-words text-sm">
+                                  {row.data[col] || ""}
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                          <td className="px-6 py-4">
+                            <div className="flex justify-end gap-3 text-sm font-semibold">
+                              {editIndex === index ? (
+                                <>
+                                  <button
+                                    onClick={() => handleSave(index)}
+                                    className="text-primary_button transition hover:opacity-80"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancel}
+                                    className="text-gray-500 transition hover:opacity-80"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    className={`transition ${
+                                      isDistributed
+                                        ? "cursor-not-allowed text-gray-400"
+                                        : "text-primary_button hover:opacity-80"
+                                    }`}
+                                    onClick={() => handleEdit(index)}
+                                    title={
+                                      isDistributed
+                                        ? "Editing disabled for distributed participants"
+                                        : row.id
+                                        ? "Edit (PUT)"
+                                        : "Edit (POST on save)"
+                                    }
+                                    disabled={isDistributed}
+                                  >
+                                    <RiEdit2Line size={20} />
+                                  </button>
+                                  <button
+                                    className={`transition ${
+                                      isDistributed
+                                        ? "cursor-not-allowed text-gray-400"
+                                        : "text-red-500 hover:opacity-80"
+                                    }`}
+                                    onClick={() => handleDelete(index)}
+                                    disabled={isDistributed}
+                                  >
+                                    <RiDeleteBinLine size={20} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <DeleteParticipantModal
         open={Boolean(deleteTarget)}
@@ -856,6 +861,7 @@ const SharePage = () => {
       />
     </div>
   );
+
 };
 
 export { SharePage };
