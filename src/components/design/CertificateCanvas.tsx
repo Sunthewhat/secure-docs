@@ -2,6 +2,7 @@ import * as fabric from "fabric";
 import CanvasArea from "./CanvasArea";
 import ToolsSidebar from "./ToolsSidebar";
 import PropertiesPanel from "./PropertiesPanel";
+import { MenuType } from "@/page/design/utils/types";
 
 interface ElementUpdate {
 	fill?: string;
@@ -15,10 +16,8 @@ interface ElementUpdate {
 }
 
 interface CertificateCanvasProps {
-	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
-	setActiveMenu: (
-		menu: "background" | "element" | "image" | "text" | "anchor" | null
-	) => void;
+	activeMenu: MenuType;
+	setActiveMenu: (menu: MenuType) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
