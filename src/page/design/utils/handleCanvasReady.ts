@@ -39,6 +39,9 @@ export const handleCanvasReadyUtil = (
 				.find((obj) => obj.isQRanchor);
 			if (!existingQRanchor) {
 				setTimeout(() => addQRanchor(), 100);
+			} else {
+				// Ensure existing QR anchor is on top
+				canvas.bringObjectToFront(existingQRanchor);
 			}
 
 			canvas.requestRenderAll();
@@ -48,16 +51,18 @@ export const handleCanvasReadyUtil = (
 		setTimeout(() => addQRanchor(), 100);
 	}
 
-	// Keep QR anchor always on top when objects are added
-	const handleObjectAdded = () => {
+	// Keep QR anchor always on top when objects are added or reordered
+	const ensureQRanchorOnTop = () => {
 		const qrAnchor = canvas.getObjects().find((obj) => obj.isQRanchor);
 		if (qrAnchor) {
 			canvas.bringObjectToFront(qrAnchor);
+			canvas.requestRenderAll();
 		}
 	};
 
 	// Add event listeners
-	canvas.on("object:added", handleObjectAdded);
+	canvas.on("object:added", ensureQRanchorOnTop);
+	canvas.on("object:modified", ensureQRanchorOnTop);
 
 	canvas.on("selection:created", () => {
 		const activeObject = canvas.getActiveObject();

@@ -16,12 +16,13 @@ interface ElementUpdate {
 
 interface CertificateCanvasProps {
 	activeMenu: "background" | "element" | "image" | "text" | "anchor" | null;
-	setActiveMenu: (menu: "background" | "element" | "image" | "text" | "anchor" | null) => void;
+	setActiveMenu: (
+		menu: "background" | "element" | "image" | "text" | "anchor" | null
+	) => void;
 	selectedElement: fabric.Object | null;
 	onShapeAdd: (shapeType: string) => void;
 	onTextAdd: () => void;
 	onUpdateElement: (updates: ElementUpdate) => void;
-	onDeleteElement: () => void;
 	onCanvasReady: (canvas: fabric.Canvas) => void;
 	onBackgroundAdd: (imageUrl: string) => void;
 	onBackgroundRemove?: () => void;
@@ -42,7 +43,6 @@ const CertificateCanvas = ({
 	onShapeAdd,
 	onTextAdd,
 	onUpdateElement,
-	onDeleteElement,
 	onCanvasReady,
 	onBackgroundAdd,
 	onBackgroundRemove,
@@ -70,7 +70,6 @@ const CertificateCanvas = ({
 				<PropertiesPanel
 					selectedElement={selectedElement}
 					onUpdateElement={onUpdateElement}
-					onDeleteElement={onDeleteElement}
 					onBringForward={onBringForward}
 					onSendBackward={onSendBackward}
 					onBringToFront={onBringToFront}
