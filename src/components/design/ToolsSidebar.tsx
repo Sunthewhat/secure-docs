@@ -231,7 +231,7 @@ const ToolsSidebar = ({
 			{/* Tools Sidebar */}
 			<div className="w-50 px-3 min-h-full">
 				{activeMenu === "background" && (
-					<div className="bg-white rounded-lg">
+					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
@@ -278,7 +278,7 @@ const ToolsSidebar = ({
 				)}
 
 				{activeMenu === "element" && (
-					<div className="bg-white rounded-lg ">
+					<div className=" rounded-lg ">
 						<div className="grid grid-cols-2 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
@@ -341,7 +341,7 @@ const ToolsSidebar = ({
 				)}
 
 				{activeMenu === "image" && (
-					<div className="bg-white rounded-lg">
+					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
 							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50">
 								<img
@@ -382,10 +382,10 @@ const ToolsSidebar = ({
 				)}
 
 				{activeMenu === "text" && (
-					<div className="bg-white rounded-lg ">
+					<div className=" rounded-lg ">
 						<div className="grid grid-cols-1 gap-2">
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm  rounded-lg cursor-pointer hover:bg-gray-50"
 								onClick={onTextAdd}>
 								<span className="text-[14px]">Text Box</span>
 							</div>
@@ -394,7 +394,7 @@ const ToolsSidebar = ({
 				)}
 
 				{activeMenu === "anchor" && (
-					<div className="bg-white rounded-lg ">
+					<div className=" rounded-lg ">
 						<div className="grid grid-cols-1 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50"
