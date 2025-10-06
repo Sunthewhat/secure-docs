@@ -202,6 +202,8 @@ const HistoryPage = () => {
   const emptyDescription = isSearching
     ? "Try adjusting your search terms or clear the search box."
     : "Participants will appear here after certificates are distributed.";
+  const certificateLabel =
+    certificateName || (certId ? `Certificate ${certId}` : "Certificate");
 
   // ---- selection helpers (bulk) ----
   const toggleOne = (id: string) => {
@@ -324,135 +326,125 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row justify-between items-center w-full h-full px-[20px]">
-        <div className="px-[25px] py-[50px] flex justify-between w-full h-[140px] items-center">
-          <div className="font-bold text-[25px] w-fit">
-            Shared History - {certificateName || `Cert ID: ${certId}`}
+    <div className="select-none cursor-default flex flex-col gap-12 text-white">
+      <header className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <span className="text-sm uppercase tracking-[0.35em] text-white/60">History</span>
+          <h1 className="text-4xl font-semibold">Share history</h1>
+          <p className="max-w-2xl text-base text-white/70">Review distributed certificates and manage revocations for {certificateLabel}.</p>
+        </div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="text-sm text-white/70">
+            Certificate: <span className="text-white">{certificateLabel}</span>
           </div>
-          <div className="w-[550px] flex justify-between ">
-            <div className="flex flex-row items-center">
-              <input
-                className="text-noto text-[14px] border-1 rounded-[7px] px-[20px] py-[15px] w-[224px] h-[39px]"
-                type="text"
-                placeholder="Search recipients..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex justify-between items-center">
-              <p className="ml-10 mr-10 font-bold text-[14px]">
-                {selected.size} Selected
-              </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              className="h-10 w-full max-w-xs rounded-full border border-white/20 bg-white/10 px-4 text-sm text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
+              type="text"
+              placeholder="Search recipients..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-white/70">{selected.size} selected</span>
               <button
                 disabled={selected.size === 0 || revoking}
                 onClick={handleRevoke}
-                className={`text-noto font-bold text-[14px] rounded-[10px] h-[39px] px-6 flex items-center ${
+                className={`inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-semibold transition ${
                   selected.size === 0 || revoking
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : "bg-primary_button text-secondary_text hover:opacity-90"
+                    ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                    : 'bg-primary_button text-white hover:scale-[1.01]'
                 }`}
               >
-                {revoking ? "Revoking..." : "Revoke Selected"}
+                {revoking ? 'Revoking...' : 'Revoke selected'}
               </button>
             </div>
           </div>
         </div>
-      </div>
-      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex-col justify-center w-full h-full px-[100px] mt-[25px] py-[48px]">
-        {/* States */}
-        {loading && <div className="px-2 py-4">Loading...</div>}
-        {err && !loading && <div className="px-2 py-4 text-red-500">{err}</div>}
+      </header>
+
+      <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 flex flex-col gap-6">
+        {loading && <div className="text-sm text-white/70">Loading history...</div>}
+        {err && !loading && (
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/20 px-5 py-4 text-sm text-red-100 shadow-lg">{err}</div>
+        )}
         {!loading && !err && filtered.length === 0 && (
-          <EmptyState
-            title="No participants found."
-            description={emptyDescription}
-          />
+          <div className="rounded-3xl border border-white/20 bg-white/95 px-6 py-12 text-center text-primary_text shadow-xl">
+            <EmptyState title="No participants found." description={emptyDescription} />
+          </div>
         )}
 
-        {/* Table */}
         {!loading && !err && filtered.length > 0 && (
-          <>
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left border-collapse border border-gray-300">
-                <thead className="bg-[#f3f3f3]">
+          <div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
+            <div className="max-h-[580px] overflow-auto">
+              <table className="min-w-full table-fixed">
+                <thead className="bg-transparent text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
                   <tr>
-                    <th className="w-[60px] text-gray-700 border border-gray-300 text-center">
+                    <th className="w-14 px-5 py-3 text-center">
                       <input
                         type="checkbox"
-                      checked={allSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = !allSelected && someSelected;
-                      }}
-                      onChange={toggleAll}
-                    />
-                  </th>
-                  {columns.map((col) => (
-                    <th
-                      key={col}
-                      className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300"
-                    >
-                      {col}
+                        checked={allSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = !allSelected && someSelected;
+                        }}
+                        onChange={toggleAll}
+                      />
                     </th>
-                  ))}
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[150px]">
-                    Issue Date & Time
-                  </th>
-                  <th className="p-3 text-center text-[14px] font-semibold text-gray-700 border border-gray-300 w-[120px]">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  const checked = selected.has(r.id);
-                  return (
-                    <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="p-4 text-gray-800 border border-gray-300 text-center">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleOne(r.id)}
-                          disabled={revoking || r.status === "Revoked"}
-                        />
-                      </td>
-                      {columns.map((col) => (
-                        <td
-                          key={col}
-                          className="p-3 text-sm text-gray-800 border border-gray-300"
-                        >
-                          {r.data[col] || ""}
+                    {columns.map((col) => (
+                      <th key={col} className="px-5 py-3">
+                        {col}
+                      </th>
+                    ))}
+                    <th className="px-5 py-3">Issue date &amp; time</th>
+                    <th className="px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                  {filtered.map((r) => {
+                    const checked = selected.has(r.id);
+                    return (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-5 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleOne(r.id)}
+                            disabled={revoking || r.status === 'Revoked'}
+                          />
                         </td>
-                      ))}
-                      <td className="p-3 text-sm text-gray-800 border border-gray-300 text-center">
-                        {r.issueDate}
-                      </td>
-                      <td
-                        className={`p-3 text-sm border border-gray-300 text-center font-semibold ${
-                          r.status === "Revoked" ? "text-red-600" : "text-green-600"
-                        }`}
-                      >
-                        {r.status}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                        {columns.map((col) => (
+                          <td key={col} className="px-5 py-3">
+                            {r.data[col] || ''}
+                          </td>
+                        ))}
+                        <td className="px-5 py-3 text-center">{r.issueDate}</td>
+                        <td
+                          className={`px-5 py-3 text-center font-semibold ${
+                            r.status === 'Revoked' ? 'text-red-600' : 'text-emerald-600'
+                          }`}
+                        >
+                          {r.status}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
-            <div className="mt-6 flex justify-center">
+            <div className="flex justify-end border-t border-gray-200 px-6 py-4">
               <button
                 onClick={handleExportCsv}
-                className="rounded-md bg-primary_button px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
+                className="inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-2 text-sm font-semibold text-white transition hover:scale-[1.01]"
               >
                 Download CSV
               </button>
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
+
 };
 
 export { HistoryPage };
