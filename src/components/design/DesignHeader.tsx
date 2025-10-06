@@ -41,7 +41,7 @@ const DesignHeader = ({
 	};
 
 	return (
-		<div className="flex flex-row items-center ml-auto gap-3">
+		<div className="flex w-full flex-wrap items-center justify-end gap-3">
 			{/* form here */}
 			{lastSaved && (
 				<p className="text-gray-200 text-sm mt-1">

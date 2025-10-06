@@ -18,22 +18,22 @@ const ShareModal: React.FC<ShareModalProps> = ({
   if (!cert) return null; // don't render if no cert is selected
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-[512px] rounded-2xl bg-white p-8 shadow-lg">
-        <p className="text-lg font-medium mb-6">
-          Would you like to share{" "}
-          <span className="font-semibold">{cert.name}</span>?
-        </p>
-
-        <div className="flex gap-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="w-full max-w-[480px] rounded-[28px] border border-white/25 bg-white/95 p-8 text-primary_text shadow-2xl sm:p-10">
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold">Share certificate</h2>
+          <p className="text-sm text-gray-600">Would you like to share <span className="font-semibold">{cert.name}</span>?
+          </p>
+        </div>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
-            className="flex-1 rounded-md bg-gray-200 py-2 text-gray-800"
+            className="flex-1 rounded-full border border-white/40 bg-white/90 px-4 py-3 text-sm font-semibold text-primary_button transition hover:scale-[1.01]"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
-            className="flex-1 rounded-md bg-primary_button py-2 text-white"
+            className="flex-1 rounded-full bg-primary_button px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01]"
             onClick={() => onConfirm(cert.id)}
           >
             Share

@@ -662,54 +662,69 @@ const PreviewPage = () => {
 	};
 
 	return (
-		<div className="select-none cursor-default">
-			<div className="font-noto bg-secondary_background rounded-[15px] flex  flex-row items-center w-full h-[72px] px-[20px]">
-				{/* back button */}
+		<div className="select-none cursor-default flex flex-col gap-12 text-white">
+			<header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-wrap items-center gap-4">
+						<button
+							onClick={() => void navigate(-1)}
+							className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+						>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+								<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+							</svg>
+							Back
+						</button>
+						<span className="text-sm uppercase tracking-[0.35em] text-white/60">
+							Collection
+						</span>
+					</div>
+					<div className="space-y-2">
+						<h1 className="text-4xl font-semibold">Preview certificate</h1>
+						<p className="max-w-2xl text-base text-white/70">
+							Confirm the layout with real participant data before distributing your certificates.
+						</p>
+					</div>
+				</div>
 				<button
-					className="text-noto text-[14px] bg-white text-primary_text rounded-[7px] w-[120px] h-[39px] flex justify-center items-center  underline "
-					onClick={() => void navigate(-1)}>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="currentColor">
-						<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-					</svg>
-					Edit
+					onClick={handleSend}
+					className="inline-flex items-center justify-center rounded-full bg-primary_button px-8 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+				>
+					Next step
 				</button>
-				{/* div text  */}
-				<div className="absolute left-1/2 transform  -translate-x-1/2">
-					<p className="font-semibold text-[25px] w-fit ">Preview</p>
-				</div>
-				{/*div button*/}
-				<div className="ml-auto">
-					<button
-						className="text-noto text-[14px] bg-primary_button text-secondary_text rounded-[7px] w-[90px] h-[39px] flex justify-center items-center "
-						onClick={handleSend}>
-						Next step
-					</button>
-				</div>
-			</div>
-			<div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex justify-start w-full h-full px-[40px] mt-[25px] py-[48px] ">
-				{/* <div className='flex flex-col xl:flex-row w-full h-full'> */}
-				<div className="flex flex-col w-full h-full gap-10">
-					{/* <div className='flex flex-col w-full xl:w-1/2 2xl:w-3/5 min-w-[700px] flex-shrink-0 items-start'> */}
-					<div className="flex flex-col w-full min-w-[750px] flex-shrink-0 items-start">
-						<div
-							// className='border-4 border-black p-2 w-full'
-							className="border-4p-2 w-full"
-							// style={{ minHeight: '400px', height: '60vh', maxHeight: '700px' }}
-							style={{ minHeight: "400px", height: "60vh" }}>
+			</header>
+
+			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
+				<div className="flex flex-col gap-8 xl:flex-row">
+					<div className="flex-1 space-y-6">
+						<div className="rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
+							<div className="flex flex-wrap items-center justify-between gap-4">
+								<div>
+									<h2 className="text-lg font-semibold text-primary_text">Certificate preview</h2>
+									<p className="text-sm text-gray-500">This canvas reflects the selected participant.</p>
+								</div>
+								<button
+									onClick={handleEdit}
+									className="inline-flex items-center justify-center rounded-full bg-primary_button px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01]"
+								>
+									Edit design
+								</button>
+							</div>
+
+						<div className="mt-6 flex justify-center">
 							{loading ? (
-								<div className="w-full h-full flex items-center justify-center bg-gray-100">
-									<p className="text-gray-600">
-										Loading certificate...
-									</p>
+								<div
+									className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
+									style={{ width: "850px", height: "600px" }}
+								>
+									Loading certificate...
 								</div>
 							) : certificate ? (
 								<div
 									id="certificate-preview"
-									className="w-full h-full bg-white relative flex items-center justify-center">
+									className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white"
+									style={{ width: "850px", height: "600px" }}
+								>
 									<canvas
 										id="preview-canvas"
 										style={{
@@ -720,143 +735,86 @@ const PreviewPage = () => {
 									/>
 								</div>
 							) : (
-								<div className="w-full h-full flex items-center justify-center bg-gray-100">
-									<p className="text-gray-600">
-										No certificate found
-									</p>
+								<div
+									className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
+									style={{ width: "850px", height: "600px" }}
+								>
+									No certificate found
 								</div>
 							)}
 						</div>
 
-						{/* Edit Design Button */}
-						<div className="mt-5 flex flex-row justify-between items-center w-full">
-							<button
-								className="bg-primary_button text-white px-5 h-[40px] rounded-[7px] text-sm font-medium "
-								onClick={handleEdit}>
-								Edit Design
-							</button>
-							{/* Navigation arrows */}
-							<div className="flex justify-center gap-2">
-								<button className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-400">
-									<svg
-										width="16"
-										height="16"
-										viewBox="0 0 24 24"
-										fill="currentColor">
-										<path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-									</svg>
-								</button>
-								<button className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-400">
-									<svg
-										width="16"
-										height="16"
-										viewBox="0 0 24 24"
-										fill="currentColor">
-										<path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
-									</svg>
-								</button>
-							</div>
+							<div className="mt-6 border-t border-gray-100 pt-4 text-xs uppercase tracking-[0.25em] text-gray-400">Preview only</div>
 						</div>
 					</div>
 
-					{/* Participants Table */}
-					{/* <div className='w-full xl:w-1/2 2xl:w-2/5 pl-0 xl:pl-[20px] mt-8 xl:mt-0 flex-shrink-0'> */}
-					<div className="w-full pl-0 xl:pl-[20px] mt-8 xl:mt-0 flex-shrink-0">
-						<div
-							className="overflow-auto max-h-[600px] scrollbar-visible"
-							style={{ scrollbarWidth: "auto" }}>
-							<table className="min-w-full border border-gray-200 text-center text-sm table-auto">
-								<thead>
-									<tr className="bg-gray-100">
-										{columns.length > 0 ? (
-											columns.map((col, index) => (
-												<th
-													key={col}
-													className={`font-normal px-6 py-2 ${
-														index <
-														columns.length - 1
-															? "border-r border-gray-200"
-															: ""
-													}`}>
-													{col}
-												</th>
+					<div className="xl:w-[420px]">
+						<div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
+							<div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
+								<h2 className="text-lg font-semibold text-primary_text">Participants</h2>
+								<span className="text-sm text-gray-500">{participants.length} total</span>
+							</div>
+							<div className="max-h-[520px] overflow-auto">
+								<table className="min-w-full">
+									<thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+										<tr>
+											{columns.length > 0 ? (
+												columns.map((col) => (
+													<th key={col} className="px-5 py-3">
+														{col}
+													</th>
+												))
+											) : (
+												<th className="px-5 py-3">No columns</th>
+											)}
+									</tr>
+									</thead>
+									<tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+										{loading ? (
+											<tr>
+												<td
+													colSpan={Math.max(columns.length, 1)}
+													className="px-6 py-8 text-center text-gray-500"
+												>
+													Loading participants...
+												</td>
+											</tr>
+										) : participants.length > 0 ? (
+											participants.map((recipient, index) => (
+												<tr
+													key={recipient.id ?? `participant-${index}`}
+													className={`cursor-pointer transition ${
+														selectedParticipant?.id === recipient.id
+															? 'bg-primary_button/10'
+															: 'hover:bg-primary_button/5'
+													}`}
+													onClick={() => handleParticipantClick(recipient)}
+												>
+													{columns.length > 0 ? (
+														columns.map((col) => (
+															<td key={col} className="px-5 py-3 text-left">
+																{recipient.data?.[col] ?? ''}
+															</td>
+														))
+													) : null}
+												</tr>
 											))
 										) : (
-											<th className="font-normal px-6 py-2">
-												No columns
-											</th>
-										)}
-									</tr>
-								</thead>
-								<tbody>
-									{loading ? (
-										<tr>
-											<td
-												colSpan={
-													columns.length > 0
-														? columns.length
-														: 1
-												}
-												className="px-6 py-8 text-gray-500">
-												Loading participants...
-											</td>
-										</tr>
-									) : participants.length > 0 ? (
-										participants.map((recipient) => (
-											<tr
-												key={recipient.id}
-												className={`border border-gray-200 cursor-pointer hover:bg-gray-50 ${
-													selectedParticipant?.id ===
-													recipient.id
-														? "bg-blue-50 border-blue-200"
-														: ""
-												}`}
-												onClick={() =>
-													handleParticipantClick(
-														recipient
-													)
-												}>
-												{columns.length > 0
-													? columns.map(
-															(col, index) => (
-																<td
-																	key={col}
-																	className={`px-6 py-2 break-words ${
-																		index <
-																		columns.length -
-																			1
-																			? "border-r border-gray-200"
-																			: ""
-																	}`}>
-																	{recipient
-																		.data[
-																		col
-																	] || ""}
-																</td>
-															)
-													  )
-													: null}
+											<tr>
+												<td
+													colSpan={Math.max(columns.length, 1)}
+													className="px-6 py-8 text-center text-gray-500"
+													>No participants found
+												</td>
 											</tr>
-										))
-									) : (
-										<tr>
-											<td
-												colSpan={
-													columns.length > 0
-														? columns.length
-														: 1
-												}
-												className="px-6 py-8 text-gray-500">
-												No participants found
-											</td>
-										</tr>
-									)}
-								</tbody>
-							</table>
+										)}
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 		</div>
 	);
 };
