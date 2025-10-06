@@ -512,7 +512,7 @@ const PropertiesPanel = ({
 											!isAlignDropdownOpen
 										)
 									}
-									className="px-3 py-1 border rounded bg-designcanvas_background text-gray-700 border-gray-300 hover:bg-gray-50">
+									className="px-2 py-1 border rounded bg-designcanvas_background text-gray-700 border-gray-300 hover:bg-gray-50">
 									<img
 										src={
 											currentTextAlign === "left"
@@ -533,7 +533,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("left")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignLeftIcon}
 												alt="Align Left"
@@ -544,7 +544,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("center")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignCenterIcon}
 												alt="Align Center"
@@ -555,7 +555,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("right")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignRightIcon}
 												alt="Align Right"
@@ -660,7 +660,7 @@ const PropertiesPanel = ({
 											!isAlignDropdownOpen
 										)
 									}
-									className="px-3 py-1 border rounded bg-designcanvas_background text-gray-700 border-gray-300 hover:bg-gray-50">
+									className="px-2 py-1 border rounded bg-designcanvas_background text-gray-700 border-gray-300 hover:bg-gray-50">
 									<img
 										src={
 											currentTextAlign === "left"
@@ -681,7 +681,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("left")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignLeftIcon}
 												alt="Align Left"
@@ -692,7 +692,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("center")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignCenterIcon}
 												alt="Align Center"
@@ -703,7 +703,7 @@ const PropertiesPanel = ({
 											onClick={() =>
 												handleTextAlignChange("right")
 											}
-											className="px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
+											className="px-1 py-2 hover:bg-gray-100 rounded flex items-center justify-center">
 											<img
 												src={AlignRightIcon}
 												alt="Align Right"
