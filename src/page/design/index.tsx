@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
-import { useNavigate, useParams, useLocation, useOutletContext } from "react-router";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useLocation } from "react-router";
 import * as fabric from "fabric";
 import DesignHeader from "@/components/design/DesignHeader";
 import CertificateCanvas from "@/components/design/CertificateCanvas";
@@ -58,10 +58,6 @@ const DesignPage = () => {
 	const [snapToGrid] = useState(true);
 	const [gridSize] = useState(20);
 	const [lastSaved, setLastSaved] = useState<string | null>(null);
-
-	const { setPageTopBarProps } = useOutletContext<{
-		setPageTopBarProps: (props: { content: ReactNode } | null) => void;
-	}>();
 
 	// Fetch certificate design
 	const fetchCertificateDesign = useCallback(async () => {
@@ -338,33 +334,20 @@ const DesignPage = () => {
 		handleCanvasReadyUtil(canvas, canvasRef, designData, addQRanchor, setSelectedElement);
 	};
 
-	useEffect(() => {
-		setPageTopBarProps({
-			content: (
-				<DesignHeader
-					certificateName={certificateName}
-					setCertificateName={setCertificateName}
-					onSave={handleSaveCertificate}
-					onShare={handleShare}
-					lastSaved={lastSaved}
-				/>
-			),
-		});
-		return () => setPageTopBarProps(null);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [certificateName, lastSaved, setPageTopBarProps]);
-
 	// Show loading state while fetching design data or if no certificate ID
 	if (isLoading || (certId && !isDataFetched)) {
 		return (
 			<div className="select-none cursor-default">
-				<DesignHeader
-					certificateName={certificateName}
-					setCertificateName={setCertificateName}
-					onSave={handleSaveCertificate}
-					onShare={handleShare}
-					lastSaved={lastSaved}
-				/>
+				<div className="text-4xl font-semibold text-white flex justify-between w-full">
+					<h1 className="w-5/12">Certificate Canvas</h1>
+					<DesignHeader
+						certificateName={certificateName}
+						setCertificateName={setCertificateName}
+						onSave={handleSaveCertificate}
+						onShare={handleShare}
+						lastSaved={lastSaved}
+					/>
+				</div>
 				<div className="flex items-center justify-center h-96">
 					<p className="text-lg">Loading design...</p>
 				</div>
@@ -374,8 +357,15 @@ const DesignPage = () => {
 
 	return (
 		<div className="select-none cursor-default">
-			<div className="text-4xl font-semibold text-white">
-				<h1>Certificate Canvas</h1>
+			<div className="text-4xl font-semibold text-white flex justify-between w-full">
+				<h1 className="w-5/12">Certificate Canvas</h1>
+				<DesignHeader
+					certificateName={certificateName}
+					setCertificateName={setCertificateName}
+					onSave={handleSaveCertificate}
+					onShare={handleShare}
+					lastSaved={lastSaved}
+				/>
 			</div>
 			<CertificateCanvas
 				activeMenu={activeMenu}
