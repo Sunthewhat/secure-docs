@@ -59,6 +59,28 @@ const PropertiesPanel = ({
 	const isQRanchor = selectedElement.get("isQRanchor") === true;
 	const isImage = selectedElement.type === "image";
 
+	// Check if it's a signature by checking the ID (signature IDs are UUIDs and don't start with "PLACEHOLDER-")
+	const elementId = selectedElement.get("id") as string;
+	const isSignature =
+		isText &&
+		elementId &&
+		!elementId.startsWith("PLACEHOLDER-") &&
+		!isAnchor &&
+		!isQRanchor;
+
+	// Don't show properties panel for signature elements
+	if (isSignature) {
+		return (
+			<div
+				className="bg-designcanvas_background border border-gray-300 rounded-full p-4 mb-4 shadow-sm mx-auto"
+				style={{ width: "854px", height: "60px" }}>
+				<div className="text-base text-white text-center">
+					Signature field (move only)
+				</div>
+			</div>
+		);
+	}
+
 	const handleColorChange = (color: string) => {
 		const isLine = selectedElement instanceof fabric.Line;
 
@@ -316,8 +338,8 @@ const PropertiesPanel = ({
 							</span>
 						</div>
 					)}
-					{/* Color Picker - Not for images or QR anchors */}
-					{!isImage && !isQRanchor && (
+					{/* Color Picker - Not for images, QR anchors, or signatures */}
+					{!isImage && !isQRanchor && !isSignature && (
 						<div className="flex items-center gap-1">
 							<label className="text-sm font-medium">
 								Color:
@@ -338,7 +360,8 @@ const PropertiesPanel = ({
 						selectedElement.get("stroke") &&
 						!isText &&
 						!isImage &&
-						!isQRanchor && (
+						!isQRanchor &&
+						!isSignature && (
 							<div className="flex items-center gap-3">
 								<label className="text-sm font-medium">
 									Border:
@@ -376,7 +399,8 @@ const PropertiesPanel = ({
 						selectedElement.get("stroke") &&
 						!isText &&
 						!isImage &&
-						!isQRanchor && (
+						!isQRanchor &&
+						!isSignature && (
 							<div className="flex items-center gap-3">
 								<label className="text-sm font-medium">
 									Border:
@@ -411,7 +435,7 @@ const PropertiesPanel = ({
 					)}
 
 					{/* Text Properties */}
-					{isText && !isAnchor && (
+					{isText && !isAnchor && !isSignature && (
 						<>
 							{/* Font Family */}
 							<div className="flex items-center gap-2">
@@ -717,8 +741,8 @@ const PropertiesPanel = ({
 					)}
 				</div>
 
-				{/* Right side - Position and Delete Buttons (not for QR anchors) */}
-				{!isQRanchor && (
+				{/* Right side - Position and Delete Buttons (not for QR anchors or signatures) */}
+				{!isQRanchor && !isSignature && (
 					<div className="flex items-center gap-2">
 						<button
 							ref={positionButtonRef}

@@ -127,8 +127,25 @@ export const addElement = (
 			});
 			break;
 		}
-		default:
-			return;
+		default: {
+			// Handle signature with signer ID
+			if (type.startsWith("signature-")) {
+				const signerId = type.replace("signature-", "");
+				fabricObject = new fabric.Textbox("Signature Here", {
+					left: 100,
+					top: 100,
+					width: 200,
+					fontSize: 18,
+					fill: "#000000",
+					fontFamily: "Arial",
+					id: signerId,
+					isSignature: true,
+					editable: false,
+				});
+			} else {
+				return;
+			}
+		}
 	}
 
 	canvasRef.current.add(fabricObject);
