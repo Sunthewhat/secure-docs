@@ -71,7 +71,9 @@ const ToolsSidebar = ({
 		}
 	};
 
-	const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+	const handleBackgroundUpload = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const file = event.target.files?.[0];
 		if (file && file.type.startsWith("image/")) {
 			try {
@@ -88,7 +90,9 @@ const ToolsSidebar = ({
 		event.target.value = "";
 	};
 
-	const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+	const handleImageUpload = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const file = event.target.files?.[0];
 		if (file && file.type.startsWith("image/")) {
 			try {
@@ -110,42 +114,61 @@ const ToolsSidebar = ({
 			<div className="flex flex-col min-h-full border-r-[3px] border-gray-950 pr-2">
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "background" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "background"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "background" ? null : "background")}
-				>
+					onClick={() =>
+						setActiveMenu(
+							activeMenu === "background" ? null : "background"
+						)
+					}>
 					<img
 						src={backgroundIcon}
 						alt="Background"
 						className="w-6 h-6 mb-2"
 						style={{
-							filter: activeMenu === "background" ? "brightness(0) invert(1)" : "",
+							filter:
+								activeMenu === "background"
+									? "brightness(0) invert(1)"
+									: "",
 						}}
 					/>
 					<span className="text-[14px]">Background</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "element" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "element"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "element" ? null : "element")}
-				>
+					onClick={() =>
+						setActiveMenu(
+							activeMenu === "element" ? null : "element"
+						)
+					}>
 					<img
 						src={elementIcon}
 						alt="Line"
 						className="w-6 h-6 mb-2"
 						style={{
-							filter: activeMenu === "element" ? "brightness(0) invert(1)" : "",
+							filter:
+								activeMenu === "element"
+									? "brightness(0) invert(1)"
+									: "",
 						}}
 					/>
 					<span className="text-[14px]">Element</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "image" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "image"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "image" ? null : "image")}
-				>
+					onClick={() =>
+						setActiveMenu(activeMenu === "image" ? null : "image")
+					}>
 					<img
 						src={imageIcon}
 						alt="Image"
@@ -161,27 +184,35 @@ const ToolsSidebar = ({
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "text" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "text"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "text" ? null : "text")}
-				>
+					onClick={() =>
+						setActiveMenu(activeMenu === "text" ? null : "text")
+					}>
 					<img
 						src={textIcon}
 						alt="Text"
 						className="w-8 h-8 mb-2"
 						style={{
 							filter:
-								activeMenu === "text" ? "brightness(0) invert(1)" : "brightness(0)",
+								activeMenu === "text"
+									? "brightness(0) invert(1)"
+									: "brightness(0)",
 						}}
 					/>
 					<span className="text-[14px]">Text</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "anchor" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "anchor"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "anchor" ? null : "anchor")}
-				>
+					onClick={() =>
+						setActiveMenu(activeMenu === "anchor" ? null : "anchor")
+					}>
 					<img
 						src={anchorIcon}
 						alt="Anchor"
@@ -197,10 +228,15 @@ const ToolsSidebar = ({
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "signature" ? "bg-black text-white" : "hover:bg-gray-100/80"
+						activeMenu === "signature"
+							? "bg-black text-white"
+							: "hover:bg-gray-100/80"
 					}`}
-					onClick={() => setActiveMenu(activeMenu === "signature" ? null : "signature")}
-				>
+					onClick={() =>
+						setActiveMenu(
+							activeMenu === "signature" ? null : "signature"
+						)
+					}>
 					<img
 						src={signatureIcon}
 						alt="Signature"
@@ -221,7 +257,7 @@ const ToolsSidebar = ({
 				{activeMenu === "background" && (
 					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
-							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80">
 								<img
 									src={uploadIcon}
 									alt="Upload"
@@ -237,18 +273,16 @@ const ToolsSidebar = ({
 								/>
 							</label>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={handleRemoveBackground}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={handleRemoveBackground}>
 								<div className="w-6 h-6 mb-2 bg-white border border-gray-300 rounded"></div>
 								<span className="text-[12px]">Remove</span>
 							</div>
 							{backgrounds.map((bgUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
-									onClick={() => onBackgroundAdd(bgUrl)}
-								>
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									onClick={() => onBackgroundAdd(bgUrl)}>
 									<img
 										src={bgUrl}
 										alt={`Background ${index + 1}`}
@@ -258,7 +292,9 @@ const ToolsSidebar = ({
 							))}
 							{loading && (
 								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
-									<span className="text-[10px] text-gray-500">Loading...</span>
+									<span className="text-[10px] text-gray-500">
+										Loading...
+									</span>
 								</div>
 							)}
 						</div>
@@ -269,9 +305,8 @@ const ToolsSidebar = ({
 					<div className=" rounded-lg ">
 						<div className="grid grid-cols-2 gap-2">
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("rectangle")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("rectangle")}>
 								<img
 									src={rectangleIcon}
 									alt="Rectangle"
@@ -281,9 +316,8 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Rectangle</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("square")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("square")}>
 								<img
 									src={squareIcon}
 									alt="Square"
@@ -293,9 +327,8 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Square</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("circle")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("circle")}>
 								<img
 									src={circleIcon}
 									alt="Circle"
@@ -306,9 +339,8 @@ const ToolsSidebar = ({
 							</div>
 
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("triangle")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("triangle")}>
 								<img
 									src={triangleIcon}
 									alt="Triangle"
@@ -318,9 +350,8 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Triangle</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("line")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("line")}>
 								<img
 									src={lineIcon}
 									alt="Line"
@@ -336,7 +367,7 @@ const ToolsSidebar = ({
 				{activeMenu === "image" && (
 					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
-							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80">
 								<img
 									src={uploadIcon}
 									alt="Upload"
@@ -354,9 +385,8 @@ const ToolsSidebar = ({
 							{graphics.map((graphicUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
-									onClick={() => onImageAdd(graphicUrl)}
-								>
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									onClick={() => onImageAdd(graphicUrl)}>
 									<img
 										src={graphicUrl}
 										alt={`Graphic ${index + 1}`}
@@ -365,8 +395,10 @@ const ToolsSidebar = ({
 								</div>
 							))}
 							{loading && (
-								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
-									<span className="text-[10px] text-gray-500">Loading...</span>
+								<div className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg">
+									<span className="text-[10px] text-gray-500">
+										Loading...
+									</span>
 								</div>
 							)}
 						</div>
@@ -378,8 +410,7 @@ const ToolsSidebar = ({
 						<div className="grid grid-cols-1 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm  rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={onTextAdd}
-							>
+								onClick={onTextAdd}>
 								<span className="text-[14px]">Text Box</span>
 							</div>
 						</div>
@@ -390,10 +421,21 @@ const ToolsSidebar = ({
 					<div className=" rounded-lg ">
 						<div className="grid grid-cols-1 gap-2">
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("anchor")}
-							>
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("anchor")}>
 								<span className="text-[12px]">Add Anchor</span>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{activeMenu === "signature" && (
+					<div className=" rounded-lg ">
+						<div className="grid grid-cols-1 gap-2">
+							<div
+								className="flex flex-col justify-center items-center w-full h-10 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => onShapeAdd("signature")}>
+								<span className="text-[12px]">Add Signer</span>
 							</div>
 						</div>
 					</div>
