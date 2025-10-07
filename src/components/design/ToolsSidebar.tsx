@@ -14,6 +14,11 @@ import signatureIcon from "@/asset/design/signature.svg";
 import { uploadBackground, uploadImage } from "@/api/file/upload";
 import { getBackgrounds, getGraphics } from "@/api/file/get";
 import { MenuType } from "@/page/design/utils/types";
+import { AddSignerModal } from "@/components/modal/AddSignerModal";
+import { addSigner } from "@/api/signer/create";
+import { getSigners } from "@/api/signer/get";
+import { useToast } from "@/components/toast/ToastContext";
+import { Signer } from "@/types/response";
 
 interface ToolsSidebarProps {
 	activeMenu: MenuType;
@@ -34,9 +39,13 @@ const ToolsSidebar = ({
 	onImageAdd,
 	onBackgroundRemove,
 }: ToolsSidebarProps) => {
+	const toast = useToast();
 	const [backgrounds, setBackgrounds] = useState<string[]>([]);
 	const [graphics, setGraphics] = useState<string[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [signers, setSigners] = useState<Signer[]>([]);
+	const [isSignerModalOpen, setIsSignerModalOpen] = useState(false);
+	const [signerLoading, setSignerLoading] = useState(false);
 
 	// Extract fetchFiles function to be reusable
 	const fetchFiles = async () => {
@@ -61,8 +70,20 @@ const ToolsSidebar = ({
 		}
 	};
 
+	const fetchSigners = async () => {
+		try {
+			const response = await getSigners();
+			if (response.success && response.data) {
+				setSigners(response.data);
+			}
+		} catch (error) {
+			console.error("Error fetching signers:", error);
+		}
+	};
+
 	useEffect(() => {
 		fetchFiles();
+		fetchSigners();
 	}, []);
 
 	const handleRemoveBackground = () => {
@@ -108,6 +129,28 @@ const ToolsSidebar = ({
 		// Clear the input value to allow uploading the same file again
 		event.target.value = "";
 	};
+
+	const handleAddSigner = async (name: string, email: string) => {
+		setSignerLoading(true);
+		try {
+			const response = await addSigner(name, email);
+			if (response.success) {
+				// Successfully added signer
+				toast.success(`Signer ${name} added successfully!`);
+				setIsSignerModalOpen(false);
+				// Refresh the signers list
+				fetchSigners();
+			} else {
+				toast.error(response.msg || "Failed to add signer");
+			}
+		} catch (error) {
+			console.error("Error adding signer:", error);
+			toast.error("Failed to add signer");
+		} finally {
+			setSignerLoading(false);
+		}
+	};
+
 	return (
 		<div className="flex">
 			{/* Main Sidebar */}
@@ -431,16 +474,35 @@ const ToolsSidebar = ({
 
 				{activeMenu === "signature" && (
 					<div className=" rounded-lg ">
-						<div className="grid grid-cols-1 gap-2">
+						<div className="grid grid-cols-1 gap-2 max-h-[717px] overflow-y-auto">
+							{signers.map((signer) => (
+								<div
+									key={signer.id}
+									className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+									onClick={() =>
+										onShapeAdd(`signature-${signer.id}`)
+									}>
+									<span className="text-[12px] truncate px-2">
+										{signer.display_name}
+									</span>
+								</div>
+							))}
 							<div
-								className="flex flex-col justify-center items-center w-full h-10 border rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("signature")}>
+								className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => setIsSignerModalOpen(true)}>
 								<span className="text-[12px]">Add Signer</span>
 							</div>
 						</div>
 					</div>
 				)}
 			</div>
+
+			<AddSignerModal
+				open={isSignerModalOpen}
+				onClose={() => setIsSignerModalOpen(false)}
+				onConfirm={handleAddSigner}
+				loading={signerLoading}
+			/>
 		</div>
 	);
 };

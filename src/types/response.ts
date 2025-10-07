@@ -83,3 +83,15 @@ export type EditParticipantResponse = BaseResponse<Participant>;
 export type DeleteParticipantResponse = BaseResponse<{ id: string }>;
 
 export type GetParticipantDataResponse = BaseResponse<ValidateParticipantData>;
+
+// signer
+export type Signer = {
+	id: string;
+	display_name: string;
+	email: string;
+	created_at?: string;
+	created_by?: string;
+};
+
+export type AddSignerResponse = BaseResponse<Signer>;
+export type GetSignersResponse = BaseResponse<Signer[]>;
