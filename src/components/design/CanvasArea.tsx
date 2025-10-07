@@ -164,9 +164,9 @@ const CanvasArea = ({ onCanvasReady, showGrid, snapToGrid, gridSize }: CanvasAre
 		const currentSnapToCenterLines = snapToCenterLines;
 
 		// Add snap-to-center-lines functionality
-		const handleObjectMoving = (e: fabric.TEvent) => {
-			if (currentSnapToGrid && (e as any).target) {
-				const obj = (e as any).target as fabric.Object;
+		const handleObjectMoving = (e: { target?: fabric.Object }) => {
+			if (currentSnapToGrid && e.target) {
+				const obj = e.target;
 				const snapped = currentSnapToCenterLines(obj, canvas);
 				obj.set({
 					left: snapped.left,
@@ -176,9 +176,9 @@ const CanvasArea = ({ onCanvasReady, showGrid, snapToGrid, gridSize }: CanvasAre
 			}
 		};
 
-		const handleObjectScaling = (e: fabric.TEvent) => {
-			if (currentSnapToGrid && (e as any).target) {
-				const obj = (e as any).target as fabric.Object;
+		const handleObjectScaling = (e: { target?: fabric.Object }) => {
+			if (currentSnapToGrid && e.target) {
+				const obj = e.target;
 				const snapped = currentSnapToCenterLines(obj, canvas);
 				obj.set({
 					left: snapped.left,

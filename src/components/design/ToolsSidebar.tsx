@@ -46,6 +46,7 @@ const ToolsSidebar = ({
 	const [signers, setSigners] = useState<Signer[]>([]);
 	const [isSignerModalOpen, setIsSignerModalOpen] = useState(false);
 	const [signerLoading, setSignerLoading] = useState(false);
+	const [signatureSearch, setSignatureSearch] = useState("");
 
 	// Extract fetchFiles function to be reusable
 	const fetchFiles = async () => {
@@ -92,9 +93,7 @@ const ToolsSidebar = ({
 		}
 	};
 
-	const handleBackgroundUpload = async (
-		event: React.ChangeEvent<HTMLInputElement>
-	) => {
+	const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 		if (file && file.type.startsWith("image/")) {
 			try {
@@ -111,9 +110,7 @@ const ToolsSidebar = ({
 		event.target.value = "";
 	};
 
-	const handleImageUpload = async (
-		event: React.ChangeEvent<HTMLInputElement>
-	) => {
+	const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 		if (file && file.type.startsWith("image/")) {
 			try {
@@ -157,61 +154,42 @@ const ToolsSidebar = ({
 			<div className="flex flex-col min-h-full border-r-[3px] border-gray-950 pr-2">
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "background"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "background" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(
-							activeMenu === "background" ? null : "background"
-						)
-					}>
+					onClick={() => setActiveMenu(activeMenu === "background" ? null : "background")}
+				>
 					<img
 						src={backgroundIcon}
 						alt="Background"
 						className="w-6 h-6 mb-2"
 						style={{
-							filter:
-								activeMenu === "background"
-									? "brightness(0) invert(1)"
-									: "",
+							filter: activeMenu === "background" ? "brightness(0) invert(1)" : "",
 						}}
 					/>
 					<span className="text-[14px]">Background</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "element"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "element" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(
-							activeMenu === "element" ? null : "element"
-						)
-					}>
+					onClick={() => setActiveMenu(activeMenu === "element" ? null : "element")}
+				>
 					<img
 						src={elementIcon}
 						alt="Line"
 						className="w-6 h-6 mb-2"
 						style={{
-							filter:
-								activeMenu === "element"
-									? "brightness(0) invert(1)"
-									: "",
+							filter: activeMenu === "element" ? "brightness(0) invert(1)" : "",
 						}}
 					/>
 					<span className="text-[14px]">Element</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "image"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "image" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(activeMenu === "image" ? null : "image")
-					}>
+					onClick={() => setActiveMenu(activeMenu === "image" ? null : "image")}
+				>
 					<img
 						src={imageIcon}
 						alt="Image"
@@ -227,35 +205,27 @@ const ToolsSidebar = ({
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "text"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "text" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(activeMenu === "text" ? null : "text")
-					}>
+					onClick={() => setActiveMenu(activeMenu === "text" ? null : "text")}
+				>
 					<img
 						src={textIcon}
 						alt="Text"
 						className="w-8 h-8 mb-2"
 						style={{
 							filter:
-								activeMenu === "text"
-									? "brightness(0) invert(1)"
-									: "brightness(0)",
+								activeMenu === "text" ? "brightness(0) invert(1)" : "brightness(0)",
 						}}
 					/>
 					<span className="text-[14px]">Text</span>
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "anchor"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "anchor" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(activeMenu === "anchor" ? null : "anchor")
-					}>
+					onClick={() => setActiveMenu(activeMenu === "anchor" ? null : "anchor")}
+				>
 					<img
 						src={anchorIcon}
 						alt="Anchor"
@@ -271,15 +241,10 @@ const ToolsSidebar = ({
 				</div>
 				<div
 					className={`flex flex-col justify-center items-center w-20 h-20 mb-6 cursor-pointer rounded-lg ${
-						activeMenu === "signature"
-							? "bg-black text-white"
-							: "hover:bg-gray-100/80"
+						activeMenu === "signature" ? "bg-black text-white" : "hover:bg-gray-100/80"
 					}`}
-					onClick={() =>
-						setActiveMenu(
-							activeMenu === "signature" ? null : "signature"
-						)
-					}>
+					onClick={() => setActiveMenu(activeMenu === "signature" ? null : "signature")}
+				>
 					<img
 						src={signatureIcon}
 						alt="Signature"
@@ -317,7 +282,8 @@ const ToolsSidebar = ({
 							</label>
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={handleRemoveBackground}>
+								onClick={handleRemoveBackground}
+							>
 								<div className="w-6 h-6 mb-2 bg-white border border-gray-300 rounded"></div>
 								<span className="text-[12px]">Remove</span>
 							</div>
@@ -325,7 +291,8 @@ const ToolsSidebar = ({
 								<div
 									key={index}
 									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
-									onClick={() => onBackgroundAdd(bgUrl)}>
+									onClick={() => onBackgroundAdd(bgUrl)}
+								>
 									<img
 										src={bgUrl}
 										alt={`Background ${index + 1}`}
@@ -335,9 +302,7 @@ const ToolsSidebar = ({
 							))}
 							{loading && (
 								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
-									<span className="text-[10px] text-gray-500">
-										Loading...
-									</span>
+									<span className="text-[10px] text-gray-500">Loading...</span>
 								</div>
 							)}
 						</div>
@@ -349,7 +314,8 @@ const ToolsSidebar = ({
 						<div className="grid grid-cols-2 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("rectangle")}>
+								onClick={() => onShapeAdd("rectangle")}
+							>
 								<img
 									src={rectangleIcon}
 									alt="Rectangle"
@@ -360,7 +326,8 @@ const ToolsSidebar = ({
 							</div>
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("square")}>
+								onClick={() => onShapeAdd("square")}
+							>
 								<img
 									src={squareIcon}
 									alt="Square"
@@ -371,7 +338,8 @@ const ToolsSidebar = ({
 							</div>
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("circle")}>
+								onClick={() => onShapeAdd("circle")}
+							>
 								<img
 									src={circleIcon}
 									alt="Circle"
@@ -383,7 +351,8 @@ const ToolsSidebar = ({
 
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("triangle")}>
+								onClick={() => onShapeAdd("triangle")}
+							>
 								<img
 									src={triangleIcon}
 									alt="Triangle"
@@ -394,7 +363,8 @@ const ToolsSidebar = ({
 							</div>
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("line")}>
+								onClick={() => onShapeAdd("line")}
+							>
 								<img
 									src={lineIcon}
 									alt="Line"
@@ -429,7 +399,8 @@ const ToolsSidebar = ({
 								<div
 									key={index}
 									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
-									onClick={() => onImageAdd(graphicUrl)}>
+									onClick={() => onImageAdd(graphicUrl)}
+								>
 									<img
 										src={graphicUrl}
 										alt={`Graphic ${index + 1}`}
@@ -439,9 +410,7 @@ const ToolsSidebar = ({
 							))}
 							{loading && (
 								<div className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg">
-									<span className="text-[10px] text-gray-500">
-										Loading...
-									</span>
+									<span className="text-[10px] text-gray-500">Loading...</span>
 								</div>
 							)}
 						</div>
@@ -453,7 +422,8 @@ const ToolsSidebar = ({
 						<div className="grid grid-cols-1 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm  rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={onTextAdd}>
+								onClick={onTextAdd}
+							>
 								<span className="text-[14px]">Text Box</span>
 							</div>
 						</div>
@@ -465,7 +435,8 @@ const ToolsSidebar = ({
 						<div className="grid grid-cols-1 gap-2">
 							<div
 								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => onShapeAdd("anchor")}>
+								onClick={() => onShapeAdd("anchor")}
+							>
 								<span className="text-[12px]">Add Anchor</span>
 							</div>
 						</div>
@@ -474,23 +445,40 @@ const ToolsSidebar = ({
 
 				{activeMenu === "signature" && (
 					<div className=" rounded-lg ">
+						<input
+							type="text"
+							placeholder="Search signatures..."
+							value={signatureSearch}
+							onChange={(e) => setSignatureSearch(e.target.value)}
+							className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+						/>
 						<div className="grid grid-cols-1 gap-2 max-h-[717px] overflow-y-auto">
-							{signers.map((signer) => (
-								<div
-									key={signer.id}
-									className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-									onClick={() =>
-										onShapeAdd(`signature-${signer.id}`)
-									}>
-									<span className="text-[12px] truncate px-2">
-										{signer.display_name}
-									</span>
-								</div>
-							))}
+							{signers
+								.filter((signer) =>
+									signer.display_name
+										.toLowerCase()
+										.includes(signatureSearch.toLowerCase())
+								)
+								.map((signer) => (
+									<div
+										key={signer.id}
+										className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+										onClick={() =>
+											onShapeAdd(
+												`signature-${signer.id}-${signer.display_name}`
+											)
+										}
+									>
+										<span className="text-[12px] truncate px-2">
+											{signer.display_name}
+										</span>
+									</div>
+								))}
 							<div
 								className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
-								onClick={() => setIsSignerModalOpen(true)}>
-								<span className="text-[12px]">Add Signer</span>
+								onClick={() => setIsSignerModalOpen(true)}
+							>
+								<span className="text-[12px]">+ Add Signer</span>
 							</div>
 						</div>
 					</div>
