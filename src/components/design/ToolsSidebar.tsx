@@ -14,6 +14,11 @@ import signatureIcon from "@/asset/design/signature.svg";
 import { uploadBackground, uploadImage } from "@/api/file/upload";
 import { getBackgrounds, getGraphics } from "@/api/file/get";
 import { MenuType } from "@/page/design/utils/types";
+import { AddSignerModal } from "@/components/modal/AddSignerModal";
+import { addSigner } from "@/api/signer/create";
+import { getSigners } from "@/api/signer/get";
+import { useToast } from "@/components/toast/ToastContext";
+import { Signer } from "@/types/response";
 
 interface ToolsSidebarProps {
 	activeMenu: MenuType;
@@ -34,9 +39,14 @@ const ToolsSidebar = ({
 	onImageAdd,
 	onBackgroundRemove,
 }: ToolsSidebarProps) => {
+	const toast = useToast();
 	const [backgrounds, setBackgrounds] = useState<string[]>([]);
 	const [graphics, setGraphics] = useState<string[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [signers, setSigners] = useState<Signer[]>([]);
+	const [isSignerModalOpen, setIsSignerModalOpen] = useState(false);
+	const [signerLoading, setSignerLoading] = useState(false);
+	const [signatureSearch, setSignatureSearch] = useState("");
 
 	// Extract fetchFiles function to be reusable
 	const fetchFiles = async () => {
@@ -61,8 +71,20 @@ const ToolsSidebar = ({
 		}
 	};
 
+	const fetchSigners = async () => {
+		try {
+			const response = await getSigners();
+			if (response.success && response.data) {
+				setSigners(response.data);
+			}
+		} catch (error) {
+			console.error("Error fetching signers:", error);
+		}
+	};
+
 	useEffect(() => {
 		fetchFiles();
+		fetchSigners();
 	}, []);
 
 	const handleRemoveBackground = () => {
@@ -104,6 +126,28 @@ const ToolsSidebar = ({
 		// Clear the input value to allow uploading the same file again
 		event.target.value = "";
 	};
+
+	const handleAddSigner = async (name: string, email: string) => {
+		setSignerLoading(true);
+		try {
+			const response = await addSigner(name, email);
+			if (response.success) {
+				// Successfully added signer
+				toast.success(`Signer ${name} added successfully!`);
+				setIsSignerModalOpen(false);
+				// Refresh the signers list
+				fetchSigners();
+			} else {
+				toast.error(response.msg || "Failed to add signer");
+			}
+		} catch (error) {
+			console.error("Error adding signer:", error);
+			toast.error("Failed to add signer");
+		} finally {
+			setSignerLoading(false);
+		}
+	};
+
 	return (
 		<div className="flex">
 			{/* Main Sidebar */}
@@ -221,7 +265,7 @@ const ToolsSidebar = ({
 				{activeMenu === "background" && (
 					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
-							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80">
 								<img
 									src={uploadIcon}
 									alt="Upload"
@@ -237,7 +281,7 @@ const ToolsSidebar = ({
 								/>
 							</label>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={handleRemoveBackground}
 							>
 								<div className="w-6 h-6 mb-2 bg-white border border-gray-300 rounded"></div>
@@ -246,7 +290,7 @@ const ToolsSidebar = ({
 							{backgrounds.map((bgUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
 									onClick={() => onBackgroundAdd(bgUrl)}
 								>
 									<img
@@ -269,7 +313,7 @@ const ToolsSidebar = ({
 					<div className=" rounded-lg ">
 						<div className="grid grid-cols-2 gap-2">
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("rectangle")}
 							>
 								<img
@@ -281,7 +325,7 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Rectangle</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("square")}
 							>
 								<img
@@ -293,7 +337,7 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Square</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("circle")}
 							>
 								<img
@@ -306,7 +350,7 @@ const ToolsSidebar = ({
 							</div>
 
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("triangle")}
 							>
 								<img
@@ -318,7 +362,7 @@ const ToolsSidebar = ({
 								<span className="text-[14px]">Triangle</span>
 							</div>
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("line")}
 							>
 								<img
@@ -336,7 +380,7 @@ const ToolsSidebar = ({
 				{activeMenu === "image" && (
 					<div className=" rounded-lg">
 						<div className="grid grid-cols-2 gap-2 max-h-[717px] overflow-y-auto">
-							<label className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80">
+							<label className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80">
 								<img
 									src={uploadIcon}
 									alt="Upload"
@@ -354,7 +398,7 @@ const ToolsSidebar = ({
 							{graphics.map((graphicUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
 									onClick={() => onImageAdd(graphicUrl)}
 								>
 									<img
@@ -365,7 +409,7 @@ const ToolsSidebar = ({
 								</div>
 							))}
 							{loading && (
-								<div className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg">
+								<div className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg">
 									<span className="text-[10px] text-gray-500">Loading...</span>
 								</div>
 							)}
@@ -390,7 +434,7 @@ const ToolsSidebar = ({
 					<div className=" rounded-lg ">
 						<div className="grid grid-cols-1 gap-2">
 							<div
-								className="flex flex-col justify-center items-center w-20 h-20 border rounded-lg cursor-pointer hover:bg-gray-50/80"
+								className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
 								onClick={() => onShapeAdd("anchor")}
 							>
 								<span className="text-[12px]">Add Anchor</span>
@@ -398,7 +442,55 @@ const ToolsSidebar = ({
 						</div>
 					</div>
 				)}
+
+				{activeMenu === "signature" && (
+					<div className=" rounded-lg ">
+						<input
+							type="text"
+							placeholder="Search signatures..."
+							value={signatureSearch}
+							onChange={(e) => setSignatureSearch(e.target.value)}
+							className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+						/>
+						<div className="grid grid-cols-1 gap-2 max-h-[717px] overflow-y-auto">
+							{signers
+								.filter((signer) =>
+									signer.display_name
+										.toLowerCase()
+										.includes(signatureSearch.toLowerCase())
+								)
+								.map((signer) => (
+									<div
+										key={signer.id}
+										className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+										onClick={() =>
+											onShapeAdd(
+												`signature-${signer.id}-${signer.display_name}`
+											)
+										}
+									>
+										<span className="text-[12px] truncate px-2">
+											{signer.display_name}
+										</span>
+									</div>
+								))}
+							<div
+								className="flex flex-col justify-center items-center w-full h-10 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80"
+								onClick={() => setIsSignerModalOpen(true)}
+							>
+								<span className="text-[12px]">+ Add Signer</span>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
+
+			<AddSignerModal
+				open={isSignerModalOpen}
+				onClose={() => setIsSignerModalOpen(false)}
+				onConfirm={handleAddSigner}
+				loading={signerLoading}
+			/>
 		</div>
 	);
 };

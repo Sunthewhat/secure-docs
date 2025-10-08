@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
-import { useNavigate, useParams, useLocation, useOutletContext } from "react-router";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useLocation } from "react-router";
 import * as fabric from "fabric";
 import DesignHeader from "@/components/design/DesignHeader";
 import CertificateCanvas from "@/components/design/CertificateCanvas";
@@ -16,8 +16,16 @@ import { MenuType } from "./utils/types";
 
 // Ensure custom properties are registered
 if (fabric.FabricObject) {
-	fabric.FabricObject.customProperties = fabric.FabricObject.customProperties || [];
-	const customProps = ["name", "id", "dbField", "isAnchor", "isQRanchor", "undeleteable"];
+	fabric.FabricObject.customProperties =
+		fabric.FabricObject.customProperties || [];
+	const customProps = [
+		"name",
+		"id",
+		"dbField",
+		"isAnchor",
+		"isQRanchor",
+		"undeleteable",
+	];
 	customProps.forEach((prop) => {
 		if (!fabric.FabricObject.customProperties.includes(prop)) {
 			fabric.FabricObject.customProperties.push(prop);
@@ -45,23 +53,22 @@ const DesignPage = () => {
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 	const [certificateName, setCertificateName] = useState("");
 	const [activeMenu, setActiveMenu] = useState<MenuType>("element");
-	const [selectedElement, setSelectedElement] = useState<fabric.Object | null>(null);
+	const [selectedElement, setSelectedElement] =
+		useState<fabric.Object | null>(null);
 	const [, setForceUpdate] = useState({});
 	const toast = useToast(); // ✅ NEW
 
 	const [isDataFetched, setIsDataFetched] = useState(false);
 	const [designData, setDesignData] = useState<object | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
-	const [certificateId, setCertificateId] = useState<string | null>(certId || null);
+	const [certificateId, setCertificateId] = useState<string | null>(
+		certId || null
+	);
 	const [showWarningModal, setShowWarningModal] = useState(false);
 	const [showGrid] = useState(false);
 	const [snapToGrid] = useState(true);
 	const [gridSize] = useState(20);
 	const [lastSaved, setLastSaved] = useState<string | null>(null);
-
-	const { setPageTopBarProps } = useOutletContext<{
-		setPageTopBarProps: (props: { content: ReactNode } | null) => void;
-	}>();
 
 	// Fetch certificate design
 	const fetchCertificateDesign = useCallback(async () => {
@@ -140,7 +147,10 @@ const DesignPage = () => {
 					requestData
 				);
 
-				if (response.status === 200 && response.data?.data?.updated_at) {
+				if (
+					response.status === 200 &&
+					response.data?.data?.updated_at
+				) {
 					setLastSaved(response.data.data.updated_at);
 				}
 				console.log("Auto-saved to server");
@@ -170,7 +180,10 @@ const DesignPage = () => {
 			const activeObject = canvasRef.current.getActiveObject();
 			if (!activeObject) return;
 
-			if (activeObject.type === "textbox" || activeObject.type === "text") {
+			if (
+				activeObject.type === "textbox" ||
+				activeObject.type === "text"
+			) {
 				const textObject = activeObject as fabric.Textbox;
 				if (textObject.isEditing) {
 					return;
@@ -211,7 +224,9 @@ const DesignPage = () => {
 		if (!canvasRef.current) return;
 
 		const canvas = canvasRef.current;
-		const existingBg = canvas.getObjects().find((obj) => obj.id === "background-image");
+		const existingBg = canvas
+			.getObjects()
+			.find((obj) => obj.id === "background-image");
 
 		if (existingBg) {
 			canvas.remove(existingBg);
@@ -300,9 +315,10 @@ const DesignPage = () => {
 		qrAnchor.setControlVisible("mtr", false);
 
 		// Override rotation methods to prevent rotation
-		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate = function () {
-			return this;
-		};
+		(qrAnchor as fabric.Rect & { rotate: () => fabric.Rect }).rotate =
+			function () {
+				return this;
+			};
 
 		// Set angle to 0 and lock it
 		qrAnchor.set("angle", 0);
@@ -331,40 +347,39 @@ const DesignPage = () => {
 
 	const handleConfirmShare = (_certId: string) => {
 		setShowWarningModal(false);
-		handleShareUtil(certificateId, certificateName, canvasRef, navigate, toast);
+		handleShareUtil(
+			certificateId,
+			certificateName,
+			canvasRef,
+			navigate,
+			toast
+		);
 	};
 
 	const handleCanvasReady = (canvas: fabric.Canvas) => {
-		handleCanvasReadyUtil(canvas, canvasRef, designData, addQRanchor, setSelectedElement);
+		handleCanvasReadyUtil(
+			canvas,
+			canvasRef,
+			designData,
+			addQRanchor,
+			setSelectedElement
+		);
 	};
-
-	useEffect(() => {
-		setPageTopBarProps({
-			content: (
-				<DesignHeader
-					certificateName={certificateName}
-					setCertificateName={setCertificateName}
-					onSave={handleSaveCertificate}
-					onShare={handleShare}
-					lastSaved={lastSaved}
-				/>
-			),
-		});
-		return () => setPageTopBarProps(null);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [certificateName, lastSaved, setPageTopBarProps]);
 
 	// Show loading state while fetching design data or if no certificate ID
 	if (isLoading || (certId && !isDataFetched)) {
 		return (
 			<div className="select-none cursor-default">
-				<DesignHeader
-					certificateName={certificateName}
-					setCertificateName={setCertificateName}
-					onSave={handleSaveCertificate}
-					onShare={handleShare}
-					lastSaved={lastSaved}
-				/>
+				<div className="text-4xl font-semibold text-white flex justify-between w-full">
+					<h1 className="w-5/12">Certificate Canvas</h1>
+					<DesignHeader
+						certificateName={certificateName}
+						setCertificateName={setCertificateName}
+						onSave={handleSaveCertificate}
+						onShare={handleShare}
+						lastSaved={lastSaved}
+					/>
+				</div>
 				<div className="flex items-center justify-center h-96">
 					<p className="text-lg">Loading design...</p>
 				</div>
@@ -374,8 +389,15 @@ const DesignPage = () => {
 
 	return (
 		<div className="select-none cursor-default">
-			<div className="text-4xl font-semibold text-white">
-				<h1>Certificate Canvas</h1>
+			<div className="text-4xl font-semibold text-white flex justify-between w-full">
+				<h1 className="w-5/12">Certificate Canvas</h1>
+				<DesignHeader
+					certificateName={certificateName}
+					setCertificateName={setCertificateName}
+					onSave={handleSaveCertificate}
+					onShare={handleShare}
+					lastSaved={lastSaved}
+				/>
 			</div>
 			<CertificateCanvas
 				activeMenu={activeMenu}
@@ -394,8 +416,28 @@ const DesignPage = () => {
 				onBringForward={() => {
 					if (!selectedElement || !canvasRef.current) return;
 					canvasRef.current.bringObjectForward(selectedElement);
+
+					// Ensure signatures stay on top (but below QR anchor)
+					const signatures = canvasRef.current
+						.getObjects()
+						.filter((obj) => {
+							const id = obj.get("id") as string;
+							return (
+								obj.type === "textbox" &&
+								id &&
+								!id.startsWith("PLACEHOLDER-") &&
+								!obj.isAnchor &&
+								!obj.isQRanchor
+							);
+						});
+					signatures.forEach((signature) => {
+						canvasRef.current?.bringObjectToFront(signature);
+					});
+
 					// Ensure QR anchor stays on top
-					const qrAnchor = canvasRef.current.getObjects().find((obj) => obj.isQRanchor);
+					const qrAnchor = canvasRef.current
+						.getObjects()
+						.find((obj) => obj.isQRanchor);
 					if (qrAnchor) {
 						canvasRef.current.bringObjectToFront(qrAnchor);
 					}
@@ -405,13 +447,59 @@ const DesignPage = () => {
 					if (!selectedElement || !canvasRef.current) return;
 					if (selectedElement.id === "background-image") return;
 					canvasRef.current.sendObjectBackwards(selectedElement);
+
+					// Ensure signatures stay on top (but below QR anchor)
+					const signatures = canvasRef.current
+						.getObjects()
+						.filter((obj) => {
+							const id = obj.get("id") as string;
+							return (
+								obj.type === "textbox" &&
+								id &&
+								!id.startsWith("PLACEHOLDER-") &&
+								!obj.isAnchor &&
+								!obj.isQRanchor
+							);
+						});
+					signatures.forEach((signature) => {
+						canvasRef.current?.bringObjectToFront(signature);
+					});
+
+					// Ensure QR anchor stays on top
+					const qrAnchor = canvasRef.current
+						.getObjects()
+						.find((obj) => obj.isQRanchor);
+					if (qrAnchor) {
+						canvasRef.current.bringObjectToFront(qrAnchor);
+					}
+
 					canvasRef.current.renderAll();
 				}}
 				onBringToFront={() => {
 					if (!selectedElement || !canvasRef.current) return;
 					canvasRef.current.bringObjectToFront(selectedElement);
+
+					// Ensure signatures stay on top (but below QR anchor)
+					const signatures = canvasRef.current
+						.getObjects()
+						.filter((obj) => {
+							const id = obj.get("id") as string;
+							return (
+								obj.type === "textbox" &&
+								id &&
+								!id.startsWith("PLACEHOLDER-") &&
+								!obj.isAnchor &&
+								!obj.isQRanchor
+							);
+						});
+					signatures.forEach((signature) => {
+						canvasRef.current?.bringObjectToFront(signature);
+					});
+
 					// Ensure QR anchor stays on top
-					const qrAnchor = canvasRef.current.getObjects().find((obj) => obj.isQRanchor);
+					const qrAnchor = canvasRef.current
+						.getObjects()
+						.find((obj) => obj.isQRanchor);
 					if (qrAnchor && qrAnchor !== selectedElement) {
 						canvasRef.current.bringObjectToFront(qrAnchor);
 					}
@@ -428,6 +516,32 @@ const DesignPage = () => {
 					if (backgroundImage) {
 						canvasRef.current.sendObjectToBack(backgroundImage);
 					}
+
+					// Ensure signatures stay on top (but below QR anchor)
+					const signatures = canvasRef.current
+						.getObjects()
+						.filter((obj) => {
+							const id = obj.get("id") as string;
+							return (
+								obj.type === "textbox" &&
+								id &&
+								!id.startsWith("PLACEHOLDER-") &&
+								!obj.isAnchor &&
+								!obj.isQRanchor
+							);
+						});
+					signatures.forEach((signature) => {
+						canvasRef.current?.bringObjectToFront(signature);
+					});
+
+					// Ensure QR anchor stays on top
+					const qrAnchor = canvasRef.current
+						.getObjects()
+						.find((obj) => obj.isQRanchor);
+					if (qrAnchor) {
+						canvasRef.current.bringObjectToFront(qrAnchor);
+					}
+
 					canvasRef.current.renderAll();
 				}}
 			/>

@@ -44,6 +44,26 @@ export const handleCanvasReadyUtil = (
 				canvas.bringObjectToFront(existingQRanchor);
 			}
 
+			// Bring all signature elements to front
+			const signatures = canvas.getObjects().filter((obj) => {
+				const id = obj.get("id") as string;
+				return (
+					obj.type === "textbox" &&
+					id &&
+					!id.startsWith("PLACEHOLDER-") &&
+					!obj.isAnchor &&
+					!obj.isQRanchor
+				);
+			});
+			signatures.forEach((signature) => {
+				canvas.bringObjectToFront(signature);
+			});
+
+			// Ensure QR anchor is still on top after signatures
+			if (existingQRanchor) {
+				canvas.bringObjectToFront(existingQRanchor);
+			}
+
 			canvas.requestRenderAll();
 		});
 	} else {
@@ -51,18 +71,41 @@ export const handleCanvasReadyUtil = (
 		setTimeout(() => addQRanchor(), 100);
 	}
 
-	// Keep QR anchor always on top when objects are added or reordered
-	const ensureQRanchorOnTop = () => {
-		const qrAnchor = canvas.getObjects().find((obj) => obj.isQRanchor);
+	// Keep QR anchor and signatures always on top when objects are added or reordered
+	const ensureQRanchorAndSignaturesOnTop = () => {
+		const objects = canvas.getObjects();
+
+		// Find QR anchor
+		const qrAnchor = objects.find((obj) => obj.isQRanchor);
+
+		// Find signature elements (text elements with IDs that don't start with "PLACEHOLDER-")
+		const signatures = objects.filter((obj) => {
+			const id = obj.get("id") as string;
+			return (
+				obj.type === "textbox" &&
+				id &&
+				!id.startsWith("PLACEHOLDER-") &&
+				!obj.isAnchor &&
+				!obj.isQRanchor
+			);
+		});
+
+		// Bring signatures to front first
+		signatures.forEach((signature) => {
+			canvas.bringObjectToFront(signature);
+		});
+
+		// Then bring QR anchor to front (so it's above signatures)
 		if (qrAnchor) {
 			canvas.bringObjectToFront(qrAnchor);
-			canvas.requestRenderAll();
 		}
+
+		canvas.requestRenderAll();
 	};
 
 	// Add event listeners
-	canvas.on("object:added", ensureQRanchorOnTop);
-	canvas.on("object:modified", ensureQRanchorOnTop);
+	canvas.on("object:added", ensureQRanchorAndSignaturesOnTop);
+	canvas.on("object:modified", ensureQRanchorAndSignaturesOnTop);
 
 	canvas.on("selection:created", () => {
 		const activeObject = canvas.getActiveObject();
