@@ -162,12 +162,12 @@ const DesignPage = () => {
 		return () => clearInterval(autoSaveInterval);
 	}, [certificateId, certificateName]);
 
-	// Add keyboard delete functionality
+	// Add keyboard delete and arrow key functionality
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!canvasRef.current) return;
 
-			// Don't trigger delete if user is typing in an input field
+			// Don't trigger if user is typing in an input field
 			const target = e.target as HTMLElement;
 			if (
 				target.tagName === "INPUT" ||
@@ -188,6 +188,37 @@ const DesignPage = () => {
 				if (textObject.isEditing) {
 					return;
 				}
+			}
+
+			// Handle arrow keys for movement
+			if (
+				e.key === "ArrowUp" ||
+				e.key === "ArrowDown" ||
+				e.key === "ArrowLeft" ||
+				e.key === "ArrowRight"
+			) {
+				e.preventDefault();
+				const currentLeft = activeObject.left || 0;
+				const currentTop = activeObject.top || 0;
+
+				switch (e.key) {
+					case "ArrowUp":
+						activeObject.set("top", currentTop - 1);
+						break;
+					case "ArrowDown":
+						activeObject.set("top", currentTop + 1);
+						break;
+					case "ArrowLeft":
+						activeObject.set("left", currentLeft - 1);
+						break;
+					case "ArrowRight":
+						activeObject.set("left", currentLeft + 1);
+						break;
+				}
+
+				activeObject.setCoords();
+				canvasRef.current.renderAll();
+				return;
 			}
 
 			// Delete with Delete, Backspace, or Ctrl+X
