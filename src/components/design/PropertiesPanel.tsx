@@ -352,7 +352,40 @@ const PropertiesPanel = ({
 						</div>
 					)}
 
-					{/* Border Width - For lines and shapes with strokes */}
+					{/* Line Width - For line elements */}
+					{isLine && (
+						<div className="flex items-center gap-3">
+							<label className="text-sm font-medium">
+								Width:
+							</label>
+							<select
+								value={currentStrokeWidth}
+								onChange={(e) =>
+									handleBorderWidthChange(
+										parseInt(e.target.value)
+									)
+								}
+								className="px-3 py-1 border border-gray-300 rounded-2xl text-sm bg-designcanvas_background">
+								<option value={1}>1px</option>
+								<option value={2}>2px</option>
+								<option value={3}>3px</option>
+								<option value={4}>4px</option>
+								<option value={5}>5px</option>
+								<option value={6}>6px</option>
+								<option value={8}>8px</option>
+								<option value={10}>10px</option>
+								<option value={12}>12px</option>
+								<option value={15}>15px</option>
+								<option value={20}>20px</option>
+								<option value={25}>25px</option>
+								<option value={30}>30px</option>
+								<option value={40}>40px</option>
+								<option value={50}>50px</option>
+							</select>
+						</div>
+					)}
+
+					{/* Border Width - For shapes with strokes */}
 					{!isLine &&
 						selectedElement.get("stroke") &&
 						!isText &&
