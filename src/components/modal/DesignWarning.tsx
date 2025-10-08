@@ -23,7 +23,7 @@ const DesignWarning: React.FC<ShareModalProps> = ({
 				<div className="space-y-4">
 					<h2 className="text-2xl font-semibold text-primary_button">Share warning</h2>
 					<p className="text-sm text-gray-600">You are about to share <span className="font-semibold">{cert.name}</span>. Please ensure anchors, signatures, and participant details are correct before proceeding.</p>
-					<p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">Warning: Once distributed, participants will receive their certificates immediately.</p>
+					{/* <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">Warning: Once distributed, participants will receive their certificates immediately.</p> */}
 				</div>
 				<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 					<button

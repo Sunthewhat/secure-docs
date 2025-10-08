@@ -34,10 +34,7 @@ export const handleShareUtil = async (
 			design: JSON.stringify(fabricDesign),
 		};
 
-		const response = await Axios.put(
-			`/certificate/${certificateId}`,
-			payload
-		);
+		const response = await Axios.put(`/certificate/${certificateId}?share=true`, payload);
 
 		if (response.status === 200) {
 			void navigate(`/share/${certificateId}`);
