@@ -59,14 +59,11 @@ const PropertiesPanel = ({
 	const isQRanchor = selectedElement.get("isQRanchor") === true;
 	const isImage = selectedElement.type === "image";
 
-	// Check if it's a signature by checking the ID (signature IDs are UUIDs and don't start with "PLACEHOLDER-")
+	// Check if it's a signature by checking the ID (signature IDs start with "SIGNATURE-")
 	const elementId = selectedElement.get("id") as string;
 	const isSignature =
-		isText &&
-		elementId &&
-		!elementId.startsWith("PLACEHOLDER-") &&
-		!isAnchor &&
-		!isQRanchor;
+		selectedElement instanceof fabric.Group &&
+		elementId?.startsWith("SIGNATURE-");
 
 	// Don't show properties panel for signature elements
 	if (isSignature) {
