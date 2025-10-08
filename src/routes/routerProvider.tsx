@@ -7,6 +7,7 @@ import { LoginPage } from "@/page/login";
 import { SharePage } from "@/page/share";
 import { PreviewPage } from "@/page/share/preview";
 import { SaveSendPage } from "@/page/share/saveSend";
+import SignaturePage from "@/page/signature";
 import { CertificateValidationResultPage } from "@/page/validate/result";
 import { CertificateValidationScanPage } from "@/page/validate/scan";
 import { FC } from "react";
@@ -76,6 +77,15 @@ const RouterProvider: FC = () => {
 					element={
 						<RequireAuth>
 							<HistoryPage />
+						</RequireAuth>
+					}
+				/>
+
+				<Route
+					path="/signature"
+					element={
+						<RequireAuth>
+							<SignaturePage />
 						</RequireAuth>
 					}
 				/>

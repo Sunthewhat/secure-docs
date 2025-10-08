@@ -1,0 +1,416 @@
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import { Axios } from "@/util/axiosInstance";
+import { useSearchParams } from "react-router-dom";
+
+const OUTPUT_WIDTH = 160;
+const OUTPUT_HEIGHT = 90;
+const WORKING_WIDTH = 640;
+const WORKING_HEIGHT = 360;
+const DISPLAY_WIDTH = 320;
+const DISPLAY_HEIGHT = 180;
+
+const SignaturePage = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasManualChanges, setHasManualChanges] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const savedSignatureRef = useRef<string | null>(null);
+  const signatureOriginRef = useRef<"draw" | "upload">("draw");
+  const [searchParams] = useSearchParams();
+  const certificateId = searchParams.get("certId");
+  const signerId = searchParams.get("signerId");
+  const signatureId = searchParams.get("signatureId");
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.width = WORKING_WIDTH;
+    canvas.height = WORKING_HEIGHT;
+    canvas.style.width = `${DISPLAY_WIDTH}px`;
+    canvas.style.height = `${DISPLAY_HEIGHT}px`;
+    canvas.style.touchAction = "none";
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.lineWidth = 2.5;
+    context.lineCap = "round";
+    context.strokeStyle = "#000000";
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+    contextRef.current = context;
+  }, []);
+
+  const resetCanvas = useCallback(() => {
+    const context = contextRef.current;
+    if (!context) return;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+    context.strokeStyle = "#000000";
+    setHasManualChanges(false);
+  }, []);
+
+  const exportCurrentCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = OUTPUT_WIDTH;
+    exportCanvas.height = OUTPUT_HEIGHT;
+    const exportContext = exportCanvas.getContext("2d");
+    if (!exportContext) return null;
+    exportContext.fillStyle = "#ffffff";
+    exportContext.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+    exportContext.drawImage(canvas, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+    return exportCanvas.toDataURL("image/png");
+  }, []);
+
+  const getCanvasCoordinates = (
+    event: ReactPointerEvent<HTMLCanvasElement>
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = WORKING_WIDTH / rect.width;
+    const scaleY = WORKING_HEIGHT / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const handlePointerDown = (
+    event: ReactPointerEvent<HTMLCanvasElement>
+  ) => {
+    event.preventDefault();
+    const context = contextRef.current;
+    if (!context) return;
+
+    const { x, y } = getCanvasCoordinates(event);
+    context.beginPath();
+    context.moveTo(x, y);
+    setIsDrawing(true);
+    setHasManualChanges(true);
+    signatureOriginRef.current = "draw";
+  };
+
+  const handlePointerMove = (
+    event: ReactPointerEvent<HTMLCanvasElement>
+  ) => {
+    if (!isDrawing) return;
+    event.preventDefault();
+    const context = contextRef.current;
+    if (!context) return;
+
+    const { x, y } = getCanvasCoordinates(event);
+    context.lineTo(x, y);
+    context.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    contextRef.current?.closePath();
+    setIsDrawing(false);
+  };
+
+  const exportForDownload = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = WORKING_WIDTH;
+    exportCanvas.height = WORKING_HEIGHT;
+    const ctx = exportCanvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+    ctx.drawImage(canvas, 0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+    return exportCanvas.toDataURL("image/png");
+  };
+
+  const dataUrlToFile = async (dataUrl: string, filename: string) => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const ext = blob.type.split("/").pop() || "png";
+    return new File([blob], `${filename}.${ext}`, { type: blob.type });
+  };
+
+  const finalizeSignature = async () => {
+    const dataUrl = exportCurrentCanvas();
+    if (!dataUrl) {
+      setUploadError("Unable to capture signature. Please try again.");
+      return;
+    }
+    savedSignatureRef.current = dataUrl;
+    setUploadError(null);
+    setHasManualChanges(false);
+    setIsConfirmOpen(false);
+    const payload = {
+      certificateId,
+      signerId,
+      origin: signatureOriginRef.current,
+      confirmedAt: new Date().toISOString(),
+    };
+
+    if (!signatureId) {
+      // eslint-disable-next-line no-console
+      console.info("Signature confirmed (no signatureId provided)", payload);
+      return;
+    }
+
+    try {
+      const signatureFile = await dataUrlToFile(
+        dataUrl,
+        `signature-${signatureId}`
+      );
+      const formData = new FormData();
+      formData.append("signature_image", signatureFile);
+
+      await Axios.put(`/signature/sign/${signatureId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // eslint-disable-next-line no-console
+      console.info("Signature uploaded", {
+        ...payload,
+        signatureId,
+      });
+    } catch (error) {
+      console.error("Failed to upload signature", error);
+      setUploadError("Failed to upload signature. Please try again.");
+    }
+  };
+
+  const downloadCurrentSignature = () => {
+    const dataUrl = exportForDownload();
+    if (!dataUrl) {
+      setUploadError("Unable to download signature. Please try again.");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = "signature.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setUploadError(null);
+  };
+
+  const handleConfirmSignature = () => {
+    setIsConfirmOpen(true);
+  };
+
+  const handleClearCanvas = () => {
+    resetCanvas();
+    savedSignatureRef.current = null;
+    setUploadError(null);
+  };
+
+  const drawImageToWorkingCanvas = (image: HTMLImageElement) => {
+    const context = contextRef.current;
+    if (!context) return false;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+
+    const scale = Math.min(
+      WORKING_WIDTH / image.width,
+      WORKING_HEIGHT / image.height
+    );
+    const drawWidth = image.width * scale;
+    const drawHeight = image.height * scale;
+    const offsetX = (WORKING_WIDTH - drawWidth) / 2;
+    const offsetY = (WORKING_HEIGHT - drawHeight) / 2;
+
+    context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    return true;
+  };
+
+  const handleUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please upload an image file (PNG, JPG, etc.).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const drawn = drawImageToWorkingCanvas(image);
+        if (!drawn) {
+          setUploadError("Unable to process the uploaded file.");
+          return;
+        }
+
+        const dataUrl = exportCurrentCanvas();
+        if (!dataUrl) {
+        setUploadError("Unable to export the uploaded signature.");
+        return;
+      }
+
+      signatureOriginRef.current = "upload";
+      savedSignatureRef.current = dataUrl;
+      setUploadError(null);
+      setHasManualChanges(true);
+      // eslint-disable-next-line no-console
+      console.info("Signature uploaded", dataUrl);
+      };
+      image.src = reader.result as string;
+    };
+    reader.onerror = () => {
+      setUploadError("Failed to read the selected file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="select-none cursor-default flex flex-col gap-12 text-white">
+      <header className="flex flex-col gap-4">
+        <span className="text-sm uppercase tracking-[0.35em] text-white/60">
+          Signature
+        </span>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-semibold">Provide your signature</h1>
+          <p className="max-w-2xl text-base text-white/70">
+            Draw directly on the canvas or upload a prepared image. We’ll size and format it correctly for certificates automatically.
+          </p>
+        </div>
+      </header>
+
+      <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="flex flex-col gap-10">
+          <div className="space-y-8">
+            <div className="rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-primary_text">
+                  Draw your signature
+                </h2>
+              </div>
+              <div className="mt-6 grid w-full gap-6 md:grid-cols-[minmax(0,auto)_1px_minmax(220px,1fr)] md:items-start">
+                <div className="flex flex-col items-start gap-4">
+                  <canvas
+                    ref={canvasRef}
+                    className="rounded-xl border border-gray-300 bg-white shadow-sm"
+                    width={WORKING_WIDTH}
+                    height={WORKING_HEIGHT}
+                    style={{
+                      width: `${DISPLAY_WIDTH}px`,
+                      height: `${DISPLAY_HEIGHT}px`,
+                    }}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={stopDrawing}
+                    onPointerLeave={stopDrawing}
+                  />
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                        hasManualChanges
+                          ? "bg-primary_button text-white hover:scale-[1.01]"
+                          : "bg-white/40 text-gray-400 cursor-not-allowed"
+                      }`}
+                      onClick={handleConfirmSignature}
+                      disabled={!hasManualChanges}
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      className="rounded-full border border-primary_button/30 bg-white px-5 py-2 text-sm font-semibold text-primary_button transition hover:scale-[1.01]"
+                      onClick={handleClearCanvas}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div className="hidden h-full w-px self-stretch rounded-full bg-white/30 md:block" />
+
+                <div className="flex min-w-[220px] flex-col gap-4 rounded-2xl border border-white/15 bg-white/80 p-4 text-primary_text shadow-inner">
+                  <div>
+                    <h3 className="text-base font-semibold text-primary_text">Prefer to upload instead?</h3>
+                    <p className="mt-1 text-sm text-gray-600">Accepted formats: PNG, JPG, JPEG. We’ll adjust the image to match the drawn signature area so it aligns perfectly when saved.</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-primary_button px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01]">
+                      Upload signature
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUploadChange}
+                      />
+                    </label>
+                  </div>
+                  {uploadError && (
+                    <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{uploadError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {isConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-10">
+          <div className="relative w-full max-w-[520px] overflow-hidden rounded-[32px] bg-white text-primary_text shadow-2xl">
+            <div className="absolute inset-0 rounded-[32px] border border-white/20" aria-hidden="true" />
+            <div className="relative p-8 sm:p-10">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-3 text-left">
+                  <h2 className="text-3xl font-semibold text-primary_text">Confirm signature</h2>
+                  <p className="text-sm leading-6 text-gray-600">
+                    This will save the signature exactly as you see it now. To adjust it later,
+                    you’ll need to create or upload a new one.
+                  </p>
+                </div>
+
+                  <div className="flex flex-col gap-3 rounded-2xl border border-primary_button/15 bg-primary_button/5 px-4 py-4 text-sm text-primary_button">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-left">Download a copy for your records before confirming.</span>
+                      <button
+                        className="rounded-full border border-primary_button/20 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-primary_button transition hover:scale-[1.02]"
+                        onClick={downloadCurrentSignature}
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    className="flex-1 rounded-full border border-primary_button/30 bg-white px-5 py-3 text-sm font-semibold text-primary_button transition hover:scale-[1.01]"
+                    onClick={() => setIsConfirmOpen(false)}
+                  >
+                    Keep editing
+                  </button>
+                  <button
+                    className="flex-1 rounded-full bg-primary_button px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02]"
+                    onClick={finalizeSignature}
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default SignaturePage;
