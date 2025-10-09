@@ -301,19 +301,34 @@ const SaveSendPage = () => {
     [participants]
   );
 
+  const nonRevokedParticipantIds = useMemo(
+    () =>
+      participants
+        .filter((participant) => !participant.is_revoked)
+        .map((participant) => participant.id)
+        .filter((id): id is string => Boolean(id)),
+    [participants]
+  );
+
   const incomingParticipants = useMemo(
     () => participants.filter((participant) => !participant.certificate_url),
     [participants]
   );
 
-  const incomingParticipantIds = useMemo(
-    () =>
-      incomingParticipants
-        .map((participant) => participant.id)
-        .filter((id): id is string => Boolean(id)),
+  const incomingActiveParticipants = useMemo(
+    () => incomingParticipants.filter((participant) => !participant.is_revoked),
     [incomingParticipants]
   );
 
+  const incomingActiveParticipantIds = useMemo(
+    () =>
+      incomingActiveParticipants
+        .map((participant) => participant.id)
+        .filter((id): id is string => Boolean(id)),
+    [incomingActiveParticipants]
+  );
+
+  const hasIncomingActive = incomingActiveParticipantIds.length > 0;
   const renderStatusMap = useMemo(() => {
     const map = new Map<string, "success" | "failed">();
     renderData?.results?.forEach((result) => {
@@ -362,52 +377,68 @@ const SaveSendPage = () => {
   };
 
   const hasGenerated = generateStatus?.is_generated ?? false;
-  const hasIncoming = incomingParticipantIds.length > 0;
   const canDistribute =
-    (!hasGenerated && Boolean(renderData)) || (hasGenerated && !hasIncoming);
+    (!hasGenerated && Boolean(renderData)) || (hasGenerated && !hasIncomingActive);
   const generateButtonLabel = hasGenerated
     ? "Generate new incoming"
     : "Generate";
 
-  // 1) GENERATE (render only)
-  const handleGenerate = async () => {
+  const runGenerate = async (
+    targetIds: string[],
+    emptyMessage: string
+  ): Promise<void> => {
     if (!certId) {
       setError("Missing certificate id.");
       return;
     }
+
     setError(null);
     setNotice(null);
     setRendering(true);
+
+    if (targetIds.length === 0) {
+      setError(emptyMessage);
+      setRendering(false);
+      return;
+    }
+
     try {
-      const targetParticipantIds = hasGenerated
-        ? incomingParticipantIds
-        : participantIds;
-
-      if (targetParticipantIds.length === 0) {
-        setError(
-          hasGenerated
-            ? "No incoming participants available to generate."
-            : "No participant IDs found."
-        );
-        return;
-      }
-
       const res = await Axios.post<RenderResponse>(
         `/certificate/render/${certId}`,
         {
-          participantIds: targetParticipantIds,
+          participantIds: targetIds,
         }
       );
       if (!res.data?.success) throw new Error(res.data?.msg || "Render failed");
       setRenderData(res.data.data);
       toast.success("Render completed.");
       await fetchGenerateStatus();
+      await fetchParticipants({ silent: true });
     } catch (e) {
       setError((e as Error).message || "Render failed");
       setRenderData(null);
     } finally {
       setRendering(false);
     }
+  };
+
+  // 1) GENERATE (render only)
+  const handleGenerate = () => {
+    const targetParticipantIds = hasGenerated
+      ? incomingActiveParticipantIds
+      : participantIds;
+
+    const emptyMessage = hasGenerated
+      ? "No incoming participants available to generate."
+      : "No participant IDs found.";
+
+    void runGenerate(targetParticipantIds, emptyMessage);
+  };
+
+  const handleGenerateExcludingRevoked = () => {
+    const emptyMessage =
+      "No participant IDs available to generate (all participants revoked).";
+    void runGenerate(nonRevokedParticipantIds, emptyMessage);
   };
 
   // 2) DOWNLOAD (first mark as distributed, then download)
@@ -712,6 +743,7 @@ const SaveSendPage = () => {
                       const renderStatus = participant.id
                         ? renderStatusMap.get(participant.id)
                         : undefined;
+                      const isRevoked = Boolean(participant.is_revoked);
                       const downloadStatus = determineDownloadStatus(
                         participant,
                         renderStatus
@@ -730,9 +762,17 @@ const SaveSendPage = () => {
                       );
                       const emailActionDisabled =
                         sending ||
+                        isRevoked ||
                         sendingParticipantId === participant.id ||
                         !participant.id ||
                         !canSendAfterRender;
+                      const emailActionLabel = isRevoked
+                        ? 'Revoked'
+                        : sendingParticipantId === participant.id
+                        ? 'Sending…'
+                        : emailStatus === 'success'
+                        ? 'Resend'
+                        : 'Send';
 
                       return (
                         <tr
@@ -812,11 +852,7 @@ const SaveSendPage = () => {
                                   : 'border-primary_button bg-primary_button/10 text-primary_button hover:scale-[1.01]'
                               }`}
                             >
-                              {sendingParticipantId === participant.id
-                                ? 'Sending…'
-                                : emailStatus === 'success'
-                                ? 'Resend'
-                                : 'Send'}
+                              {emailActionLabel}
                             </button>
                           </td>
                         </tr>
@@ -861,23 +897,36 @@ const SaveSendPage = () => {
                   </button>
                 </>
               ) : null}
-              {(!hasGenerated || hasIncoming) && (
+              {(!hasGenerated || hasIncomingActive) && (
                 <button
                   onClick={handleGenerate}
                   disabled={
                     rendering ||
                     (!hasGenerated && participants.length === 0) ||
-                    (hasGenerated && !hasIncoming)
+                    (hasGenerated && !hasIncomingActive)
                   }
                   className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
                     rendering ||
                     (!hasGenerated && participants.length === 0) ||
-                    (hasGenerated && !hasIncoming)
+                    (hasGenerated && !hasIncomingActive)
                       ? 'cursor-not-allowed opacity-60'
                       : ''
                   }`}
                 >
                   {rendering ? 'Rendering…' : generateButtonLabel}
+                </button>
+              )}
+              {!canDistribute && (
+                <button
+                  onClick={handleGenerateExcludingRevoked}
+                  disabled={rendering || nonRevokedParticipantIds.length === 0}
+                  className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
+                    rendering || nonRevokedParticipantIds.length === 0
+                      ? 'cursor-not-allowed opacity-60'
+                      : ''
+                  }`}
+                >
+                  {rendering ? 'Rendering…' : 'Generate All Except Revoke'}
                 </button>
               )}
             </div>
