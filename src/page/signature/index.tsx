@@ -9,8 +9,8 @@ import {
 import { Axios } from "@/util/axiosInstance";
 import { useParams } from "react-router-dom";
 
-const OUTPUT_WIDTH = 160;
-const OUTPUT_HEIGHT = 90;
+const OUTPUT_WIDTH = 800;
+const OUTPUT_HEIGHT = 450;
 const WORKING_WIDTH = 640;
 const WORKING_HEIGHT = 360;
 const DISPLAY_WIDTH = 320;
@@ -74,16 +74,17 @@ const SignaturePage = () => {
 		context.lineWidth = 2.5;
 		context.lineCap = "round";
 		context.strokeStyle = "#000000";
-		context.fillStyle = "#ffffff";
-		context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+		// context.fillStyle = "#ffffff";
+		// context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		contextRef.current = context;
 	}, []);
 
 	const resetCanvas = useCallback(() => {
 		const context = contextRef.current;
 		if (!context) return;
-		context.fillStyle = "#ffffff";
-		context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+		// context.fillStyle = "#ffffff";
+		// context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+		context.clearRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		context.strokeStyle = "#000000";
 		setHasManualChanges(false);
 	}, []);
@@ -96,8 +97,8 @@ const SignaturePage = () => {
 		exportCanvas.height = OUTPUT_HEIGHT;
 		const exportContext = exportCanvas.getContext("2d");
 		if (!exportContext) return null;
-		exportContext.fillStyle = "#ffffff";
-		exportContext.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+		// exportContext.fillStyle = "#ffffff";
+		// exportContext.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 		exportContext.drawImage(canvas, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 		return exportCanvas.toDataURL("image/png");
 	}, []);
@@ -238,16 +239,53 @@ const SignaturePage = () => {
 		const context = contextRef.current;
 		if (!context) return false;
 
+		// Create temporary canvas for background removal
+		const tempCanvas = document.createElement("canvas");
+		tempCanvas.width = image.width;
+		tempCanvas.height = image.height;
+		const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+		if (!tempCtx) return false;
+
+		// Draw image to temp canvas
+		tempCtx.drawImage(image, 0, 0);
+
+		// Get image data and process it
+		const imageData = tempCtx.getImageData(0, 0, image.width, image.height);
+		const data = imageData.data;
+
+		// Remove white background
+		const threshold = 200;
+		for (let i = 0; i < data.length; i += 4) {
+			const r = data[i];
+			const g = data[i + 1];
+			const b = data[i + 2];
+			const brightness = (r + g + b) / 3;
+
+			if (brightness > threshold) {
+				// Make white/light pixels transparent
+				data[i + 3] = 0;
+			} else if (brightness > threshold - 50) {
+				// Smooth edges
+				const alpha = 255 - Math.floor(((brightness - (threshold - 50)) / 50) * 255);
+				data[i + 3] = alpha;
+			}
+		}
+
+		// Put processed data back
+		tempCtx.putImageData(imageData, 0, 0);
+
+		// Clear working canvas with white background
 		context.fillStyle = "#ffffff";
 		context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 
+		// Scale and center the processed image
 		const scale = Math.min(WORKING_WIDTH / image.width, WORKING_HEIGHT / image.height);
 		const drawWidth = image.width * scale;
 		const drawHeight = image.height * scale;
 		const offsetX = (WORKING_WIDTH - drawWidth) / 2;
 		const offsetY = (WORKING_HEIGHT - drawHeight) / 2;
 
-		context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+		context.drawImage(tempCanvas, offsetX, offsetY, drawWidth, drawHeight);
 		return true;
 	};
 
