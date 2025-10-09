@@ -60,8 +60,11 @@ export const addElement = (
 				strokeWidth: 1,
 			});
 			break;
-		case "line":
-			fabricObject = new fabric.Line([0, 0, 100, 0], {
+		case "line": {
+			const lineWidth = 100;
+			const lineHeight = 0;
+
+			fabricObject = new fabric.Line([0, 0, lineWidth, lineHeight], {
 				left: 100,
 				top: 100,
 				stroke: color,
@@ -70,7 +73,14 @@ export const addElement = (
 				originX: "left",
 				originY: "top",
 			});
+
+			// Add event handler to maintain line aspect ratio during scaling
+			fabricObject.on("scaling", function (this: fabric.Line) {
+				// For a horizontal line, always reset scaleY to 1 to keep it straight
+				this.scaleY = 1;
+			});
 			break;
+		}
 		case "text":
 			fabricObject = new fabric.Textbox("Sample Text", {
 				left: 100,
@@ -136,11 +146,13 @@ export const addElement = (
 				const parts = type.replace("signature-", "").split("-");
 
 				let signerId = "";
-				for (let i = 0; i < 5; i++) signerId += i < 4 ? parts[i] + "-" : parts[i];
+				for (let i = 0; i < 5; i++)
+					signerId += i < 4 ? parts[i] + "-" : parts[i];
 
 				let displayName = "";
 				for (let i = 5; i < parts.length; i++)
-					displayName += i < parts.length - 1 ? parts[i] + "-" : parts[i];
+					displayName +=
+						i < parts.length - 1 ? parts[i] + "-" : parts[i];
 
 				// Create a rectangle with 16:9 aspect ratio (landscape)
 				const width = 320;
@@ -176,23 +188,30 @@ export const addElement = (
 				});
 
 				// Group the rectangle and text together
-				fabricObject = new fabric.Group([signatureRect, signatureText], {
-					left: 100,
-					top: 100,
-					id: `SIGNATURE-${signerId}`,
-					lockRotation: false,
-				});
+				fabricObject = new fabric.Group(
+					[signatureRect, signatureText],
+					{
+						left: 100,
+						top: 100,
+						id: `SIGNATURE-${signerId}`,
+						lockRotation: false,
+					}
+				);
 
 				// Add custom properties after creation
-				(fabricObject as fabric.Group & { isSignature: boolean }).isSignature = true;
+				(
+					fabricObject as fabric.Group & { isSignature: boolean }
+				).isSignature = true;
 
 				// Add event handler to maintain 16:9 aspect ratio during scaling
 				fabricObject.on("scaling", function (this: fabric.Group) {
 					const aspectRatio = 16 / 9;
 
 					// Calculate new dimensions based on the original group size
-					const currentWidth = (this.width || width) * (this.scaleX || 1);
-					const currentHeight = (this.height || height) * (this.scaleY || 1);
+					const currentWidth =
+						(this.width || width) * (this.scaleX || 1);
+					const currentHeight =
+						(this.height || height) * (this.scaleY || 1);
 
 					// Determine which dimension to use as base
 					const widthChange = Math.abs(currentWidth - width);
