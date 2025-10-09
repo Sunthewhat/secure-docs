@@ -27,6 +27,8 @@ type ParticipantRow = {
   id?: string; // present if row exists on server
   data: Recipient; // editable fields
   isDistributed?: boolean;
+  isDownloaded?: boolean;
+  emailStatus?: "pending" | "success" | "failed";
 };
 
 const SharePage = () => {
@@ -194,10 +196,20 @@ const SharePage = () => {
           normalized[col] =
             val !== undefined && val !== null ? String(val) : "";
         });
+        const rawEmailStatus =
+          typeof p.email_status === "string"
+            ? p.email_status.toLowerCase()
+            : undefined;
+        const emailStatus: ParticipantRow["emailStatus"] =
+          rawEmailStatus === "success" || rawEmailStatus === "failed"
+            ? rawEmailStatus
+            : "pending";
         return {
           id: p.id,
           data: normalized,
           isDistributed: Boolean(p.is_distributed),
+          isDownloaded: Boolean(p.is_downloaded),
+          emailStatus,
         };
       });
 
@@ -418,7 +430,13 @@ const SharePage = () => {
         const value = headerIndex >= 0 ? row[headerIndex] ?? "" : "";
         data[anchor] = value;
       });
-      return { id: undefined, data, isDistributed: false };
+      return {
+        id: undefined,
+        data,
+        isDistributed: false,
+        isDownloaded: false,
+        emailStatus: "pending",
+      };
     });
 
     const filledRows = mappedRows.filter((row) => !isRowEmpty(row));
@@ -507,8 +525,9 @@ const SharePage = () => {
 
   const handleEdit = (index: number) => {
     const row = recipients[index];
-    if (row?.isDistributed) {
-      toast.error("Distributed participants cannot be edited.");
+    if (!row) return;
+    if (isParticipantLocked(row)) {
+      toast.error("Participants already emailed or downloaded cannot be modified.");
       return;
     }
     setEditIndex(index);
@@ -522,8 +541,13 @@ const SharePage = () => {
   const handleSave = async (index: number) => {
     const row = recipients[index];
 
-    if (row?.isDistributed) {
-      toast.error("Distributed participants cannot be edited.");
+    if (!row) {
+      toast.error("Participant not found.");
+      return;
+    }
+
+    if (isParticipantLocked(row)) {
+      toast.error("Participants already emailed or downloaded cannot be modified.");
       return;
     }
 
@@ -576,8 +600,8 @@ const SharePage = () => {
   const handleDelete = (index: number) => {
     const row = recipients[index];
     if (!row) return;
-    if (row.isDistributed) {
-      toast.error("Distributed participants cannot be modified.");
+    if (isParticipantLocked(row)) {
+      toast.error("Participants already emailed or downloaded cannot be modified.");
       return;
     }
     if (!row.id) {
@@ -598,13 +622,17 @@ const SharePage = () => {
   const handleAddRow = () => {
     const newData: Recipient = {};
     columns.forEach((col) => (newData[col] = ""));
-    const newRecipients = [
-      ...recipients,
-      { id: undefined, data: newData, isDistributed: false },
-    ];
+    const newRow: ParticipantRow = {
+      id: undefined,
+      data: newData,
+      isDistributed: false,
+      isDownloaded: false,
+      emailStatus: "pending",
+    };
+    const newRecipients = [...recipients, newRow];
     setRecipients(newRecipients);
     setEditIndex(newRecipients.length - 1);
-    setEditForm(newData);
+    setEditForm({ ...newRow.data });
   };
 
   const handleConfirmDelete = async () => {
@@ -646,6 +674,9 @@ const SharePage = () => {
   const isRowEmpty = (row: ParticipantRow) =>
     Object.values(row.data).every((v) => (v ?? "").trim() === "");
 
+  const isParticipantLocked = (row: ParticipantRow) =>
+    Boolean(row.isDistributed || row.isDownloaded || row.emailStatus === "success");
+
   const buildPreviewParticipants = () => {
     const timestamp = Date.now();
     return recipients
@@ -654,6 +685,11 @@ const SharePage = () => {
         id: row.id ?? `local-${timestamp}-${index}`,
         data: { ...row.data },
         isDistributed: Boolean(row.isDistributed),
+        isDownloaded: Boolean(row.isDownloaded),
+        emailStatus:
+          row.emailStatus === "success" || row.emailStatus === "failed"
+            ? row.emailStatus
+            : "pending",
       }));
   };
 
@@ -729,17 +765,24 @@ const SharePage = () => {
           <div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
             <div className="max-h-[520px] overflow-auto">
               <table className="min-w-full table-fixed">
-                <thead className="bg-transparent border-b-1 border-gray-300 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                <thead className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
                   <tr >
-                    {columns.map((col) => (
-                      <th key={col} className="min-w-[200px] px-6 py-4">
+                    {columns.map((col, colIndex) => (
+                      <th
+                        key={col}
+                        className={`sticky top-0 z-10 min-w-[200px] bg-white px-6 py-4 shadow-sm ${
+                          colIndex === 0 ? "rounded-tl-3xl" : ""
+                        }`}
+                      >
                         {col}
                       </th>
                     ))}
-                    <th className="w-[160px] px-6 py-4 text-right">Actions</th>
+                    <th className="sticky top-0 z-10 w-[160px] bg-white px-6 py-4 text-right shadow-sm rounded-tr-3xl">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                <tbody className="divide-y divide-transparent text-sm text-gray-700">
                   {recipients.length === 0 ? (
                     <tr>
                       <td
@@ -752,7 +795,7 @@ const SharePage = () => {
                     </tr>
                   ) : (
                     recipients.map((row, index) => {
-                      const isDistributed = Boolean(row.isDistributed);
+                      const isLocked = isParticipantLocked(row);
 
                       return (
                         <tr key={row.id ?? `new-${index}`} className="align-top">
@@ -795,30 +838,30 @@ const SharePage = () => {
                                 <>
                                   <button
                                     className={`transition ${
-                                      isDistributed
+                                      isLocked
                                         ? "cursor-not-allowed text-gray-400"
                                         : "text-primary_button hover:opacity-80"
                                     }`}
                                     onClick={() => handleEdit(index)}
                                     title={
-                                      isDistributed
-                                        ? "Editing disabled for distributed participants"
+                                      isLocked
+                                        ? "Editing disabled for distributed or delivered participants"
                                         : row.id
                                         ? "Edit (PUT)"
                                         : "Edit (POST on save)"
                                     }
-                                    disabled={isDistributed}
+                                    disabled={isLocked}
                                   >
                                     <RiEdit2Line size={20} />
                                   </button>
                                   <button
                                     className={`transition ${
-                                      isDistributed
+                                      isLocked
                                         ? "cursor-not-allowed text-gray-400"
                                         : "text-red-500 hover:opacity-80"
                                     }`}
                                     onClick={() => handleDelete(index)}
-                                    disabled={isDistributed}
+                                    disabled={isLocked}
                                   >
                                     <RiDeleteBinLine size={20} />
                                   </button>

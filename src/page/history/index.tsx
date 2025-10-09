@@ -378,9 +378,9 @@ const HistoryPage = () => {
           <div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
             <div className="max-h-[580px] overflow-auto">
               <table className="min-w-full table-fixed">
-                <thead className="bg-transparent text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                <thead className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
                   <tr>
-                    <th className="w-14 px-5 py-3 text-center">
+                    <th className="sticky top-0 z-10 w-14 rounded-tl-3xl bg-white px-5 py-3 text-center shadow-sm">
                       <input
                         type="checkbox"
                         checked={allSelected}
@@ -391,15 +391,22 @@ const HistoryPage = () => {
                       />
                     </th>
                     {columns.map((col) => (
-                      <th key={col} className="px-5 py-3">
+                      <th
+                        key={col}
+                        className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm"
+                      >
                         {col}
                       </th>
                     ))}
-                    <th className="px-5 py-3">Issue date &amp; time</th>
-                    <th className="px-5 py-3">Status</th>
+                    <th className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm">
+                      Issue date &amp; time
+                    </th>
+                    <th className="sticky top-0 z-10 rounded-tr-3xl bg-white px-5 py-3 shadow-sm">
+                      Status
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                <tbody className="divide-y divide-transparent text-sm text-gray-700">
                   {filtered.map((r) => {
                     const checked = selected.has(r.id);
                     return (
