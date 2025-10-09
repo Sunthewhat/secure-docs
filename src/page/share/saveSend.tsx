@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router-dom";
 import type {
@@ -23,13 +23,28 @@ type RenderResponse = {
   };
 };
 
+type DownloadStatus = "pending" | "downloaded" | "failed";
+type EmailStatus = "pending" | "success" | "failed";
+
+type GenerateStatus = {
+  is_generated: boolean;
+  is_partial_generated: boolean;
+};
+
+type GenerateStatusResponse = {
+  success: boolean;
+  msg: string;
+  data: GenerateStatus;
+};
+
 interface LocationState {
   participants?: Participant[];
   certId?: string;
+  columns?: string[];
 }
 
 const SaveSendPage = () => {
-  const location = useLocation() as { state: LocationState | null };
+  const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
   const locationState = useMemo(
@@ -44,22 +59,114 @@ const SaveSendPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
   const [certId, setCertId] = useState<string>("");
+  const [generateStatus, setGenerateStatus] = useState<GenerateStatus | null>(
+    null
+  );
   const [mailStatusMap, setMailStatusMap] = useState<
     Record<string, "success" | "failed">
   >({});
+  const [downloadedMap, setDownloadedMap] = useState<Record<string, boolean>>({});
+  const initialColumnsRef = useRef<string[] | null>(null);
+  const [sendingParticipantId, setSendingParticipantId] = useState<string | null>(
+    null
+  );
+
+  const sanitizeColumns = useCallback((cols?: string[]): string[] => {
+    if (!Array.isArray(cols)) return [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const col of cols) {
+      if (typeof col !== "string") continue;
+      const trimmed = col.trim();
+      if (!trimmed || seen.has(trimmed)) continue;
+      seen.add(trimmed);
+      result.push(trimmed);
+    }
+    return result;
+  }, []);
+  const markParticipantsAsDownloaded = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const idSet = new Set(ids);
+    setDownloadedMap((prev) => {
+      const next = { ...prev };
+      for (const id of ids) {
+        next[id] = true;
+      }
+      return next;
+    });
+    setParticipants((prev) =>
+      prev.map((participant) =>
+        idSet.has(participant.id)
+          ? { ...participant, is_downloaded: true }
+          : participant
+      )
+    );
+  }, []);
+
+  const fetchParticipants = useCallback(
+    async ({ silent }: { silent?: boolean } = {}) => {
+      if (!certId) return;
+
+      try {
+        const response = await Axios.get<GetParticipantResponse>(
+          `/participant/${certId}`
+        );
+        if (response.status === 200 && Array.isArray(response.data?.data)) {
+          setParticipants(response.data.data);
+        }
+      } catch {
+        if (!silent) {
+          toast.error("Failed to load participants.");
+        }
+      }
+    },
+    [certId, toast]
+  );
 
   useEffect(() => {
-    if (!locationState) return;
-
-    if (Array.isArray(locationState.participants)) {
-      setParticipants(locationState.participants);
+    if (locationState?.certId) {
+      setCertId(locationState.certId);
+      return;
     }
 
-    if (locationState.certId) {
-      setCertId(locationState.certId);
+    if (Array.isArray(locationState?.participants)) {
+      const withCert = locationState.participants.find(
+        (participant) => participant?.certificate_id
+      );
+      if (withCert?.certificate_id) {
+        setCertId(withCert.certificate_id);
+      }
     }
   }, [locationState]);
+
+  useEffect(() => {
+    const stateColumns = sanitizeColumns(locationState?.columns);
+    if (stateColumns.length) {
+      initialColumnsRef.current = [...stateColumns];
+      setColumns(stateColumns);
+    }
+  }, [locationState, sanitizeColumns]);
+
+  useEffect(() => {
+    if (
+      Array.isArray(locationState?.participants) &&
+      locationState.participants.length > 0
+    ) {
+      setParticipants(locationState.participants);
+    }
+  }, [locationState]);
+
+  useEffect(() => {
+    if (locationState?.certId) return;
+    if (!location.search) return;
+    const params = new URLSearchParams(location.search);
+    const queryCertId = params.get("certId");
+    if (queryCertId) {
+      setCertId(queryCertId);
+    }
+  }, [location.search, locationState]);
 
   useEffect(() => {
     if (certId || participants.length === 0) return;
@@ -71,67 +178,27 @@ const SaveSendPage = () => {
     }
   }, [certId, participants]);
 
-  useEffect(() => {
-    if (participants.length > 0) return;
-    if (locationState?.participants?.length) return;
+  const fetchGenerateStatus = useCallback(async () => {
     if (!certId) return;
 
-    let ignore = false;
-
-    const fetchParticipants = async () => {
-      try {
-        const response = await Axios.get<GetParticipantResponse>(
-          `/participant/${certId}`
-        );
-        if (response.status === 200 && Array.isArray(response.data?.data)) {
-          if (!ignore) {
-            setParticipants(response.data.data);
-          }
-        }
-      } catch {
-        if (!ignore) {
-          toast.error("Failed to load participants.");
-        }
+    try {
+      const response = await Axios.get<GenerateStatusResponse>(
+        `/certificate/generate/status/${certId}`
+      );
+      if (response.status === 200 && response.data?.data) {
+        setGenerateStatus(response.data.data);
       }
-    };
+    } catch {
+      // ignore status errors; buttons will fallback to render state
+    }
+  }, [certId]);
+
+  useEffect(() => {
+    if (!certId) return;
 
     void fetchParticipants();
-
-    return () => {
-      ignore = true;
-    };
-  }, [certId, locationState, participants.length, toast]);
-
-  useEffect(() => {
-    if (!certId) return;
-    const missingIds = participants.some((participant) => !participant.id);
-    if (!missingIds) return;
-
-    let ignore = false;
-
-    const hydrateParticipants = async () => {
-      try {
-        const response = await Axios.get<GetParticipantResponse>(
-          `/participant/${certId}`
-        );
-        if (response.status === 200 && Array.isArray(response.data?.data)) {
-          if (!ignore) {
-            setParticipants(response.data.data);
-          }
-        }
-      } catch {
-        if (!ignore) {
-          toast.error("Failed to sync participants with the server.");
-        }
-      }
-    };
-
-    void hydrateParticipants();
-
-    return () => {
-      ignore = true;
-    };
-  }, [certId, participants, toast]);
+    void fetchGenerateStatus();
+  }, [certId, fetchGenerateStatus, fetchParticipants]);
 
   useEffect(() => {
     setMailStatusMap((prev) => {
@@ -147,18 +214,80 @@ const SaveSendPage = () => {
     });
   }, [participants]);
 
+  useEffect(() => {
+    setDownloadedMap((prev) => {
+      if (participants.length === 0) return {};
+      const next: Record<string, boolean> = {};
+      for (const participant of participants) {
+        const id = participant.id;
+        if (!id) continue;
+        if (prev[id] || participant.is_downloaded) {
+          next[id] = true;
+        }
+      }
+      return next;
+    });
+  }, [participants, sanitizeColumns]);
+
   // store render payload after "Generate"
   const [renderData, setRenderData] = useState<RenderResponse["data"] | null>(
     null
   );
 
-  // union of dynamic columns
-  const columns = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of participants)
-      Object.keys(p.data ?? {}).forEach((k) => set.add(k));
-    return Array.from(set);
-  }, [participants]);
+  // align dynamic columns without reordering the initial structure
+  useEffect(() => {
+    if (participants.length === 0) {
+      if (!initialColumnsRef.current?.length) {
+        setColumns([]);
+      }
+      return;
+    }
+
+    setColumns((prev) => {
+      const base =
+        initialColumnsRef.current && initialColumnsRef.current.length
+          ? [...initialColumnsRef.current]
+          : prev.length
+          ? [...prev]
+          : sanitizeColumns(
+              Array.from(
+                new Set(
+                  participants.flatMap((participant) =>
+                    Object.keys(participant.data ?? {})
+                  )
+                )
+              )
+            );
+
+      const seen = new Set(base);
+      let updated = false;
+
+      for (const participant of participants) {
+        const keys = Object.keys(participant.data ?? {});
+        for (const key of keys) {
+          if (!seen.has(key)) {
+            const trimmed = typeof key === "string" ? key.trim() : "";
+            if (!trimmed || seen.has(trimmed)) continue;
+            base.push(trimmed);
+            seen.add(trimmed);
+            updated = true;
+          }
+        }
+      }
+
+      if (!initialColumnsRef.current?.length) {
+        initialColumnsRef.current = [...base];
+      } else if (updated) {
+        initialColumnsRef.current = [...base];
+      }
+
+      const sameLength = prev.length === base.length;
+      const sameOrder =
+        sameLength && prev.every((col, idx) => col === base[idx]);
+
+      return sameOrder ? prev : base;
+    });
+  }, [participants, sanitizeColumns]);
 
   // detect the "email" column (case-insensitive)
   const emailColumn = useMemo(
@@ -172,6 +301,19 @@ const SaveSendPage = () => {
     [participants]
   );
 
+  const incomingParticipants = useMemo(
+    () => participants.filter((participant) => !participant.certificate_url),
+    [participants]
+  );
+
+  const incomingParticipantIds = useMemo(
+    () =>
+      incomingParticipants
+        .map((participant) => participant.id)
+        .filter((id): id is string => Boolean(id)),
+    [incomingParticipants]
+  );
+
   const renderStatusMap = useMemo(() => {
     const map = new Map<string, "success" | "failed">();
     renderData?.results?.forEach((result) => {
@@ -181,6 +323,51 @@ const SaveSendPage = () => {
     });
     return map;
   }, [renderData]);
+
+  const determineDownloadStatus = (
+    participant: Participant,
+    renderStatus?: "success" | "failed"
+  ): DownloadStatus => {
+    if (renderStatus === "failed") {
+      return "failed";
+    }
+
+    if (!participant.certificate_url) {
+      return "pending";
+    }
+
+    if (participant.is_downloaded) {
+      return "downloaded";
+    }
+
+    if (participant.id && downloadedMap[participant.id]) {
+      return "downloaded";
+    }
+
+    return "pending";
+  };
+
+  const determineEmailStatus = (
+    participant: Participant,
+    mailStatus?: "success" | "failed"
+  ): EmailStatus => {
+    if (mailStatus) return mailStatus;
+
+    const emailStatus = participant.email_status;
+    if (emailStatus === "success" || emailStatus === "failed") {
+      return emailStatus;
+    }
+
+    return "pending";
+  };
+
+  const hasGenerated = generateStatus?.is_generated ?? false;
+  const hasIncoming = incomingParticipantIds.length > 0;
+  const canDistribute =
+    (!hasGenerated && Boolean(renderData)) || (hasGenerated && !hasIncoming);
+  const generateButtonLabel = hasGenerated
+    ? "Generate new incoming"
+    : "Generate";
 
   // 1) GENERATE (render only)
   const handleGenerate = async () => {
@@ -192,15 +379,29 @@ const SaveSendPage = () => {
     setNotice(null);
     setRendering(true);
     try {
+      const targetParticipantIds = hasGenerated
+        ? incomingParticipantIds
+        : participantIds;
+
+      if (targetParticipantIds.length === 0) {
+        setError(
+          hasGenerated
+            ? "No incoming participants available to generate."
+            : "No participant IDs found."
+        );
+        return;
+      }
+
       const res = await Axios.post<RenderResponse>(
         `/certificate/render/${certId}`,
         {
-          participantIds,
+          participantIds: targetParticipantIds,
         }
       );
       if (!res.data?.success) throw new Error(res.data?.msg || "Render failed");
       setRenderData(res.data.data);
       toast.success("Render completed.");
+      await fetchGenerateStatus();
     } catch (e) {
       setError((e as Error).message || "Render failed");
       setRenderData(null);
@@ -211,7 +412,6 @@ const SaveSendPage = () => {
 
   // 2) DOWNLOAD (first mark as distributed, then download)
   const handleDownload = async () => {
-    if (!renderData) return;
     if (participantIds.length === 0) {
       setError("No participant IDs found.");
       return;
@@ -221,6 +421,19 @@ const SaveSendPage = () => {
     setNotice(null);
     setDownloading(true);
     try {
+      if (!renderData) {
+        const certData = await Axios.get<GetCertificateResponse>(
+          `/certificate/${certId}`
+        );
+        const zipfileUrl = certData.data.data.archive_url;
+        if (!zipfileUrl) {
+          throw new Error("No downloadable file available. Please generate first.");
+        }
+        window.open(zipfileUrl, "_blank", "noopener,noreferrer");
+        markParticipantsAsDownloaded(participantIds);
+        return;
+      }
+
       // A) mark as distributed
       try {
         const dist = await Axios.put(`/participant/distribute`, {
@@ -263,14 +476,17 @@ const SaveSendPage = () => {
         // CORS fallback
         window.open(targetUrl, "_blank", "noopener,noreferrer");
       }
+
+      markParticipantsAsDownloaded(participantIds);
     } catch (e) {
       setError((e as Error).message || "Download failed");
     } finally {
+      await fetchParticipants({ silent: true });
       setDownloading(false);
     }
   };
 
-  // 3) SEND EMAILS (GET /certificate/mail/:certId?email=<columnName>)
+  // 3) SEND EMAILS (POST /certificate/mail/:certId?email=<columnName>)
   const handleSend = async () => {
     if (!certId) {
       setError("Missing certificate id.");
@@ -348,7 +564,61 @@ const SaveSendPage = () => {
     } catch (e) {
       setError((e as Error).message || "Send failed");
     } finally {
+      await fetchParticipants({ silent: true });
       setSending(false);
+    }
+  };
+
+  const handleSendIndividual = async (participantId: string | undefined) => {
+    if (!participantId) {
+      setError("Missing participant id.");
+      return;
+    }
+    if (!certId) {
+      setError("Missing certificate id.");
+      return;
+    }
+
+    setError(null);
+    setNotice(null);
+    setSendingParticipantId(participantId);
+    try {
+      const res = await Axios.post(`/certificate/mail/resend/${participantId}`);
+
+      if (!res.data?.success) {
+        throw new Error(res.data?.msg || "Mail resend failed");
+      }
+
+      const data = res.data?.data;
+      const participantKey =
+        typeof data?.participant_id === "string"
+          ? data.participant_id
+          : participantId;
+      const statusValue =
+        typeof data?.email_status === "string"
+          ? data.email_status.toLowerCase()
+          : "success";
+
+      if (participantKey) {
+        setMailStatusMap((prev) => ({
+          ...prev,
+          [participantKey]:
+            statusValue === "success" || statusValue === "failed"
+              ? statusValue
+              : "success",
+        }));
+      }
+
+      toast.success("Email sent successfully.");
+    } catch (e) {
+      setMailStatusMap((prev) => ({
+        ...prev,
+        [participantId]: "failed",
+      }));
+      setError((e as Error).message || "Send failed");
+    } finally {
+      await fetchParticipants({ silent: true });
+      setSendingParticipantId(null);
     }
   };
 
@@ -379,13 +649,13 @@ const SaveSendPage = () => {
         </div>
         <span
           className={`inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold shadow-lg ${
-            renderData
+            canDistribute
               ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-100'
               : 'border-white/20 bg-white/10 text-white/70'
           }`}
         >
           <span className="inline-flex h-2 w-2 rounded-full bg-current" />
-          {renderData ? 'Render complete' : 'Awaiting render'}
+          {canDistribute ? 'Render complete' : 'Awaiting render'}
         </span>
       </header>
 
@@ -408,18 +678,31 @@ const SaveSendPage = () => {
             </div>
             <div className="max-h-[520px] overflow-auto">
               <table className="min-w-full">
-                <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                <thead className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
                   <tr>
                     {columns.length > 0 ? (
                       columns.map((col) => (
-                        <th key={col} className="px-5 py-3">
+                        <th
+                          key={col}
+                          className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm"
+                        >
                           {col}
                         </th>
                       ))
                     ) : (
-                      <th className="px-5 py-3">No columns</th>
+                      <th className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm">
+                        No columns
+                      </th>
                     )}
-                    <th className="px-5 py-3 text-right">Email status</th>
+                    <th className="sticky top-0 z-10 bg-white px-5 py-3 text-right shadow-sm">
+                      Download Status
+                    </th>
+                    <th className="sticky top-0 z-10 bg-white px-5 py-3 text-right shadow-sm">
+                      Email Status
+                    </th>
+                    <th className="sticky top-0 z-10 bg-white px-5 py-3 text-right shadow-sm">
+                      Email Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
@@ -429,7 +712,14 @@ const SaveSendPage = () => {
                       const renderStatus = participant.id
                         ? renderStatusMap.get(participant.id)
                         : undefined;
-                      const status = mailStatus ?? renderStatus;
+                      const downloadStatus = determineDownloadStatus(
+                        participant,
+                        renderStatus
+                      );
+                      const emailStatus = determineEmailStatus(
+                        participant,
+                        mailStatus
+                      );
 
                       return (
                         <tr
@@ -442,19 +732,19 @@ const SaveSendPage = () => {
                             </td>
                           ))}
                           <td className="px-5 py-3 text-right">
-                            {status === 'success' ? (
-                              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600">
+                            {downloadStatus === 'downloaded' ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/15 px-3 py-1 text-xs font-semibold text-sky-600">
                                 <svg
                                   className="h-4 w-4"
                                   viewBox="0 0 24 24"
                                   fill="currentColor"
                                   aria-hidden="true"
                                 >
-                                  <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm-1 15-4-4 1.414-1.414L11 13.172l5.586-5.586L18 9Z" />
+                                  <path d="M12 3a1 1 0 0 1 1 1v9.586l2.293-2.293 1.414 1.414L12 17.414l-4.707-4.707 1.414-1.414L11 13.586V4a1 1 0 0 1 1-1Zm-7 15h14v2H5v-2Z" />
                                 </svg>
-                                Delivered
+                                Downloaded
                               </span>
-                            ) : status === 'failed' ? (
+                            ) : downloadStatus === 'failed' ? (
                               <span className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-600">
                                 <svg
                                   className="h-4 w-4"
@@ -470,13 +760,65 @@ const SaveSendPage = () => {
                               <span className="text-gray-400">Pending</span>
                             )}
                           </td>
+                          <td className="px-5 py-3 text-right">
+                            {emailStatus === 'success' ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600">
+                                <svg
+                                  className="h-4 w-4"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm-1 15-4-4 1.414-1.414L11 13.172l5.586-5.586L18 9Z" />
+                                </svg>
+                                Delivered
+                              </span>
+                            ) : emailStatus === 'failed' ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-600">
+                                <svg
+                                  className="h-4 w-4"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm3.707 12.293-1.414 1.414L12 13.414l-2.293 2.293-1.414-1.414L10.586 12 8.293 9.707l1.414-1.414L12 10.586l2.293-2.293 1.414 1.414L13.414 12Z" />
+                                </svg>
+                                Failed
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">Pending</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <button
+                              onClick={() => void handleSendIndividual(participant.id)}
+                              disabled={
+                                sending ||
+                                sendingParticipantId === participant.id ||
+                                !participant.id
+                              }
+                              className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                                sending ||
+                                sendingParticipantId === participant.id ||
+                                !participant.id
+                                  ? 'cursor-not-allowed border-white/40 bg-white/20 text-white/50'
+                                  : 'border-primary_button bg-primary_button/10 text-primary_button hover:scale-[1.01]'
+                              }`}
+                            >
+                              {sendingParticipantId === participant.id
+                                ? 'Sending…'
+                                : emailStatus === 'success'
+                                ? 'Resend'
+                                : 'Send'}
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
                       <td
-                        colSpan={Math.max(columns.length, 1) + 1}
+                        colSpan={Math.max(columns.length, 1) + 3}
                         className="px-6 py-10 text-center text-gray-500"
                       >
                         No participants found
@@ -489,42 +831,53 @@ const SaveSendPage = () => {
           </div>
 
           <div className="flex flex-col items-center gap-3 pt-2">
-            {!renderData ? (
-              <button
-                onClick={handleGenerate}
-                disabled={rendering || participants.length === 0}
-                className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
-                  rendering || participants.length === 0
-                    ? 'cursor-not-allowed opacity-60'
-                    : ''
-                }`}
-              >
-                {rendering ? 'Rendering…' : 'Generate'}
-              </button>
-            ) : (
-              <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
+              {canDistribute ? (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
+                      downloading ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
+                  >
+                    {downloading ? 'Preparing…' : 'Download'}
+                  </button>
+                  <button
+                    onClick={handleSend}
+                    disabled={sending}
+                    className={`inline-flex items-center justify-center rounded-full border border-white/40 bg-white/90 px-6 py-3 text-sm font-semibold text-primary_button shadow-lg transition hover:scale-[1.01] ${
+                      sending ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
+                  >
+                    {sending ? 'Sending…' : 'Send to participant email'}
+                  </button>
+                </>
+              ) : null}
+              {(!hasGenerated || hasIncoming) && (
                 <button
-                  onClick={handleDownload}
-                  disabled={downloading}
+                  onClick={handleGenerate}
+                  disabled={
+                    rendering ||
+                    (!hasGenerated && participants.length === 0) ||
+                    (hasGenerated && !hasIncoming)
+                  }
                   className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
-                    downloading ? 'cursor-not-allowed opacity-60' : ''
+                    rendering ||
+                    (!hasGenerated && participants.length === 0) ||
+                    (hasGenerated && !hasIncoming)
+                      ? 'cursor-not-allowed opacity-60'
+                      : ''
                   }`}
                 >
-                  {downloading ? 'Preparing…' : 'Download'}
+                  {rendering ? 'Rendering…' : generateButtonLabel}
                 </button>
-                <button
-                  onClick={handleSend}
-                  disabled={sending}
-                  className={`inline-flex items-center justify-center rounded-full border border-white/40 bg-white/90 px-6 py-3 text-sm font-semibold text-primary_button shadow-lg transition hover:scale-[1.01] ${
-                    sending ? 'cursor-not-allowed opacity-60' : ''
-                  }`}
-                >
-                  {sending ? 'Sending…' : 'Send to participant email'}
-                </button>
-              </div>
-            )}
+              )}
+            </div>
             <p className="text-center text-xs uppercase tracking-[0.25em] text-white/50">
-              {renderData ? 'Ready to distribute' : 'Generate certificates before sharing'}
+              {canDistribute
+                ? 'Ready to distribute'
+                : 'Generate certificates before sharing'}
             </p>
           </div>
         </div>

@@ -13,6 +13,8 @@ export type Participant = {
 	created_at: string;
 	updated_at: string;
 	certificate_url: string;
+	email_status?: "pending" | "success" | "failed";
+	is_downloaded: boolean;
 	data: {
 		[key: string]: string; // dynamic columns
 	};

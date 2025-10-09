@@ -14,6 +14,8 @@ type SharePreviewParticipant = {
 	id?: string;
 	data: Record<string, string>;
 	isDistributed?: boolean;
+	isDownloaded?: boolean;
+	emailStatus?: "pending" | "success" | "failed";
 };
 
 type SharePreviewState = {
@@ -89,12 +91,18 @@ const PreviewPage = () => {
 			orderedColumns.forEach((col) => {
 				normalizedData[col] = participant.data?.[col] ?? '';
 			});
+			const normalizedEmailStatus: Participant['email_status'] =
+				participant.emailStatus === 'success' || participant.emailStatus === 'failed'
+					? participant.emailStatus
+					: 'pending';
 
 			return {
 				id: participant.id ?? `local-${timestamp}-${index}`,
 				certificate_id: certId ?? '',
 				is_revoked: false,
 				is_distributed: Boolean(participant.isDistributed),
+				is_downloaded: Boolean(participant.isDownloaded),
+				email_status: normalizedEmailStatus,
 				created_at: new Date().toISOString(),
 				updated_at: new Date().toISOString(),
 				certificate_url: '',
@@ -222,14 +230,22 @@ const PreviewPage = () => {
 								normalizedData[col] =
 									participant.data?.[col] ?? "";
 							});
-							return { ...participant, data: normalizedData };
+							const normalizedEmailStatus: Participant["email_status"] =
+								participant.email_status === "success" ||
+								participant.email_status === "failed"
+									? participant.email_status
+									: "pending";
+							return {
+								...participant,
+								is_downloaded: Boolean(participant.is_downloaded),
+								email_status: normalizedEmailStatus,
+								data: normalizedData,
+							};
 						}
 					);
 
 					setParticipants(normalizedParticipants);
-					if (normalizedParticipants.length > 0) {
-						setSelectedParticipant(normalizedParticipants[0]);
-					}
+					setSelectedParticipant(normalizedParticipants[0] ?? null);
 				} else {
 					console.error("Failed to fetch participants");
 				}
@@ -756,16 +772,21 @@ const PreviewPage = () => {
 							</div>
 							<div className="max-h-[520px] overflow-auto">
 								<table className="min-w-full">
-									<thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+									<thead className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
 										<tr>
 											{columns.length > 0 ? (
 												columns.map((col) => (
-													<th key={col} className="px-5 py-3">
+													<th
+														key={col}
+														className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm"
+													>
 														{col}
 													</th>
 												))
 											) : (
-												<th className="px-5 py-3">No columns</th>
+												<th className="sticky top-0 z-10 bg-white px-5 py-3 shadow-sm">
+													No columns
+												</th>
 											)}
 									</tr>
 									</thead>
