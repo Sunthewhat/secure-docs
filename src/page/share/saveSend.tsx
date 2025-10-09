@@ -721,6 +721,19 @@ const SaveSendPage = () => {
                         mailStatus
                       );
 
+                      const canSendAfterRender = Boolean(
+                        (participant.certificate_url &&
+                          participant.certificate_url.trim().length > 0) ||
+                        participant.is_distributed ||
+                        participant.is_downloaded ||
+                        renderStatus === 'success'
+                      );
+                      const emailActionDisabled =
+                        sending ||
+                        sendingParticipantId === participant.id ||
+                        !participant.id ||
+                        !canSendAfterRender;
+
                       return (
                         <tr
                           key={participant.id ?? `participant-${index}`}
@@ -792,16 +805,10 @@ const SaveSendPage = () => {
                           <td className="px-5 py-3 text-right">
                             <button
                               onClick={() => void handleSendIndividual(participant.id)}
-                              disabled={
-                                sending ||
-                                sendingParticipantId === participant.id ||
-                                !participant.id
-                              }
+                              disabled={emailActionDisabled}
                               className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                                sending ||
-                                sendingParticipantId === participant.id ||
-                                !participant.id
-                                  ? 'cursor-not-allowed border-white/40 bg-white/20 text-white/50'
+                                emailActionDisabled
+                                  ? 'cursor-not-allowed border-gray-400 bg-gray-200/70 text-gray-500'
                                   : 'border-primary_button bg-primary_button/10 text-primary_button hover:scale-[1.01]'
                               }`}
                             >
