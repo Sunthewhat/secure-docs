@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { LoginResponse } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/auth/useAuth";
 import EasyCertLogo from "../../asset/EasyCertLogo.svg";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
@@ -18,6 +18,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -43,9 +44,11 @@ const LoginPage = () => {
         return;
       }
 
-      // Set authentication state with user data and navigate to home page
+      // Set authentication state with user data and navigate back to the original page
       auth.signin(response.data.data, () => {
-        void navigate("/");
+        const from = (location.state as { from?: { pathname: string; search: string } })?.from;
+        const redirectTo = from ? `${from.pathname}${from.search}` : "/";
+        void navigate(redirectTo);
       });
     } catch (error: unknown) {
       console.error("Login failed:", error);

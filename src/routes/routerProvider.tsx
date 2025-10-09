@@ -82,7 +82,7 @@ const RouterProvider: FC = () => {
 				/>
 
 				<Route
-					path="/signature"
+					path="/signature/:certificateId"
 					element={
 						<RequireAuth>
 							<SignaturePage />

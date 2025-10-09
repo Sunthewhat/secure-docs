@@ -25,6 +25,7 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 	const handleVerify = async () => {
 		const path = window.location.pathname;
+		const search = window.location.search;
 
 		if (path.startsWith('/login') || path.startsWith('/validate')) {
 			return;
@@ -32,7 +33,10 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 		const response = await Axios.get('/auth/verify');
 		if (response.status != 200) {
-			navigator('/login', { replace: true });
+			navigator('/login', {
+				replace: true,
+				state: { from: { pathname: path, search: search } }
+			});
 		}
 	};
 
