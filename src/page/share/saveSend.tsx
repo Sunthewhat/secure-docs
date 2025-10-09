@@ -315,14 +315,6 @@ const SaveSendPage = () => {
     [participants]
   );
 
-  const incomingParticipantIds = useMemo(
-    () =>
-      incomingParticipants
-        .map((participant) => participant.id)
-        .filter((id): id is string => Boolean(id)),
-    [incomingParticipants]
-  );
-
   const incomingActiveParticipants = useMemo(
     () => incomingParticipants.filter((participant) => !participant.is_revoked),
     [incomingParticipants]

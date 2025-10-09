@@ -153,8 +153,7 @@ const SignaturePage = () => {
 		exportCanvas.height = WORKING_HEIGHT;
 		const ctx = exportCanvas.getContext("2d");
 		if (!ctx) return null;
-		ctx.fillStyle = "#ffffff";
-		ctx.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+		ctx.clearRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		ctx.drawImage(canvas, 0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		return exportCanvas.toDataURL("image/png");
 	};
@@ -274,9 +273,8 @@ const SignaturePage = () => {
 		// Put processed data back
 		tempCtx.putImageData(imageData, 0, 0);
 
-		// Clear working canvas with white background
-		context.fillStyle = "#ffffff";
-		context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
+		// Clear working canvas to keep transparent background
+		context.clearRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 
 		// Scale and center the processed image
 		const scale = Math.min(WORKING_WIDTH / image.width, WORKING_HEIGHT / image.height);
