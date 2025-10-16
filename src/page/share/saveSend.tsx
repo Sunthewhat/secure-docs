@@ -460,7 +460,17 @@ const SaveSendPage = () => {
         if (!zipfileUrl) {
           throw new Error("No downloadable file available. Please generate first.");
         }
-        window.open(zipfileUrl, "_blank", "noopener,noreferrer");
+
+        // Use anchor element download for better compatibility
+        const link = document.createElement('a');
+        link.href = zipfileUrl;
+        link.download = 'certificates.zip';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
         markParticipantsAsDownloaded(participantIds);
         return;
       }
@@ -497,16 +507,28 @@ const SaveSendPage = () => {
       const targetUrl = zipFilePath || results?.[0]?.filePath;
       if (!targetUrl) throw new Error("No file URL returned from renderer.");
 
+      let downloadUrl = targetUrl;
       try {
         const certData = await Axios.get<GetCertificateResponse>(
           `/certificate/${certId}`
         );
         const zipfileUrl = certData.data.data.archive_url;
-        window.open(zipfileUrl, "_blank", "noopener,noreferrer");
+        if (zipfileUrl) {
+          downloadUrl = zipfileUrl;
+        }
       } catch {
-        // CORS fallback
-        window.open(targetUrl, "_blank", "noopener,noreferrer");
+        // Use targetUrl as fallback
       }
+
+      // Use anchor element download for better compatibility
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'certificates.zip';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       markParticipantsAsDownloaded(participantIds);
     } catch (e) {
