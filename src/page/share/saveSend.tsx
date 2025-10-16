@@ -476,10 +476,17 @@ const SaveSendPage = () => {
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = 'certificates.zip';
+        link.style.display = 'none';
         document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
+
+        // Use setTimeout to ensure blob URL is ready for Chromium
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+          }, 100);
+        }, 0);
 
         markParticipantsAsDownloaded(participantIds);
         return;
@@ -545,10 +552,17 @@ const SaveSendPage = () => {
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = 'certificates.zip';
+      link.style.display = 'none';
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+
+      // Use setTimeout to ensure blob URL is ready for Chromium
+      setTimeout(() => {
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
+      }, 0);
 
       markParticipantsAsDownloaded(participantIds);
     } catch (e) {
