@@ -461,15 +461,25 @@ const SaveSendPage = () => {
           throw new Error("No downloadable file available. Please generate first.");
         }
 
-        // Use anchor element download for better compatibility
+        // Fetch file as blob and download
+        const response = await fetch(zipfileUrl, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = zipfileUrl;
+        link.href = blobUrl;
         link.download = 'certificates.zip';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
 
         markParticipantsAsDownloaded(participantIds);
         return;
@@ -520,15 +530,25 @@ const SaveSendPage = () => {
         // Use targetUrl as fallback
       }
 
-      // Use anchor element download for better compatibility
+      // Fetch file as blob and download
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = blobUrl;
       link.download = 'certificates.zip';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
 
       markParticipantsAsDownloaded(participantIds);
     } catch (e) {
