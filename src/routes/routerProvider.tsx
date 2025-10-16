@@ -17,17 +17,12 @@ const RouterProvider: FC = () => {
 	return (
 		<Routes>
 			<Route path="/login" element={<LoginPage />} />
-			<Route path="/validate">
-				<Route
-					path="result/:participantId"
-					element={<CertificateValidationResultPage />}
-				/>
-				<Route
-					path="scan"
-					element={<CertificateValidationScanPage />}
-				/>
-			</Route>
 			<Route element={<Layout />}>
+				{/* Public Routes under layout */}
+				<Route path="/validate">
+					<Route path="result/:participantId" element={<CertificateValidationResultPage />} />
+					<Route path="scan" element={<CertificateValidationScanPage />} />
+				</Route>
 				{/* Public Routes */}
 				{/* <Route path='/' element={<HomePage />} /> */}
 

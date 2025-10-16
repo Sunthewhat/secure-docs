@@ -1,7 +1,6 @@
 import { FC, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { BrowserMultiFormatReader, NotFoundException } from "@zxing/library";
-import { IoDocumentTextOutline } from "react-icons/io5";
 
 const CertificateValidationScanPage: FC = () => {
   const navigate = useNavigate();
@@ -105,24 +104,21 @@ const CertificateValidationScanPage: FC = () => {
   };
 
   return (
-    <div className="select-none cursor-default">
-      <div className="bg-black px-6 h-20 flex flex-row justify-between">
-        <div className="flex flex-row items-center gap-2">
-          <IoDocumentTextOutline size={30} className="text-white" />
-          <h1 className="text-2xl font-bold text-white font-adlam cursor-pointer text-[25px]">
-            EasyCert
-          </h1>
+    <div className="select-none cursor-default flex flex-col gap-12 text-white">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4">
+          <span className="text-sm uppercase tracking-[0.35em] text-white/60">Validation</span>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold sm:text-4xl">Scan QR Code</h1>
+            <p className="max-w-2xl text-base text-white/70">Point your camera at a validation QR code to verify a certificate.</p>
+          </div>
         </div>
-      </div>
-      <div className="font-noto bg-secondary_background rounded-[15px] flex flex-row items-center w-full h-[72px] px-[20px] mt-[24px]">
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <p className="font-semibold text-[32px] w-fit">Scan QR Code</p>
-        </div>
-      </div>
-      <div className="font-noto bg-secondary_background min-h-[777px] rounded-[15px] flex flex-col items-center w-full h-full px-[40px] mt-[16px] pb-[48px]">
-        <div className="flex flex-col items-center w-full max-w-2xl">
+      </header>
+
+      <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
+        <div className="flex flex-col items-center gap-8">
           {/* Camera Preview */}
-          <div className="relative w-full max-w-[400px] aspect-square mb-8 bg-black rounded-[15px] overflow-hidden">
+          <div className="relative w-full max-w-[420px] aspect-square rounded-3xl overflow-hidden border border-white/20 bg-black/60 shadow-xl">
             <video
               ref={videoRef}
               className="w-full h-full object-cover"
@@ -131,77 +127,78 @@ const CertificateValidationScanPage: FC = () => {
               playsInline
             />
             {!isScanning && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-                <p className="text-white text-lg">
-                  Camera preview will appear here
-                </p>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <p className="text-white/90 text-base">Camera preview will appear here</p>
               </div>
             )}
             {/* Scanning overlay */}
             {isScanning && (
-              <div className="absolute inset-0 border-4 border-blue-500 animate-pulse">
-                <div className="absolute top-4 left-4 right-4 text-center">
-                  <p className="text-white bg-black bg-opacity-50 px-2 py-1 rounded">
-                    Scanning for QR code...
-                  </p>
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute inset-6 rounded-2xl border-2 border-white/70 animate-pulse" />
+                <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white/90">
+                  Scanning for QR code…
                 </div>
               </div>
             )}
           </div>
 
-          {/* Control Buttons */}
-          <div className="flex gap-4 mb-6">
+          {/* Controls */}
+          <div className="w-full max-w-[520px] grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
             <button
               onClick={startScanning}
               disabled={isScanning}
-              className={`px-8 py-3 rounded-[7px] text-white font-medium ${
+              className={`inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                 isScanning
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-primary_button hover:bg-opacity-90"
-              }`}
+                  ? "cursor-not-allowed bg-white/20 text-white/60"
+                  : "bg-primary_button text-white hover:scale-[1.01]"
+              } w-full sm:w-auto`}
+              aria-label="Start scanning QR"
+              aria-disabled={isScanning}
             >
-              {isScanning ? "Scanning..." : "Start Scan"}
+              {isScanning ? "Scanning…" : "Start scan"}
             </button>
             <button
               onClick={stopScanning}
               disabled={!isScanning}
-              className={`px-8 py-3 rounded-[7px] text-white font-medium ${
+              className={`inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                 !isScanning
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-red-500 hover:bg-red-600"
-              }`}
+                  ? "cursor-not-allowed bg-white/20 text-white/60"
+                  : "bg-white/90 text-primary_text hover:bg-white"
+              } w-full sm:w-auto`}
+              aria-label="Stop scanning"
+              aria-disabled={!isScanning}
             >
-              Stop Scan
+              Stop
             </button>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-[7px] w-full max-w-[400px] mb-4">
+            <div className="w-full max-w-[520px] rounded-2xl border border-red-300/40 bg-red-500/10 px-5 py-4 text-red-200">
               <p className="text-sm">{error}</p>
             </div>
           )}
 
-          {/* Scan Result */}
+          {/* Scan Result (debug info) */}
           {scanResult && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-[7px] w-full max-w-[400px] mb-4">
-              <p className="text-sm font-medium">Scanned URL:</p>
-              <p className="text-sm break-all">{scanResult}</p>
+            <div className="w-full max-w-[520px] rounded-2xl border border-white/20 bg-white/95 px-5 py-4 text-primary_text shadow-xl">
+              <p className="text-sm font-semibold">Scanned URL</p>
+              <p className="text-sm break-all opacity-80">{scanResult}</p>
             </div>
           )}
 
-          {/* Instructions */}
-          <div className="bg-white rounded-[15px] p-6 w-full max-w-[400px] shadow-lg">
-            <h3 className="text-lg font-bold mb-3 text-center">Instructions</h3>
+          {/* Tips */}
+          <div className="w-full max-w-[520px] rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
+            <h3 className="text-base font-bold mb-3 text-center">How to scan</h3>
             <ul className="text-sm text-gray-700 space-y-2">
-              <li>• Allow camera access when prompted</li>
-              <li>• Point your camera at the QR code</li>
-              <li>• Keep the QR code within the viewfinder</li>
-              <li>• The scanner will automatically detect and redirect</li>
+              <li>• Allow camera access when prompted.</li>
+              <li>• Center the QR code within the square frame.</li>
+              <li>• Hold steady for a moment while it detects.</li>
+              <li>• You’ll be redirected to the validation result.</li>
             </ul>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
