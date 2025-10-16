@@ -24,7 +24,7 @@ const Layout = () => {
 				{/* Header */}
 				<TopBar pageTopBarProps={pageTopBarProps} />
 				{/* Main content */}
-				<main className='flex-1 mx-auto w-full px-20 py-6 sm:px-6 lg:px-30'>
+				<main className='flex-1 mx-auto w-full px-4 py-6 sm:px-6 lg:px-30'>
 					<Outlet context={{ setPageTopBarProps }} />
 				</main>
 			</div>

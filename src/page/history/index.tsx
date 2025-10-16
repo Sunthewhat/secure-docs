@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Axios } from "@/util/axiosInstance";
 import { EmptyState } from "@/components/EmptyState";
 import { GetCertificateResponse, GetAnchorResponse } from "@/types/response";
+import { RevokeParticipantsModal } from "@/components/modal/RevokeParticipantsModal";
+import { useToast } from "@/components/toast/ToastContext";
 
 // ---- API types ----
 type ApiParticipant = {
@@ -10,6 +12,8 @@ type ApiParticipant = {
   certificate_id: string;
   is_revoked: boolean | "true" | "false" | 0 | 1;
   is_distributed?: boolean | "true" | "false" | 0 | 1;
+  is_downloaded?: boolean | "true" | "false" | 0 | 1;
+  email_status?: string | null;
   certificate_url?: string | null;
   created_at: string;
   updated_at: string;
@@ -27,7 +31,7 @@ type RecipientRow = {
   data: Record<string, string>;
   issueDate: string;
   certificateUrl?: string;
-  status: "Valid" | "Revoked";
+  status: "Valid" | "Revoked" | "Pending";
 };
 
 const ensureEmailColumn = (cols: string[]): string[] => {
@@ -71,6 +75,7 @@ function formatDate(iso?: string) {
 
 const HistoryPage = () => {
   const { certId } = useParams<{ certId: string }>();
+  const toast = useToast();
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,6 +83,7 @@ const HistoryPage = () => {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [revoking, setRevoking] = useState(false); // bulk revoke
+  const [revokeOpen, setRevokeOpen] = useState(false);
   const [certificateName, setCertificateName] = useState<string>("");
 
   // fetch certificate metadata for header display
@@ -163,18 +169,29 @@ const HistoryPage = () => {
             rowData[col] = p.data?.[col] ?? "";
           });
           const isRevoked = toBool(p.is_revoked);
+          const isDownloaded = toBool(p.is_downloaded);
+          const emailStatus = String(p.email_status ?? "").toLowerCase();
+          const isEmailSuccess = emailStatus === "success";
+          const computedStatus: RecipientRow["status"] = isRevoked
+            ? "Revoked"
+            : isDownloaded || isEmailSuccess
+            ? "Valid"
+            : "Pending";
           return {
             id: p.id,
             data: rowData,
             issueDate: formatDate(p.updated_at || p.created_at),
             certificateUrl: p.certificate_url ?? undefined,
-            status: isRevoked ? "Revoked" : "Valid",
+            status: computedStatus,
           };
         });
 
+        // Exclude Pending rows from the table (only show Valid or Revoked)
+        const visibleRows = mapped.filter((r) => r.status !== "Pending");
+
         if (!ignore) {
           setColumns(orderedColumns);
-          setRows(mapped);
+          setRows(visibleRows);
         }
       } catch (e: any) {
         if (!ignore) setErr(e?.response?.data?.msg || "Failed to load history");
@@ -237,15 +254,13 @@ const HistoryPage = () => {
   };
 
   // ---- revoke SELECTED (bulk) ----
-  const handleRevoke = async () => {
+  const handleOpenRevoke = () => {
     if (selected.size === 0) return;
-    const confirm = window.confirm(
-      `Revoke ${selected.size} participant${
-        selected.size > 1 ? "s" : ""
-      }? This will invalidate their certificate link.`
-    );
-    if (!confirm) return;
+    setRevokeOpen(true);
+  };
 
+  const handleConfirmRevoke = async () => {
+    if (selected.size === 0) return;
     setRevoking(true);
     try {
       const ids = Array.from(selected);
@@ -271,23 +286,27 @@ const HistoryPage = () => {
           okIds.forEach((id) => next.delete(id));
           return next;
         });
-      }
-
-      if (fails.length) {
-        alert(`Some revokes failed (${fails.length}). Please try again.`);
-      } else {
-        alert(
+        toast.success(
           `Revoked ${okIds.length} participant${okIds.length > 1 ? "s" : ""}.`
         );
       }
+
+      if (fails.length) {
+        toast.error(
+          `Some revokes failed (${fails.length}). Please try again.`
+        );
+      }
+    } catch {
+      toast.error("Failed to revoke participants. Please try again.");
     } finally {
       setRevoking(false);
+      setRevokeOpen(false);
     }
   };
 
   const handleExportCsv = () => {
     if (filtered.length === 0) {
-      alert("No history records to export.");
+      toast.error("No history records to export.");
       return;
     }
 
@@ -349,7 +368,7 @@ const HistoryPage = () => {
               <span className="text-sm text-white/70">{selected.size} selected</span>
               <button
                 disabled={selected.size === 0 || revoking}
-                onClick={handleRevoke}
+                onClick={handleOpenRevoke}
                 className={`inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-semibold transition ${
                   selected.size === 0 || revoking
                     ? 'bg-white/20 text-white/40 cursor-not-allowed'
@@ -427,7 +446,11 @@ const HistoryPage = () => {
                         <td className="px-5 py-3 text-center">{r.issueDate}</td>
                         <td
                           className={`px-5 py-3 text-center font-semibold ${
-                            r.status === 'Revoked' ? 'text-red-600' : 'text-emerald-600'
+                            r.status === 'Revoked'
+                              ? 'text-red-600'
+                              : r.status === 'Valid'
+                              ? 'text-emerald-600'
+                              : 'text-amber-600'
                           }`}
                         >
                           {r.status}
@@ -449,6 +472,16 @@ const HistoryPage = () => {
           </div>
         )}
       </section>
+      <RevokeParticipantsModal
+        open={revokeOpen}
+        count={selected.size}
+        onClose={() => {
+          if (revoking) return;
+          setRevokeOpen(false);
+        }}
+        onConfirm={handleConfirmRevoke}
+        loading={revoking}
+      />
     </div>
   );
 

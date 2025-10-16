@@ -17,6 +17,8 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
@@ -30,17 +32,16 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSubmitting(true);
+    setErrorMsg("");
     try {
       const response = await Axios.post<LoginResponse>("/auth/login", {
         username: username,
         password: password,
       });
 
-      console.log(username, password);
-      console.log(response);
-      if (response.status !== 200) {
-        alert(response.data.msg);
+      if (response.status !== 200 || !response.data?.success) {
+        setErrorMsg(response.data?.msg || "Invalid username or password.");
         return;
       }
 
@@ -50,9 +51,12 @@ const LoginPage = () => {
         const redirectTo = from ? `${from.pathname}${from.search}` : "/";
         void navigate(redirectTo);
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
+      const apiMsg = error?.response?.data?.msg;
+      setErrorMsg(apiMsg || "Invalid username or password. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -93,7 +97,10 @@ const LoginPage = () => {
                 type="text"
                 className="w-full border p-3 rounded-xl bg-[rgb(255,255,255,0.2)] placeholder-[#C8C8C8]"
                 placeholder="Username"
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (errorMsg) setErrorMsg("");
+                }}
                 value={username}
                 autoComplete={"username"}
                 required
@@ -105,10 +112,15 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 className="w-full border p-3 pr-12 rounded-xl bg-[rgb(255,255,255,0.2)] placeholder-[#C8C8C8]"
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMsg) setErrorMsg("");
+                }}
                 value={password}
                 autoComplete={"current-password"}
                 required
+                aria-invalid={errorMsg ? true : false}
+                aria-describedby={errorMsg ? "login-error" : undefined}
               />
               <button
                 type="button"
@@ -118,13 +130,19 @@ const LoginPage = () => {
               >
                 {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
               </button>
+              {errorMsg && (
+                <p id="login-error" role="alert" aria-live="polite" className="mt-2 text-sm text-red-300">
+                  {errorMsg}
+                </p>
+              )}
             </div>
             <div className="flex justify-center mt-8">
               <button
                 type="submit"
-                className="bg-white w-full px-4 py-2 rounded-2xl text-black"
+                disabled={submitting}
+                className={`bg-white w-full px-4 py-2 rounded-2xl text-black ${submitting ? "opacity-60 cursor-not-allowed" : ""}`}
               >
-                Login
+                {submitting ? "Signing in..." : "Login"}
               </button>
             </div>
           </form>
