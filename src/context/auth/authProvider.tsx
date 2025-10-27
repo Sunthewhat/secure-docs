@@ -27,7 +27,7 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		const path = window.location.pathname;
 		const search = window.location.search;
 
-		if (path.startsWith('/login') || path.startsWith('/validate') || path.startsWith('/signature')) {
+		if (path.startsWith('/login') || path.startsWith('/validate')) {
 			return;
 		}
 
