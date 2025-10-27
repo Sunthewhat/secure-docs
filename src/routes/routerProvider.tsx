@@ -76,7 +76,14 @@ const RouterProvider: FC = () => {
 					}
 				/>
 
-				<Route path="/signature/:certificateId" element={<SignaturePage />} />
+				<Route
+					path="/signature/:certificateId"
+					element={
+						<RequireAuth>
+							<SignaturePage />
+						</RequireAuth>
+					}
+				/>
 
 				{/* Fallback for undefined routes */}
 				<Route path="*" element={<p>There's nothing here!</p>} />
