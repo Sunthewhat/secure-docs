@@ -972,7 +972,7 @@ const SaveSendPage = () => {
                   {rendering ? 'Rendering…' : generateButtonLabel}
                 </button>
               )}
-              {!canDistribute && (
+              {!canDistribute && hasGenerated && (
                 <button
                   onClick={handleGenerateExcludingRevoked}
                   disabled={rendering || nonRevokedParticipantIds.length === 0}

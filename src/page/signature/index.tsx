@@ -8,6 +8,19 @@ import {
 } from "react";
 import { Axios } from "@/util/axiosInstance";
 import { useParams } from "react-router-dom";
+import * as fabric from "fabric";
+// Ensure Fabric custom properties are known (helps when loading saved designs)
+if ((fabric as any).FabricObject) {
+  (fabric as any).FabricObject.customProperties =
+    (fabric as any).FabricObject.customProperties || [];
+  const customProps = ["name", "id", "dbField", "isAnchor", "isQRanchor", "undeleteable"];
+  for (const prop of customProps) {
+    if (!(fabric as any).FabricObject.customProperties.includes(prop)) {
+      (fabric as any).FabricObject.customProperties.push(prop);
+    }
+  }
+}
+import { type Certificate, type GetCertificateResponse } from "@/types/response";
 
 const OUTPUT_WIDTH = 800;
 const OUTPUT_HEIGHT = 450;
@@ -19,6 +32,10 @@ const DISPLAY_HEIGHT = 180;
 const SignaturePage = () => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+	// Fabric canvas for certificate preview
+	const certificateCanvasRef = useRef<fabric.Canvas | null>(null);
+	const signatureImageRef = useRef<fabric.Image | null>(null);
+	const signatureOverlayRef = useRef<HTMLImageElement | null>(null);
 	const [isDrawing, setIsDrawing] = useState(false);
 	const [hasManualChanges, setHasManualChanges] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -29,6 +46,10 @@ const SignaturePage = () => {
 	const [signerId, setSignerId] = useState<string | null>(null);
 	const [isSigned, setIsSigned] = useState(false);
 	const [signerName, setSignerName] = useState<string>("");
+	const [certificate, setCertificate] = useState<Certificate | null>(null);
+	const [loadingCertificate, setLoadingCertificate] = useState<boolean>(false);
+	const lastPreviewUpdateRef = useRef<number>(0);
+	const PREVIEW_THROTTLE_MS = 33; // ~30 FPS real-time preview
 
 	const { certificateId } = useParams();
 
@@ -52,6 +73,338 @@ const SignaturePage = () => {
 		};
 
 		void fetchSignerData();
+	}, [certificateId]);
+
+	const initializeCertificateCanvas = useCallback(() => {
+		if (!certificate?.design) return;
+
+		if (certificateCanvasRef.current) {
+			certificateCanvasRef.current.dispose();
+			certificateCanvasRef.current = null;
+		}
+
+		const canvasElement = document.getElementById(
+			"signature-preview-canvas"
+		) as HTMLCanvasElement | null;
+		const containerElement = document.getElementById(
+			"signature-certificate-preview"
+		) as HTMLDivElement | null;
+
+		if (!canvasElement || !containerElement) return;
+
+		const containerRect = containerElement.getBoundingClientRect();
+		const containerWidth = containerRect.width;
+		const containerHeight = containerRect.height;
+		const originalWidth = 850;
+		const originalHeight = 601;
+		const designAspectRatio = originalWidth / originalHeight;
+
+		let canvasWidth = containerWidth;
+		let canvasHeight = canvasWidth / designAspectRatio;
+		if (canvasHeight > containerHeight) {
+			canvasHeight = containerHeight;
+			canvasWidth = canvasHeight * designAspectRatio;
+		}
+
+		const canvas = new fabric.Canvas(canvasElement, {
+			width: canvasWidth,
+			height: canvasHeight,
+			selection: false,
+		});
+		canvasElement.style.maxWidth = "100%";
+		canvasElement.style.maxHeight = "100%";
+		canvasElement.style.width = "auto";
+		canvasElement.style.height = "auto";
+		certificateCanvasRef.current = canvas;
+
+		try {
+			const designData = JSON.parse(certificate.design);
+			canvas
+				.loadFromJSON(designData)
+				.then(() => {
+					const scaleX = canvasWidth / originalWidth;
+					const scaleY = canvasHeight / originalHeight;
+					const scale = Math.min(scaleX, scaleY, 1);
+
+					const objects = canvas.getObjects();
+					objects.forEach((obj) => {
+						obj.canvas = canvas;
+						obj.dirty = true;
+						obj.set({
+							left: (obj.left || 0) * scale,
+							top: (obj.top || 0) * scale,
+							scaleX: (obj.scaleX || 1) * scale,
+							scaleY: (obj.scaleY || 1) * scale,
+							selectable: false,
+							evented: false,
+							visible: true,
+							opacity: 1,
+						});
+
+						obj.setCoords();
+					});
+
+					canvas.calcOffset();
+					canvas.requestRenderAll();
+					canvas.renderAll();
+
+					requestAnimationFrame(() => {
+						if (certificateCanvasRef.current) {
+							certificateCanvasRef.current.calcOffset();
+							certificateCanvasRef.current.renderAll();
+
+							requestAnimationFrame(() => {
+								certificateCanvasRef.current?.renderAll();
+							});
+						}
+					});
+
+					if (savedSignatureRef.current) {
+						setTimeout(() => {
+							void applySignatureToPreview(savedSignatureRef.current!);
+						}, 200);
+					}
+				})
+				.catch((e) => {
+					console.error("Error loading certificate design for signature preview:", e);
+				});
+		} catch (e) {
+			console.error("Error parsing certificate design for signature preview:", e);
+		}
+					}, [certificate]);
+
+	useEffect(() => {
+		initializeCertificateCanvas();
+		return () => {
+			if (certificateCanvasRef.current) {
+				certificateCanvasRef.current.dispose();
+				certificateCanvasRef.current = null;
+			}
+		};
+	}, [initializeCertificateCanvas]);
+
+	// Resize observer similar to PreviewPage to keep canvas responsive
+	useEffect(() => {
+		const containerElement = document.getElementById("signature-certificate-preview");
+		if (!containerElement || !certificateCanvasRef.current || !certificate?.design) return;
+
+		const resizeCanvas = () => {
+			if (!certificateCanvasRef.current || !certificate?.design) return;
+			const canvas = certificateCanvasRef.current;
+			const containerRect = containerElement.getBoundingClientRect();
+			const containerWidth = containerRect.width;
+			const containerHeight = containerRect.height;
+			if (containerWidth <= 0 || containerHeight <= 0) return;
+
+			const originalWidth = 850;
+			const originalHeight = 601;
+			const designAspectRatio = originalWidth / originalHeight;
+
+			let newWidth = containerWidth;
+			let newHeight = newWidth / designAspectRatio;
+			if (newHeight > containerHeight) {
+				newHeight = containerHeight;
+				newWidth = newHeight * designAspectRatio;
+			}
+
+			const scaleX = newWidth / originalWidth;
+			const scaleY = newHeight / originalHeight;
+			const scale = Math.min(scaleX, scaleY, 1);
+
+			canvas.setDimensions({ width: newWidth, height: newHeight });
+
+			try {
+				const designData = JSON.parse(certificate.design);
+				canvas.loadFromJSON(designData).then(() => {
+					canvas.getObjects().forEach((obj) => {
+						obj.canvas = canvas;
+						obj.dirty = true;
+						obj.set({
+							left: (obj.left || 0) * scale,
+							top: (obj.top || 0) * scale,
+							scaleX: (obj.scaleX || 1) * scale,
+							scaleY: (obj.scaleY || 1) * scale,
+							selectable: false,
+							evented: false,
+							visible: true,
+							opacity: 1,
+						});
+						obj.setCoords();
+					});
+
+					canvas.calcOffset();
+					canvas.requestRenderAll();
+					canvas.renderAll();
+
+					requestAnimationFrame(() => {
+						canvas.renderAll();
+					});
+
+					if (savedSignatureRef.current) {
+						setTimeout(() => {
+							void applySignatureToPreview(savedSignatureRef.current!);
+						}, 200);
+					}
+
+				});
+			} catch {
+				// ignore
+			}
+		};
+
+		let resizeTimeout: NodeJS.Timeout;
+		const observer = new ResizeObserver(() => {
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(resizeCanvas, 150);
+		});
+		observer.observe(containerElement);
+
+		return () => {
+			clearTimeout(resizeTimeout);
+			observer.disconnect();
+		};
+		}, [certificate]);
+
+// Ensure overlay is applied once signerId becomes available
+
+async function applySignatureToPreview(dataUrl: string) {
+  if (!certificate) return;
+  const container = document.getElementById("signature-certificate-preview");
+  const overlay = signatureOverlayRef.current;
+  if (!container || !overlay) return;
+
+  overlay.src = dataUrl;
+  overlay.style.position = "absolute";
+  overlay.style.pointerEvents = "none";
+
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+
+  let sigBounds: { left: number; top: number; width: number; height: number } | null = null;
+  try {
+    const design = JSON.parse(certificate.design);
+    const objects: any[] = Array.isArray(design.objects) ? design.objects : [];
+    const candidates = objects.filter((obj) => typeof obj?.id === 'string' && obj.id.startsWith('SIGNATURE-'));
+    let target: any | null = null;
+    if (candidates.length > 0) {
+      target = signerId ? (candidates.find((o) => o.id === `SIGNATURE-${signerId}`) || candidates[0]) : candidates[0];
+    } else {
+      target = objects.find((obj) => {
+        if (obj.type !== 'group') return false;
+        if (obj.id && typeof obj.id === 'string' && obj.id.startsWith('PLACEHOLDER-')) return false;
+        if (obj.isAnchor) return false;
+        const kids: any[] = Array.isArray(obj.objects) ? obj.objects : [];
+        const rect = kids.find((k) => k.type === 'rect');
+        if (!rect) return false;
+        const w = (rect.width || 0) * (rect.scaleX || 1);
+        const h = (rect.height || 0) * (rect.scaleY || 1);
+        if (w <= 0 || h <= 0) return false;
+        const ar = w / h;
+        return Math.abs(ar - 16 / 9) <= 0.25;
+      }) || null;
+    }
+
+    if (target) {
+      const originalWidth = 850;
+      const originalHeight = 601;
+      const scaleX = containerWidth / originalWidth;
+      const scaleY = containerHeight / originalHeight;
+      const left = (target.left || 0) * scaleX;
+      const top = (target.top || 0) * scaleY;
+      const width = (target.width || 0) * (target.scaleX || 1) * scaleX;
+      const height = (target.height || 0) * (target.scaleY || 1) * scaleY;
+      sigBounds = { left, top, width, height };
+    }
+  } catch {
+    // ignore parsing errors
+  }
+
+  const CANVAS_AR = OUTPUT_HEIGHT / OUTPUT_WIDTH; // 450/800 = 0.5625
+  if (sigBounds) {
+    const fitScale = Math.min(sigBounds.width / OUTPUT_WIDTH, sigBounds.height / OUTPUT_HEIGHT);
+    const sigWidth = OUTPUT_WIDTH * fitScale;
+    const sigHeight = sigWidth * CANVAS_AR;
+    const left = sigBounds.left + (sigBounds.width - sigWidth) / 2;
+    const top = sigBounds.top + (sigBounds.height - sigHeight) / 2;
+    overlay.style.left = `${left}px`;
+    overlay.style.top = `${top}px`;
+    overlay.style.width = `${sigWidth}px`;
+    overlay.style.height = `${sigHeight}px`;
+    overlay.style.display = "block";
+    // Hide placeholder group on the Fabric canvas if present while previewing
+    toggleSignaturePlaceholders(false);
+    return;
+  }
+
+  // Fallback bottom-center in container
+  const sigWidth = containerWidth * 0.35;
+  const sigHeight = sigWidth * CANVAS_AR;
+  const left = (containerWidth - sigWidth) / 2;
+  const top = containerHeight - sigHeight - 24;
+  overlay.style.left = `${left}px`;
+  overlay.style.top = `${top}px`;
+  overlay.style.width = `${sigWidth}px`;
+  overlay.style.height = `${sigHeight}px`;
+  overlay.style.display = "block";
+  // Hide placeholder group if present while previewing
+  toggleSignaturePlaceholders(false);
+}
+
+// Toggle visibility of signature placeholder(s) on the Fabric canvas
+function toggleSignaturePlaceholders(visible: boolean) {
+  const canvas = certificateCanvasRef.current;
+  if (!canvas) return;
+  const objs = canvas.getObjects();
+  // candidates: id starts with SIGNATURE- or heuristic group with ~16:9 rect
+  const approx = (a: number, b: number, tol = 0.25) => Math.abs(a - b) <= tol;
+  const groups = objs.filter((obj) => {
+    const id = (obj as any).id as string | undefined;
+    if (typeof id === 'string' && id.startsWith('SIGNATURE-')) return true;
+    if (obj.type !== 'group') return false;
+    const group = obj as unknown as fabric.Group;
+    const children = group.getObjects?.() ?? [];
+    const rect = children.find((c) => c.type === 'rect') as fabric.Rect | undefined;
+    if (!rect) return false;
+    if ((obj as any).isAnchor) return false;
+    const w = (rect.width || 0) * ((rect.scaleX as number) || 1);
+    const h = (rect.height || 0) * ((rect.scaleY as number) || 1);
+    if (w <= 0 || h <= 0) return false;
+    return approx(w / h, 16 / 9, 0.3);
+  });
+
+  groups.forEach((g) => {
+    g.set({ opacity: visible ? 1 : 0 });
+  });
+  canvas.requestRenderAll();
+}
+
+	// Ensure overlay is applied once signerId becomes available
+	useEffect(() => {
+		if (signerId && savedSignatureRef.current) {
+			void applySignatureToPreview(savedSignatureRef.current);
+		}
+	}, [signerId]);
+
+	// Fetch certificate design for preview
+	useEffect(() => {
+		const fetchCertificate = async () => {
+			if (!certificateId) return;
+			try {
+				setLoadingCertificate(true);
+				const resp = await Axios.get<GetCertificateResponse>(
+					`/certificate/${certificateId}`
+				);
+				if (resp.status === 200) {
+					setCertificate(resp.data.data);
+				}
+			} catch (error) {
+				console.error("Failed to fetch certificate", error);
+			} finally {
+				setLoadingCertificate(false);
+			}
+		};
+
+		void fetchCertificate();
 	}, [certificateId]);
 
 	const handleCloseTab = () => {
@@ -137,12 +490,28 @@ const SignaturePage = () => {
 		const { x, y } = getCanvasCoordinates(event);
 		context.lineTo(x, y);
 		context.stroke();
+
+		// Throttled live preview update
+		const now = Date.now();
+		if (now - lastPreviewUpdateRef.current > PREVIEW_THROTTLE_MS) {
+			const dataUrl = exportCurrentCanvas();
+			if (dataUrl) {
+				savedSignatureRef.current = dataUrl;
+				void applySignatureToPreview(dataUrl);
+				lastPreviewUpdateRef.current = now;
+			}
+		}
 	};
 
 	const stopDrawing = () => {
 		if (!isDrawing) return;
 		contextRef.current?.closePath();
 		setIsDrawing(false);
+		const dataUrl = exportCurrentCanvas();
+		if (dataUrl) {
+			savedSignatureRef.current = dataUrl;
+			void applySignatureToPreview(dataUrl);
+		}
 	};
 
 	const exportForDownload = () => {
@@ -228,11 +597,22 @@ const SignaturePage = () => {
 		setIsConfirmOpen(true);
 	};
 
-	const handleClearCanvas = () => {
-		resetCanvas();
-		savedSignatureRef.current = null;
-		setUploadError(null);
-	};
+  const handleClearCanvas = () => {
+    resetCanvas();
+    savedSignatureRef.current = null;
+    setUploadError(null);
+    if (certificateCanvasRef.current && signatureImageRef.current) {
+      certificateCanvasRef.current.remove(signatureImageRef.current);
+      signatureImageRef.current = null;
+      certificateCanvasRef.current.requestRenderAll();
+    }
+    if (signatureOverlayRef.current) {
+      signatureOverlayRef.current.style.display = "none";
+      signatureOverlayRef.current.src = "";
+    }
+    // Restore placeholder visibility
+    toggleSignaturePlaceholders(true);
+  };
 
 	const drawImageToWorkingCanvas = (image: HTMLImageElement) => {
 		const context = contextRef.current;
@@ -318,6 +698,7 @@ const SignaturePage = () => {
 				setUploadError(null);
 				setHasManualChanges(true);
 				console.info("Signature uploaded", dataUrl);
+				void applySignatureToPreview(dataUrl);
 			};
 			image.src = reader.result as string;
 		};
@@ -392,6 +773,48 @@ const SignaturePage = () => {
 					</p>
 				</div>
 			</header>
+
+			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+				<div className="flex flex-col gap-6">
+					<div className="flex items-center justify-between">
+						<h2 className="text-lg font-semibold text-white">Certificate preview</h2>
+						<span className="text-sm text-white/70">Signature will appear in its designated area</span>
+					</div>
+					<div className="mt-2 flex justify-center">
+						{loadingCertificate ? (
+							<div
+								className="flex items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
+								style={{ width: "850px", height: "600px" }}
+							>
+								Loading certificate...
+							</div>
+						) : certificate ? (
+						<div
+							id="signature-certificate-preview"
+							className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white"
+							style={{ width: "850px", height: "600px" }}
+						>
+							<canvas
+								id="signature-preview-canvas"
+								style={{ display: "block", margin: "0 auto", border: "2px solid #00000010" }}
+							/>
+							<img
+								ref={signatureOverlayRef}
+								alt="Signature overlay"
+								style={{ position: "absolute", display: "none", pointerEvents: "none" }}
+							/>
+						</div>
+						) : (
+							<div
+								className="flex items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
+								style={{ width: "850px", height: "600px" }}
+							>
+								No certificate found
+							</div>
+						)}
+					</div>
+				</div>
+			</section>
 
 			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
 				<div className="flex flex-col gap-10">
