@@ -27,6 +27,7 @@ type DownloadStatus = "pending" | "downloaded" | "failed";
 type EmailStatus = "pending" | "success" | "failed";
 
 type GenerateStatus = {
+  is_signed: boolean;
   is_generated: boolean;
   is_partial_generated: boolean;
 };
@@ -376,12 +377,15 @@ const SaveSendPage = () => {
     return "pending";
   };
 
+  const hasSigned = generateStatus?.is_signed ?? false;
   const hasGenerated = generateStatus?.is_generated ?? false;
   const canDistribute =
     (!hasGenerated && Boolean(renderData)) || (hasGenerated && !hasIncomingActive);
-  const generateButtonLabel = hasGenerated
-    ? "Generate new incoming"
-    : "Generate";
+  const generateButtonLabel = !hasSigned
+    ? "Certificate not signed"
+      : hasGenerated
+      ? "Generate new incoming"
+      : "Generate";
 
   const runGenerate = async (
     targetIds: string[],
@@ -424,13 +428,13 @@ const SaveSendPage = () => {
 
   // 1) GENERATE (render only)
   const handleGenerate = () => {
-    const targetParticipantIds = hasGenerated
+    const targetParticipantIds = !hasSigned ? [] : hasGenerated
       ? incomingActiveParticipantIds
       : participantIds;
 
-    const emptyMessage = hasGenerated
+    const emptyMessage = !hasSigned ? "Certificate is not signed by all signer yet" : hasGenerated
       ? "No incoming participants available to generate."
-      : "No participant IDs found.";
+      : "No participant IDs found.";    
 
     void runGenerate(targetParticipantIds, emptyMessage);
   };
@@ -962,7 +966,7 @@ const SaveSendPage = () => {
                     (hasGenerated && !hasIncomingActive)
                   }
                   className={`inline-flex items-center justify-center rounded-full bg-primary_button px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] ${
-                    rendering ||
+                    rendering || !hasSigned ||
                     (!hasGenerated && participants.length === 0) ||
                     (hasGenerated && !hasIncomingActive)
                       ? 'cursor-not-allowed opacity-60'
