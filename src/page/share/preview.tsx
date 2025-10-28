@@ -711,7 +711,7 @@ const PreviewPage = () => {
 			</header>
 
 			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
-				<div className="flex flex-col gap-8 xl:flex-row">
+				<div className="flex flex-col gap-8">
 					<div className="flex-1 space-y-6">
 						<div className="rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
 							<div className="flex flex-wrap items-center justify-between gap-4">
@@ -764,7 +764,7 @@ const PreviewPage = () => {
 						</div>
 					</div>
 
-					<div className="xl:w-[420px]">
+					<div className="w-full">
 						<div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
 							<div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
 								<h2 className="text-lg font-semibold text-primary_text">Participants</h2>
