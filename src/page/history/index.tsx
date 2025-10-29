@@ -85,6 +85,9 @@ const HistoryPage = () => {
   const [revoking, setRevoking] = useState(false); // bulk revoke
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [certificateName, setCertificateName] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "valid" | "revoked">(
+    "all"
+  );
 
   // fetch certificate metadata for header display
   useEffect(() => {
@@ -207,13 +210,21 @@ const HistoryPage = () => {
   // ---- filtering ----
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (r) =>
-        columns.some((col) => r.data[col]?.toLowerCase().includes(q)) ||
-        r.issueDate.toLowerCase().includes(q)
-    );
-  }, [rows, query, columns]);
+    let base = rows;
+    if (statusFilter !== "all") {
+      base = base.filter((r) =>
+        statusFilter === "valid" ? r.status === "Valid" : r.status === "Revoked"
+      );
+    }
+    if (q) {
+      base = base.filter(
+        (r) =>
+          columns.some((col) => r.data[col]?.toLowerCase().includes(q)) ||
+          r.issueDate.toLowerCase().includes(q)
+      );
+    }
+    return base;
+  }, [rows, query, columns, statusFilter]);
 
   const isSearching = query.trim().length > 0;
   const emptyDescription = isSearching
@@ -292,9 +303,7 @@ const HistoryPage = () => {
       }
 
       if (fails.length) {
-        toast.error(
-          `Some revokes failed (${fails.length}). Please try again.`
-        );
+        toast.error(`Some revokes failed (${fails.length}). Please try again.`);
       }
     } catch {
       toast.error("Failed to revoke participants. Please try again.");
@@ -346,36 +355,66 @@ const HistoryPage = () => {
 
   return (
     <div className="select-none cursor-default flex flex-col gap-12 text-white">
-      <header className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 flex flex-col gap-6">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-2">
-          <span className="text-sm uppercase tracking-[0.35em] text-white/60">History</span>
-          <h1 className="text-4xl font-semibold">Share history</h1>
-          <p className="max-w-2xl text-base text-white/70">Review distributed certificates and manage revocations for {certificateLabel}.</p>
+          <span className="text-sm uppercase tracking-[0.35em] text-white/60">
+            History
+          </span>
+          <h1 className="text-4xl font-semibold">
+            Share history of {certificateLabel}
+          </h1>
+          <p className="max-w-2xl text-base text-white/70">
+            Review distributed certificates and manage revocations for{" "}
+            {certificateLabel}.
+          </p>
         </div>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="text-sm text-white/70">
-            Certificate: <span className="text-white">{certificateLabel}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
+          <div className="flex w-full flex-wrap items-center gap-3 lg:ml-auto lg:w-auto lg:justify-end">
             <input
-              className="h-10 w-full max-w-xs rounded-full border border-white/20 bg-white/10 px-4 text-sm text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
+              className="h-10 w-full max-w-md rounded-full border border-white/20 bg-white/10 px-4 text-sm text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
               type="text"
               placeholder="Search recipients..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs text-white transition hover:bg-white/20"
+              >
+                Clear
+              </button>
+            )}
+           
+            <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1">
+              {(["all", "valid", "revoked"] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setStatusFilter(k)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
+                    statusFilter === k
+                      ? "bg-white text-primary_text"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-white/70">{selected.size} selected</span>
+              <span className="text-sm text-white/70">
+                {selected.size} selected
+              </span>
               <button
                 disabled={selected.size === 0 || revoking}
                 onClick={handleOpenRevoke}
                 className={`inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-semibold transition ${
                   selected.size === 0 || revoking
-                    ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                    : 'bg-primary_button text-white hover:scale-[1.01]'
+                    ? "bg-white/20 text-white/40 cursor-not-allowed"
+                    : "bg-primary_button text-white hover:scale-[1.01]"
                 }`}
               >
-                {revoking ? 'Revoking...' : 'Revoke selected'}
+                {revoking ? "Revoking..." : "Revoke selected"}
               </button>
             </div>
           </div>
@@ -383,13 +422,20 @@ const HistoryPage = () => {
       </header>
 
       <section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 flex flex-col gap-6">
-        {loading && <div className="text-sm text-white/70">Loading history...</div>}
+        {loading && (
+          <div className="text-sm text-white/70">Loading history...</div>
+        )}
         {err && !loading && (
-          <div className="rounded-2xl border border-red-500/40 bg-red-500/20 px-5 py-4 text-sm text-red-100 shadow-lg">{err}</div>
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/20 px-5 py-4 text-sm text-red-100 shadow-lg">
+            {err}
+          </div>
         )}
         {!loading && !err && filtered.length === 0 && (
           <div className="rounded-3xl border border-white/20 bg-white/95 px-6 py-12 text-center text-primary_text shadow-xl">
-            <EmptyState title="No participants found." description={emptyDescription} />
+            <EmptyState
+              title="No participants found."
+              description={emptyDescription}
+            />
           </div>
         )}
 
@@ -404,7 +450,8 @@ const HistoryPage = () => {
                         type="checkbox"
                         checked={allSelected}
                         ref={(el) => {
-                          if (el) el.indeterminate = !allSelected && someSelected;
+                          if (el)
+                            el.indeterminate = !allSelected && someSelected;
                         }}
                         onChange={toggleAll}
                       />
@@ -435,22 +482,22 @@ const HistoryPage = () => {
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleOne(r.id)}
-                            disabled={revoking || r.status === 'Revoked'}
+                            disabled={revoking || r.status === "Revoked"}
                           />
                         </td>
                         {columns.map((col) => (
                           <td key={col} className="px-5 py-3">
-                            {r.data[col] || ''}
+                            {r.data[col] || ""}
                           </td>
                         ))}
                         <td className="px-5 py-3 text-center">{r.issueDate}</td>
                         <td
                           className={`px-5 py-3 text-center font-semibold ${
-                            r.status === 'Revoked'
-                              ? 'text-red-600'
-                              : r.status === 'Valid'
-                              ? 'text-emerald-600'
-                              : 'text-amber-600'
+                            r.status === "Revoked"
+                              ? "text-red-600"
+                              : r.status === "Valid"
+                              ? "text-emerald-600"
+                              : "text-amber-600"
                           }`}
                         >
                           {r.status}
@@ -484,7 +531,6 @@ const HistoryPage = () => {
       />
     </div>
   );
-
 };
 
 export { HistoryPage };
