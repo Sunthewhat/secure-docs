@@ -5,8 +5,8 @@ import { HistoryPage } from "@/page/history";
 import { HomePage } from "@/page/home";
 import { LoginPage } from "@/page/login";
 import { SharePage } from "@/page/share";
-import { PreviewPage } from "@/page/share/preview";
-import { SaveSendPage } from "@/page/share/saveSend";
+import { PreviewPage } from "@/page/preview";
+import { SaveSendPage } from "@/page/send";
 import SignaturePage from "@/page/signature";
 import { CertificateValidationResultPage } from "@/page/validate/result";
 import { CertificateValidationScanPage } from "@/page/validate/scan";
@@ -60,7 +60,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/share/preview/send"
+					path="/send/:certId"
 					element={
 						<RequireAuth>
 							<SaveSendPage />

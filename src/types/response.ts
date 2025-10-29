@@ -48,6 +48,22 @@ type uploadFileType = {
 	url: string;
 };
 
+type renderCertificate = {
+	message: string;
+	results: Array<{
+		filePath: string;
+		participantId: string;
+		status: "success" | "failed";
+	}>;
+	zipFilePath?: string;
+};
+
+type certificateStatus = {
+	is_signed: boolean;
+	is_generated: boolean;
+	is_partial_generated: boolean;
+};
+
 type getImage = {
 	count: number;
 	files: string[];
@@ -85,7 +101,8 @@ export type EditParticipantResponse = BaseResponse<Participant>;
 export type DeleteParticipantResponse = BaseResponse<{ id: string }>;
 
 export type GetParticipantDataResponse = BaseResponse<ValidateParticipantData>;
-
+export type RenderCertificateResponse = BaseResponse<renderCertificate>;
+export type CertificateStatusResponse = BaseResponse<certificateStatus>;
 // signer
 export type Signer = {
 	id: string;

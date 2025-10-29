@@ -1,57 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import type {
+  CertificateStatusResponse,
   GetCertificateResponse,
   GetParticipantResponse,
   Participant,
+  RenderCertificateResponse,
 } from "@/types/response";
 import { Axios } from "@/util/axiosInstance";
 import { useToast } from "@/components/toast/ToastContext";
 
-type RenderResponse = {
-  success: boolean;
-  msg: string;
-  data: {
-    message: string;
-    results: Array<{
-      filePath: string;
-      participantId: string;
-      status: "success" | "failed";
-    }>;
-    zipFilePath?: string;
-  };
-};
-
 type DownloadStatus = "pending" | "downloaded" | "failed";
 type EmailStatus = "pending" | "success" | "failed";
 
-type GenerateStatus = {
-  is_signed: boolean;
-  is_generated: boolean;
-  is_partial_generated: boolean;
-};
-
-type GenerateStatusResponse = {
-  success: boolean;
-  msg: string;
-  data: GenerateStatus;
-};
-
-interface LocationState {
-  participants?: Participant[];
-  certId?: string;
-  columns?: string[];
-}
-
 const SaveSendPage = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
-  const locationState = useMemo(
-    () => (location.state as LocationState | null) ?? null,
-    [location.state]
-  );
+	const { certId } = useParams<{ certId: string }>();
 
   // UI states
   const [rendering, setRendering] = useState(false);
@@ -61,8 +26,7 @@ const SaveSendPage = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
-  const [certId, setCertId] = useState<string>("");
-  const [generateStatus, setGenerateStatus] = useState<GenerateStatus | null>(
+  const [generateStatus, setGenerateStatus] = useState<CertificateStatusResponse["data"] | null>(
     null
   );
   const [mailStatusMap, setMailStatusMap] = useState<
@@ -126,64 +90,11 @@ const SaveSendPage = () => {
     [certId, toast]
   );
 
-  useEffect(() => {
-    if (locationState?.certId) {
-      setCertId(locationState.certId);
-      return;
-    }
-
-    if (Array.isArray(locationState?.participants)) {
-      const withCert = locationState.participants.find(
-        (participant) => participant?.certificate_id
-      );
-      if (withCert?.certificate_id) {
-        setCertId(withCert.certificate_id);
-      }
-    }
-  }, [locationState]);
-
-  useEffect(() => {
-    const stateColumns = sanitizeColumns(locationState?.columns);
-    if (stateColumns.length) {
-      initialColumnsRef.current = [...stateColumns];
-      setColumns(stateColumns);
-    }
-  }, [locationState, sanitizeColumns]);
-
-  useEffect(() => {
-    if (
-      Array.isArray(locationState?.participants) &&
-      locationState.participants.length > 0
-    ) {
-      setParticipants(locationState.participants);
-    }
-  }, [locationState]);
-
-  useEffect(() => {
-    if (locationState?.certId) return;
-    if (!location.search) return;
-    const params = new URLSearchParams(location.search);
-    const queryCertId = params.get("certId");
-    if (queryCertId) {
-      setCertId(queryCertId);
-    }
-  }, [location.search, locationState]);
-
-  useEffect(() => {
-    if (certId || participants.length === 0) return;
-    const withCertId = participants.find(
-      (participant) => participant.certificate_id
-    );
-    if (withCertId?.certificate_id) {
-      setCertId(withCertId.certificate_id);
-    }
-  }, [certId, participants]);
-
   const fetchGenerateStatus = useCallback(async () => {
     if (!certId) return;
 
     try {
-      const response = await Axios.get<GenerateStatusResponse>(
+      const response = await Axios.get<CertificateStatusResponse>(
         `/certificate/generate/status/${certId}`
       );
       if (response.status === 200 && response.data?.data) {
@@ -231,7 +142,7 @@ const SaveSendPage = () => {
   }, [participants, sanitizeColumns]);
 
   // store render payload after "Generate"
-  const [renderData, setRenderData] = useState<RenderResponse["data"] | null>(
+  const [renderData, setRenderData] = useState<RenderCertificateResponse["data"] | null>(
     null
   );
 
@@ -407,7 +318,7 @@ const SaveSendPage = () => {
     }
 
     try {
-      const res = await Axios.post<RenderResponse>(
+      const res = await Axios.post<RenderCertificateResponse>(
         `/certificate/render/${certId}`,
         {
           participantIds: targetIds,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams, useLocation } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import * as fabric from "fabric";
 import { Axios } from "@/util/axiosInstance";
 import {
@@ -9,49 +9,11 @@ import {
 	Certificate,
 	GetAnchorResponse,
 } from "@/types/response";
-
-type SharePreviewParticipant = {
-	id?: string;
-	data: Record<string, string>;
-	isDistributed?: boolean;
-	isDownloaded?: boolean;
-	emailStatus?: "pending" | "success" | "failed";
-};
-
-type SharePreviewState = {
-	fromShare?: boolean;
-	columns?: string[];
-	participants?: SharePreviewParticipant[];
-};
-
-const ensureEmailColumn = (cols: string[]): string[] => {
-	if (!cols.length) return ["email"];
-	const filtered = cols.filter(
-		(col): col is string => typeof col === "string" && col.trim().length > 0
-	);
-	const normalized = filtered.map((col) => col.trim().toLowerCase());
-	let targetIndex = normalized.findIndex((col) => col === "email");
-	if (targetIndex === -1) {
-		targetIndex = normalized.findIndex((col) => col.includes("email"));
-	}
-	const reordered = [...filtered];
-	if (targetIndex === -1) {
-		reordered.push("email");
-		return reordered;
-	}
-	if (targetIndex === reordered.length - 1) {
-		return reordered;
-	}
-	const [emailCol] = reordered.splice(targetIndex, 1);
-	reordered.push(emailCol);
-	return reordered;
-};
+import { ensureEmailColumn } from "@/components/preview/utils";
 
 const PreviewPage = () => {
 	const navigate = useNavigate();
 	const { certId } = useParams<{ certId: string }>();
-	const location = useLocation();
-	const shareState = location.state as SharePreviewState | undefined;
 	const [participants, setParticipants] = useState<Participant[]>([]);
 	const [columns, setColumns] = useState<string[]>([]);
 	const [certificate, setCertificate] = useState<Certificate | null>(null);
@@ -59,67 +21,11 @@ const PreviewPage = () => {
 	const [selectedParticipant, setSelectedParticipant] =
 		useState<Participant | null>(null);
 	const canvasRef = useRef<fabric.Canvas | null>(null);
-	const [initializedFromShare, setInitializedFromShare] = useState(false);
-
-	useEffect(() => {
-		if (initializedFromShare) return;
-
-		const shareParticipants = shareState?.participants ?? [];
-		if (!shareParticipants.length) return;
-
-		const sanitizedColumns = (shareState?.columns ?? [])
-			.map((col) => (typeof col === 'string' ? col.trim() : ''))
-			.filter((col) => col.length > 0);
-
-		const derivedColumns = sanitizedColumns.length
-			? sanitizedColumns
-			: Array.from(
-				new Set(
-					shareParticipants.flatMap((participant) =>
-						participant?.data ? Object.keys(participant.data) : []
-					)
-				)
-			);
-
-		const uniqueColumns = Array.from(new Set(derivedColumns));
-		const orderedColumns = ensureEmailColumn(uniqueColumns);
-		setColumns(orderedColumns);
-
-		const timestamp = Date.now();
-		const normalizedParticipants = shareParticipants.map((participant, index) => {
-			const normalizedData: Participant['data'] = {};
-			orderedColumns.forEach((col) => {
-				normalizedData[col] = participant.data?.[col] ?? '';
-			});
-			const normalizedEmailStatus: Participant['email_status'] =
-				participant.emailStatus === 'success' || participant.emailStatus === 'failed'
-					? participant.emailStatus
-					: 'pending';
-
-			return {
-				id: participant.id ?? `local-${timestamp}-${index}`,
-				certificate_id: certId ?? '',
-				is_revoked: false,
-				is_distributed: Boolean(participant.isDistributed),
-				is_downloaded: Boolean(participant.isDownloaded),
-				email_status: normalizedEmailStatus,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-				certificate_url: '',
-				data: normalizedData,
-			};
-		});
-
-		setParticipants(normalizedParticipants);
-		setSelectedParticipant(normalizedParticipants[0] ?? null);
-		setInitializedFromShare(true);
-	}, [shareState, initializedFromShare, certId]);
 
 	// Fetch certificate and participants data from API
 	useEffect(() => {
 		const fetchData = async () => {
 			if (!certId) return;
-			const shareParticipantsProvided = Boolean(shareState?.participants?.length);
 
 			try {
 				setLoading(true);
@@ -132,10 +38,6 @@ const PreviewPage = () => {
 					setCertificate(certResponse.data.data);
 				} else {
 					console.error("Failed to fetch certificate");
-				}
-
-				if (shareParticipantsProvided) {
-					return;
 				}
 
 				// Fetch anchor columns for consistent ordering
@@ -257,7 +159,7 @@ const PreviewPage = () => {
 		};
 
 		void fetchData();
-	}, [certId, shareState]);
+	}, [certId]);
 
 	// Function to update certificate with participant data
 	const updateCertificateWithParticipantData = (participant: Participant) => {
@@ -664,13 +566,7 @@ const PreviewPage = () => {
 
 	// Function to handle sending data to next page via navigation state
 	const handleSend = () => {
-		void navigate("/share/preview/send", {
-			state: {
-				participants,
-				certId,
-				columns,
-			},
-		});
+		void navigate(`/send/${certId}`);
 	};
 	const handleEdit = () => {
 		// Pass edit mode and certificate ID to design page

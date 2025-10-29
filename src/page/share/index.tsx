@@ -489,19 +489,12 @@ const SharePage = () => {
       toast.error("Please fill at least one field for a recipient.");
       return;
     }
-    const previewParticipants = buildPreviewParticipants();
-    if (!previewParticipants.length) {
+    if (!recipients.length) {
       toast.error("Please fill at least one field for a recipient.");
       return;
     }
 
-    navigate(`/preview/${certId}`, {
-      state: {
-        fromShare: true,
-        columns: [...columns],
-        participants: previewParticipants,
-      },
-    });
+    navigate(`/preview/${certId}`);
   };
 
   // ===== Effects =====
@@ -676,22 +669,6 @@ const SharePage = () => {
 
   const isParticipantLocked = (row: ParticipantRow) =>
     Boolean(row.isDistributed || row.isDownloaded || row.emailStatus === "success");
-
-  const buildPreviewParticipants = () => {
-    const timestamp = Date.now();
-    return recipients
-      .filter((row) => !isRowEmpty(row))
-      .map((row, index) => ({
-        id: row.id ?? `local-${timestamp}-${index}`,
-        data: { ...row.data },
-        isDistributed: Boolean(row.isDistributed),
-        isDownloaded: Boolean(row.isDownloaded),
-        emailStatus:
-          row.emailStatus === "success" || row.emailStatus === "failed"
-            ? row.emailStatus
-            : "pending",
-      }));
-  };
 
   // does the table contain at least one non-empty row?
   const hasAtLeastOneFilledRow = () => recipients.some((r) => !isRowEmpty(r));
