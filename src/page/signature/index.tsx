@@ -27,7 +27,6 @@ const OUTPUT_HEIGHT = 450;
 const WORKING_WIDTH = 640;
 const WORKING_HEIGHT = 360;
 const DISPLAY_WIDTH = 320;
-const DISPLAY_HEIGHT = 180;
 
 const SignaturePage = () => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -94,17 +93,12 @@ const SignaturePage = () => {
 
 		const containerRect = containerElement.getBoundingClientRect();
 		const containerWidth = containerRect.width;
-		const containerHeight = containerRect.height;
 		const originalWidth = 850;
 		const originalHeight = 601;
 		const designAspectRatio = originalWidth / originalHeight;
 
-		let canvasWidth = containerWidth;
-		let canvasHeight = canvasWidth / designAspectRatio;
-		if (canvasHeight > containerHeight) {
-			canvasHeight = containerHeight;
-			canvasWidth = canvasHeight * designAspectRatio;
-		}
+		const canvasWidth = containerWidth;
+		const canvasHeight = Math.max(1, canvasWidth / designAspectRatio);
 
 		const canvas = new fabric.Canvas(canvasElement, {
 			width: canvasWidth,
@@ -193,19 +187,14 @@ const SignaturePage = () => {
 			const canvas = certificateCanvasRef.current;
 			const containerRect = containerElement.getBoundingClientRect();
 			const containerWidth = containerRect.width;
-			const containerHeight = containerRect.height;
-			if (containerWidth <= 0 || containerHeight <= 0) return;
+			if (containerWidth <= 0) return;
 
 			const originalWidth = 850;
 			const originalHeight = 601;
 			const designAspectRatio = originalWidth / originalHeight;
 
-			let newWidth = containerWidth;
-			let newHeight = newWidth / designAspectRatio;
-			if (newHeight > containerHeight) {
-				newHeight = containerHeight;
-				newWidth = newHeight * designAspectRatio;
-			}
+			const newWidth = containerWidth;
+			const newHeight = Math.max(1, newWidth / designAspectRatio);
 
 			const scaleX = newWidth / originalWidth;
 			const scaleY = newHeight / originalHeight;
@@ -277,46 +266,98 @@ async function applySignatureToPreview(dataUrl: string) {
   overlay.style.position = "absolute";
   overlay.style.pointerEvents = "none";
 
-  const containerWidth = container.clientWidth;
-  const containerHeight = container.clientHeight;
-
+  // Prefer reading live bounds from the Fabric canvas for perfect alignment
+  const canvas = certificateCanvasRef.current;
   let sigBounds: { left: number; top: number; width: number; height: number } | null = null;
-  try {
-    const design = JSON.parse(certificate.design);
-    const objects: any[] = Array.isArray(design.objects) ? design.objects : [];
-    const candidates = objects.filter((obj) => typeof obj?.id === 'string' && obj.id.startsWith('SIGNATURE-'));
-    let target: any | null = null;
-    if (candidates.length > 0) {
-      target = signerId ? (candidates.find((o) => o.id === `SIGNATURE-${signerId}`) || candidates[0]) : candidates[0];
-    } else {
-      target = objects.find((obj) => {
-        if (obj.type !== 'group') return false;
-        if (obj.id && typeof obj.id === 'string' && obj.id.startsWith('PLACEHOLDER-')) return false;
-        if (obj.isAnchor) return false;
-        const kids: any[] = Array.isArray(obj.objects) ? obj.objects : [];
-        const rect = kids.find((k) => k.type === 'rect');
-        if (!rect) return false;
-        const w = (rect.width || 0) * (rect.scaleX || 1);
-        const h = (rect.height || 0) * (rect.scaleY || 1);
-        if (w <= 0 || h <= 0) return false;
-        const ar = w / h;
-        return Math.abs(ar - 16 / 9) <= 0.25;
-      }) || null;
+
+  if (canvas) {
+    const objs = canvas.getObjects();
+    let targetObj: fabric.Object | null = null;
+
+    // Priority 1: exact SIGNATURE-<signerId>
+    if (signerId) {
+      targetObj = (objs.find((o) => (o as any).id === `SIGNATURE-${signerId}`) as fabric.Object) || null;
+    }
+    // Priority 2: any SIGNATURE- group/object
+    if (!targetObj) {
+      targetObj = (objs.find((o) => typeof (o as any).id === 'string' && (o as any).id.startsWith('SIGNATURE-')) as fabric.Object) || null;
+    }
+    // Priority 3: heuristic 16:9 rect (non-anchor)
+    if (!targetObj) {
+      const approx = (a: number, b: number, tol = 0.25) => Math.abs(a - b) <= tol;
+      targetObj = (objs.find((o) => {
+        if ((o as any).isAnchor) return false;
+        if (o.type === 'group') {
+          const g = o as fabric.Group;
+          const kids = g.getObjects?.() ?? [];
+          const rect = kids.find((k) => k.type === 'rect') as fabric.Rect | undefined;
+          if (!rect) return false;
+          const w = (rect.width || 0) * ((rect.scaleX as number) || 1);
+          const h = (rect.height || 0) * ((rect.scaleY as number) || 1);
+          if (w <= 0 || h <= 0) return false;
+          return approx(w / h, 16 / 9, 0.3);
+        }
+        return false;
+      }) as fabric.Object) || null;
     }
 
-    if (target) {
-      const originalWidth = 850;
-      const originalHeight = 601;
-      const scaleX = containerWidth / originalWidth;
-      const scaleY = containerHeight / originalHeight;
-      const left = (target.left || 0) * scaleX;
-      const top = (target.top || 0) * scaleY;
-      const width = (target.width || 0) * (target.scaleX || 1) * scaleX;
-      const height = (target.height || 0) * (target.scaleY || 1) * scaleY;
-      sigBounds = { left, top, width, height };
+    if (targetObj) {
+      // If the target is a group, prefer the inner rect bounds
+      let rectBounds: { left: number; top: number; width: number; height: number } | null = null;
+      if (targetObj.type === 'group') {
+        const g = targetObj as fabric.Group;
+        const rect = (g.getObjects?.() ?? []).find((k) => k.type === 'rect') as fabric.Object | undefined;
+        if (rect && rect.getBoundingRect) {
+          const br = rect.getBoundingRect();
+          rectBounds = { left: br.left, top: br.top, width: br.width, height: br.height };
+        }
+      }
+      const br = rectBounds ?? targetObj.getBoundingRect();
+      sigBounds = { left: br.left, top: br.top, width: br.width, height: br.height };
     }
-  } catch {
-    // ignore parsing errors
+  }
+
+  // If canvas probing failed, fall back to JSON-based computation
+  if (!sigBounds) {
+    try {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const design = JSON.parse(certificate.design);
+      const objects: any[] = Array.isArray(design.objects) ? design.objects : [];
+      const candidates = objects.filter((obj) => typeof obj?.id === 'string' && obj.id.startsWith('SIGNATURE-'));
+      let target: any | null = null;
+      if (candidates.length > 0) {
+        target = signerId ? (candidates.find((o: any) => o.id === `SIGNATURE-${signerId}`) || candidates[0]) : candidates[0];
+      } else {
+        target = objects.find((obj: any) => {
+          if (obj.type !== 'group') return false;
+          if (obj.id && typeof obj.id === 'string' && obj.id.startsWith('PLACEHOLDER-')) return false;
+          if (obj.isAnchor) return false;
+          const kids: any[] = Array.isArray(obj.objects) ? obj.objects : [];
+          const rect = kids.find((k) => k.type === 'rect');
+          if (!rect) return false;
+          const w = (rect.width || 0) * (rect.scaleX || 1);
+          const h = (rect.height || 0) * (rect.scaleY || 1);
+          if (w <= 0 || h <= 0) return false;
+          const ar = w / h;
+          return Math.abs(ar - 16 / 9) <= 0.25;
+        }) || null;
+      }
+
+      if (target) {
+        const originalWidth = 850;
+        const originalHeight = 601;
+        const scaleX = containerWidth / originalWidth;
+        const scaleY = containerHeight / originalHeight;
+        const left = (target.left || 0) * scaleX;
+        const top = (target.top || 0) * scaleY;
+        const width = (target.width || 0) * (target.scaleX || 1) * scaleX;
+        const height = (target.height || 0) * (target.scaleY || 1) * scaleY;
+        sigBounds = { left, top, width, height };
+      }
+    } catch {
+      // ignore parsing errors
+    }
   }
 
   const CANVAS_AR = OUTPUT_HEIGHT / OUTPUT_WIDTH; // 450/800 = 0.5625
@@ -331,12 +372,13 @@ async function applySignatureToPreview(dataUrl: string) {
     overlay.style.width = `${sigWidth}px`;
     overlay.style.height = `${sigHeight}px`;
     overlay.style.display = "block";
-    // Hide placeholder group on the Fabric canvas if present while previewing
     toggleSignaturePlaceholders(false);
     return;
   }
 
   // Fallback bottom-center in container
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
   const sigWidth = containerWidth * 0.35;
   const sigHeight = sigWidth * CANVAS_AR;
   const left = (containerWidth - sigWidth) / 2;
@@ -346,7 +388,6 @@ async function applySignatureToPreview(dataUrl: string) {
   overlay.style.width = `${sigWidth}px`;
   overlay.style.height = `${sigHeight}px`;
   overlay.style.display = "block";
-  // Hide placeholder group if present while previewing
   toggleSignaturePlaceholders(false);
 }
 
@@ -417,8 +458,9 @@ function toggleSignaturePlaceholders(visible: boolean) {
 
 		canvas.width = WORKING_WIDTH;
 		canvas.height = WORKING_HEIGHT;
-		canvas.style.width = `${DISPLAY_WIDTH}px`;
-		canvas.style.height = `${DISPLAY_HEIGHT}px`;
+		// Make the drawing canvas responsive: match container width and keep aspect ratio
+		canvas.style.width = "100%";
+		canvas.style.height = "auto";
 		canvas.style.touchAction = "none";
 
 		const context = canvas.getContext("2d");
@@ -783,20 +825,20 @@ function toggleSignaturePlaceholders(visible: boolean) {
 					<div className="mt-2 flex justify-center">
 						{loadingCertificate ? (
 							<div
-								className="flex items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
-								style={{ width: "850px", height: "600px" }}
+								className="flex w-full max-w-[850px] items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
+								style={{ aspectRatio: "850/601", minHeight: "240px" }}
 							>
 								Loading certificate...
 							</div>
 						) : certificate ? (
 						<div
 							id="signature-certificate-preview"
-							className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white"
-							style={{ width: "850px", height: "600px" }}
+							className="relative flex w-full max-w-[850px] items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white"
+							style={{ aspectRatio: "850/601" }}
 						>
 							<canvas
 								id="signature-preview-canvas"
-								style={{ display: "block", margin: "0 auto", border: "2px solid #00000010" }}
+								style={{ display: "block", margin: "0 auto" }}
 							/>
 							<img
 								ref={signatureOverlayRef}
@@ -806,8 +848,8 @@ function toggleSignaturePlaceholders(visible: boolean) {
 						</div>
 						) : (
 							<div
-								className="flex items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
-								style={{ width: "850px", height: "600px" }}
+								className="flex w-full max-w-[850px] items-center justify-center rounded-2xl border border-dashed border-white/30 bg-white/10 text-white/70"
+								style={{ aspectRatio: "850/601", minHeight: "240px" }}
 							>
 								No certificate found
 							</div>
@@ -826,15 +868,16 @@ function toggleSignaturePlaceholders(visible: boolean) {
 								</h2>
 							</div>
 							<div className="mt-6 grid w-full gap-6 md:grid-cols-[minmax(0,auto)_1px_minmax(220px,1fr)] md:items-start">
-								<div className="flex flex-col items-start gap-4">
+								<div className="flex w-full flex-col items-start gap-4">
 									<canvas
 										ref={canvasRef}
 										className="rounded-xl border border-gray-300 bg-white shadow-sm"
 										width={WORKING_WIDTH}
 										height={WORKING_HEIGHT}
 										style={{
-											width: `${DISPLAY_WIDTH}px`,
-											height: `${DISPLAY_HEIGHT}px`,
+											width: "100%",
+											maxWidth: `${DISPLAY_WIDTH}px`,
+											height: "auto",
 										}}
 										onPointerDown={handlePointerDown}
 										onPointerMove={handlePointerMove}
