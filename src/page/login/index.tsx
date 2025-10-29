@@ -7,11 +7,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/auth/useAuth";
 import EasyCertLogo from "../../asset/EasyCertLogo.svg";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+import BackgroundVid from "@/asset/Background_Video.mp4"
 
 // Login page (public)
-
-const BACKGROUND_VIDEO_URL =
-  "https://easy-cert-storage.sunthewhat.com/easy-cert-internal-resource/Background_video.mp4";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -51,9 +49,9 @@ const LoginPage = () => {
         const redirectTo = from ? `${from.pathname}${from.search}` : "/";
         void navigate(redirectTo);
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login failed:", error);
-      const apiMsg = error?.response?.data?.msg;
+      const apiMsg = (error as { response: { data: { msg: string }}})?.response?.data?.msg;
       setErrorMsg(apiMsg || "Invalid username or password. Please try again.");
     } finally {
       setSubmitting(false);
@@ -64,7 +62,7 @@ const LoginPage = () => {
     <div className="relative flex h-screen w-full items-center justify-center overflow-hidden font-noto">
       <video
         ref={videoRef}
-        src={BACKGROUND_VIDEO_URL}
+        src={BackgroundVid}
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         loop
