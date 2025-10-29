@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import type {
   GetCertificateResponse,
   GetParticipantResponse,
@@ -38,20 +37,10 @@ type GenerateStatusResponse = {
   data: GenerateStatus;
 };
 
-interface LocationState {
-  participants?: Participant[];
-  certId?: string;
-  columns?: string[];
-}
-
 const SaveSendPage = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
-  const locationState = useMemo(
-    () => (location.state as LocationState | null) ?? null,
-    [location.state]
-  );
+	const { certId } = useParams<{ certId: string }>();
 
   // UI states
   const [rendering, setRendering] = useState(false);
@@ -61,7 +50,6 @@ const SaveSendPage = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
-  const [certId, setCertId] = useState<string>("");
   const [generateStatus, setGenerateStatus] = useState<GenerateStatus | null>(
     null
   );
@@ -125,59 +113,6 @@ const SaveSendPage = () => {
     },
     [certId, toast]
   );
-
-  useEffect(() => {
-    if (locationState?.certId) {
-      setCertId(locationState.certId);
-      return;
-    }
-
-    if (Array.isArray(locationState?.participants)) {
-      const withCert = locationState.participants.find(
-        (participant) => participant?.certificate_id
-      );
-      if (withCert?.certificate_id) {
-        setCertId(withCert.certificate_id);
-      }
-    }
-  }, [locationState]);
-
-  useEffect(() => {
-    const stateColumns = sanitizeColumns(locationState?.columns);
-    if (stateColumns.length) {
-      initialColumnsRef.current = [...stateColumns];
-      setColumns(stateColumns);
-    }
-  }, [locationState, sanitizeColumns]);
-
-  useEffect(() => {
-    if (
-      Array.isArray(locationState?.participants) &&
-      locationState.participants.length > 0
-    ) {
-      setParticipants(locationState.participants);
-    }
-  }, [locationState]);
-
-  useEffect(() => {
-    if (locationState?.certId) return;
-    if (!location.search) return;
-    const params = new URLSearchParams(location.search);
-    const queryCertId = params.get("certId");
-    if (queryCertId) {
-      setCertId(queryCertId);
-    }
-  }, [location.search, locationState]);
-
-  useEffect(() => {
-    if (certId || participants.length === 0) return;
-    const withCertId = participants.find(
-      (participant) => participant.certificate_id
-    );
-    if (withCertId?.certificate_id) {
-      setCertId(withCertId.certificate_id);
-    }
-  }, [certId, participants]);
 
   const fetchGenerateStatus = useCallback(async () => {
     if (!certId) return;

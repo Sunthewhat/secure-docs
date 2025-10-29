@@ -60,7 +60,7 @@ const RouterProvider: FC = () => {
 					}
 				/>
 				<Route
-					path="/share/preview/send"
+					path="/send/:certId"
 					element={
 						<RequireAuth>
 							<SaveSendPage />
