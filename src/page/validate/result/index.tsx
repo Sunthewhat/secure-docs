@@ -148,7 +148,7 @@ const CertificateValidationResultPage: FC = () => {
 						{/* Certificate Display */}
 						<div className='border-4 border-black aspect-[297/212] w-full max-w-[700px] mb-8'>
 							<iframe
-								src={`${participantData.participant.certificate_url}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+								src={`${participantData.participant.certificate_url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
 								className='w-full h-full'
 								title='Certificate PDF'
 								style={{
