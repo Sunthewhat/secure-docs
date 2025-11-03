@@ -109,75 +109,101 @@ const CertificateValidationResultPage: FC = () => {
 	}
 
 	return (
-		<div className='select-none cursor-default flex flex-col gap-12 text-white'>
-			<header className='flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between'>
-				<div className='flex flex-col gap-4'>
-					<span className='text-sm uppercase tracking-[0.35em] text-white/60'>Validation</span>
-					<div className='space-y-2'>
-						<h1 className='text-3xl font-semibold sm:text-4xl'>Certificate validation</h1>
-						<p className='max-w-2xl text-base text-white/70'>View certificate status and participant details.</p>
+		<div className="select-none cursor-default flex flex-col gap-12 text-white">
+			<header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+				<div className="flex flex-col gap-4">
+					<span className="text-sm uppercase tracking-[0.35em] text-white/60">
+						Validation
+					</span>
+					<div className="space-y-2">
+						<h1 className="text-3xl font-semibold sm:text-4xl">
+							Certificate validation
+						</h1>
+						<p className="max-w-2xl text-base text-white/70">
+							View certificate status and participant details.
+						</p>
 					</div>
 				</div>
 			</header>
 
-			<section className='rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10'>
+			<section className="rounded-[32px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10">
 				{participantData ? (
-					<div className='mx-auto flex w-full max-w-5xl flex-col items-center gap-8'>
+					<div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8">
 						{statusConfig && (
 							<div
-								role='status'
+								role="status"
 								className={`w-full max-w-[680px] rounded-2xl border px-5 py-4 shadow-xl backdrop-blur-md ${
 									participantData.participant.is_revoked
-										? 'border-red-300/40 bg-red-500/10 text-red-200'
-										: 'border-green-300/40 bg-green-500/10 text-green-200'
+										? "border-red-300/40 bg-red-500/10 text-red-200"
+										: "border-green-300/40 bg-green-500/10 text-green-200"
 								}`}
 							>
-								<div className='flex items-start gap-3'>
-									<statusConfig.Icon size={28} className='mt-0.5' />
-									<div className='flex-1'>
-										<span className='inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]'>
+								<div className="flex items-start gap-3">
+									<statusConfig.Icon size={28} className="mt-0.5" />
+									<div className="flex-1">
+										<span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]">
 											{statusConfig.badgeLabel}
 										</span>
-										<h2 className='mt-2 text-2xl font-bold text-white'>{statusConfig.label}</h2>
-										<p className='mt-1 text-sm opacity-90'>{statusConfig.message}</p>
+										<h2 className="mt-2 text-2xl font-bold text-white">
+											{statusConfig.label}
+										</h2>
+										<p className="mt-1 text-sm opacity-90">
+											{statusConfig.message}
+										</p>
 									</div>
 								</div>
 							</div>
 						)}
 
 						{/* Certificate Display */}
-						<div className='border-4 border-black aspect-[297/212] w-full max-w-[700px] mb-8'>
+						<div className="border-4 border-black aspect-[297/212] w-full max-w-[700px] mb-8">
 							<iframe
-								src={`${participantData.participant.certificate_url}#toolbar=0&navpanes=0&scrollbar=0`}
-								className='w-full h-full'
-								title='Certificate PDF'
-								style={{
-									border: 'none',
-								}}
+								// src={`${participantData.participant.certificate_url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+								src={`https://docs.google.com/viewer?url=${participantData.participant.certificate_url}&embedded=true`}
+								className="w-full h-full"
+								title="Certificate PDF"
+								// style={{
+								// 	border: "none",
+								// }}
 							/>
 						</div>
 
 						{/* Participant Information */}
-						<div className='w-full max-w-[680px] rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl'>
-							<h3 className='mb-4 text-center text-xl font-bold'>Participant information</h3>
-							<div className='grid grid-cols-1 gap-4'>
-								{Object.entries(participantData.participant.data).map(([key, value]) => (
-									<div key={key} className='flex items-center justify-between border-b border-gray-200 pb-2'>
-										<span className='capitalize text-gray-700'>{key}:</span>
-										<span className='text-gray-900'>{String(value)}</span>
-									</div>
-								))}
+						<div className="w-full max-w-[680px] rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
+							<h3 className="mb-4 text-center text-xl font-bold">
+								Participant information
+							</h3>
+							<div className="grid grid-cols-1 gap-4">
+								{Object.entries(participantData.participant.data).map(
+									([key, value]) => (
+										<div
+											key={key}
+											className="flex items-center justify-between border-b border-gray-200 pb-2"
+										>
+											<span className="capitalize text-gray-700">{key}:</span>
+											<span className="text-gray-900">{String(value)}</span>
+										</div>
+									)
+								)}
 							</div>
-							<div className='mt-4 flex items-center justify-between'>
-								<span className='font-medium text-gray-700'>Status</span>
-								<span className={participantData.participant.is_revoked ? 'text-red-500' : 'text-green-600'}>
-									{participantData.participant.is_revoked ? 'This certificate has been revoked' : 'This certificate is valid'}
+							<div className="mt-4 flex items-center justify-between">
+								<span className="font-medium text-gray-700">Status</span>
+								<span
+									className={
+										participantData.participant.is_revoked
+											? "text-red-500"
+											: "text-green-600"
+									}
+								>
+									{participantData.participant.is_revoked
+										? "This certificate has been revoked"
+										: "This certificate is valid"}
 								</span>
 							</div>
 						</div>
 					</div>
 				) : (
-					<p className='text-white/80'>No certificate data found.</p>
+					<p className="text-white/80">No certificate data found.</p>
 				)}
 			</section>
 		</div>
