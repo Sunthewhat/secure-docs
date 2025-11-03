@@ -114,3 +114,13 @@ export type Signer = {
 
 export type AddSignerResponse = BaseResponse<Signer>;
 export type GetSignersResponse = BaseResponse<Signer[]>;
+
+// signer status
+export type SignerStatus = {
+    id: string;
+    is_signed: boolean;
+    is_requested: boolean;
+    email: string;
+    display_name: string;
+};
+export type GetSignerStatusResponse = BaseResponse<SignerStatus[]>;

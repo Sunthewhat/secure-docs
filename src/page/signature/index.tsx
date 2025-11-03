@@ -35,7 +35,11 @@ const SignaturePage = () => {
 	const certificateCanvasRef = useRef<fabric.Canvas | null>(null);
 	const signatureImageRef = useRef<fabric.Image | null>(null);
 	const signatureOverlayRef = useRef<HTMLImageElement | null>(null);
+	const devicePixelRatioRef = useRef<number>(Math.min(window.devicePixelRatio || 1, 2));
 	const [isDrawing, setIsDrawing] = useState(false);
+	const [signatureColor, setSignatureColor] = useState<"black" | "white" | "blue">(
+		"black"
+	);
 	const [hasManualChanges, setHasManualChanges] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -262,7 +266,6 @@ async function applySignatureToPreview(dataUrl: string) {
   const overlay = signatureOverlayRef.current;
   if (!container || !overlay) return;
 
-  overlay.src = dataUrl;
   overlay.style.position = "absolute";
   overlay.style.pointerEvents = "none";
 
@@ -367,6 +370,31 @@ async function applySignatureToPreview(dataUrl: string) {
     const sigHeight = sigWidth * CANVAS_AR;
     const left = sigBounds.left + (sigBounds.width - sigWidth) / 2;
     const top = sigBounds.top + (sigBounds.height - sigHeight) / 2;
+    // Export higher-resolution data for crisp preview (clamped to source size)
+    const dpr = devicePixelRatioRef.current || 1;
+    const targetW = Math.max(1, Math.floor(sigWidth * dpr));
+    const targetH = Math.max(1, Math.floor(sigHeight * dpr));
+    const src = canvasRef.current;
+    let hd: string | null = null;
+    if (src) {
+      const srcW = src.width;
+      const srcH = src.height;
+      const scale = Math.min(1, srcW / targetW, srcH / targetH);
+      const outW = Math.max(1, Math.floor(targetW * scale));
+      const outH = Math.max(1, Math.floor(targetH * scale));
+      const ex = document.createElement('canvas');
+      ex.width = outW;
+      ex.height = outH;
+      const ctx = ex.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, outW, outH);
+        ctx.drawImage(src, 0, 0, outW, outH);
+        hd = ex.toDataURL('image/png');
+      }
+    }
+    overlay.src = hd ?? dataUrl;
     overlay.style.left = `${left}px`;
     overlay.style.top = `${top}px`;
     overlay.style.width = `${sigWidth}px`;
@@ -383,6 +411,32 @@ async function applySignatureToPreview(dataUrl: string) {
   const sigHeight = sigWidth * CANVAS_AR;
   const left = (containerWidth - sigWidth) / 2;
   const top = containerHeight - sigHeight - 24;
+  const dpr = devicePixelRatioRef.current || 1;
+  const targetW = Math.max(1, Math.floor(sigWidth * dpr));
+  const targetH = Math.max(1, Math.floor(sigHeight * dpr));
+  let hd: string | null = null;
+  {
+    const src = canvasRef.current;
+    if (src) {
+      const srcW = src.width;
+      const srcH = src.height;
+      const scale = Math.min(1, srcW / targetW, srcH / targetH);
+      const outW = Math.max(1, Math.floor(targetW * scale));
+      const outH = Math.max(1, Math.floor(targetH * scale));
+      const ex = document.createElement('canvas');
+      ex.width = outW;
+      ex.height = outH;
+      const ctx = ex.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, outW, outH);
+        ctx.drawImage(src, 0, 0, outW, outH);
+        hd = ex.toDataURL('image/png');
+      }
+    }
+  }
+  overlay.src = hd ?? dataUrl;
   overlay.style.left = `${left}px`;
   overlay.style.top = `${top}px`;
   overlay.style.width = `${sigWidth}px`;
@@ -456,8 +510,10 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		canvas.width = WORKING_WIDTH;
-		canvas.height = WORKING_HEIGHT;
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+		devicePixelRatioRef.current = dpr;
+		canvas.width = Math.floor(WORKING_WIDTH * dpr);
+		canvas.height = Math.floor(WORKING_HEIGHT * dpr);
 		// Make the drawing canvas responsive: match container width and keep aspect ratio
 		canvas.style.width = "100%";
 		canvas.style.height = "auto";
@@ -466,13 +522,47 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		const context = canvas.getContext("2d");
 		if (!context) return;
 
+		// scale for crisp rendering
+		context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
 		context.lineWidth = 2.5;
 		context.lineCap = "round";
-		context.strokeStyle = "#000000";
+		// initialize with current selected color
+		const colorHex = signatureColor === 'white' ? '#ffffff' : signatureColor === 'blue' ? '#2563eb' : '#000000';
+		context.strokeStyle = colorHex;
 		// context.fillStyle = "#ffffff";
 		// context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		contextRef.current = context;
-	}, []);
+	}, [signatureColor]);
+
+	const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+		const sanitized = hex.replace('#', '');
+		const bigint = parseInt(sanitized.length === 3 ? sanitized.split('').map((c) => c + c).join('') : sanitized, 16);
+		return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+	};
+
+	const recolorWorkingCanvasTo = (hex: string) => {
+		const ctx = contextRef.current;
+		const cnv = canvasRef.current;
+		if (!ctx || !cnv) return;
+		const img = ctx.getImageData(0, 0, cnv.width, cnv.height);
+		const data = img.data;
+		const { r, g, b } = hexToRgb(hex);
+		for (let i = 0; i < data.length; i += 4) {
+			const alpha = data[i + 3];
+			if (alpha !== 0) {
+				data[i] = r;
+				data[i + 1] = g;
+				data[i + 2] = b;
+			}
+		}
+		ctx.putImageData(img, 0, 0);
+		const latest = exportCurrentCanvas();
+		if (latest) {
+			savedSignatureRef.current = latest;
+			void applySignatureToPreview(latest);
+		}
+	};
 
 	const resetCanvas = useCallback(() => {
 		const context = contextRef.current;
@@ -480,9 +570,11 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		// context.fillStyle = "#ffffff";
 		// context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		context.clearRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
-		context.strokeStyle = "#000000";
+		// Keep current selected color after clearing
+		const colorHex = signatureColor === 'white' ? '#ffffff' : signatureColor === 'blue' ? '#2563eb' : '#000000';
+		context.strokeStyle = colorHex;
 		setHasManualChanges(false);
-	}, []);
+	}, [signatureColor]);
 
 	const exportCurrentCanvas = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -639,6 +731,12 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		setIsConfirmOpen(true);
 	};
 
+	const handleSelectColor = (c: "black" | "white" | "blue") => {
+		setSignatureColor(c);
+		const hex = c === 'white' ? '#ffffff' : c === 'blue' ? '#2563eb' : '#000000';
+		recolorWorkingCanvasTo(hex);
+	};
+
   const handleClearCanvas = () => {
     resetCanvas();
     savedSignatureRef.current = null;
@@ -674,8 +772,10 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		const imageData = tempCtx.getImageData(0, 0, image.width, image.height);
 		const data = imageData.data;
 
-		// Remove white background
+		// Remove white background and recolor to selected color
 		const threshold = 200;
+		const selectedHex = signatureColor === 'white' ? '#ffffff' : signatureColor === 'blue' ? '#2563eb' : '#000000';
+		const { r: tr, g: tg, b: tb } = hexToRgb(selectedHex);
 		for (let i = 0; i < data.length; i += 4) {
 			const r = data[i];
 			const g = data[i + 1];
@@ -689,6 +789,13 @@ function toggleSignaturePlaceholders(visible: boolean) {
 				// Smooth edges
 				const alpha = 255 - Math.floor(((brightness - (threshold - 50)) / 50) * 255);
 				data[i + 3] = alpha;
+			}
+
+			// Recolor any remaining visible pixel to the selected color
+			if (data[i + 3] > 0) {
+				data[i] = tr;
+				data[i + 1] = tg;
+				data[i + 2] = tb;
 			}
 		}
 
@@ -878,15 +985,33 @@ function toggleSignaturePlaceholders(visible: boolean) {
 											width: "100%",
 											maxWidth: `${DISPLAY_WIDTH}px`,
 											height: "auto",
+											backgroundColor: signatureColor === 'white' ? '#000000' : '#ffffff',
 										}}
 										onPointerDown={handlePointerDown}
 										onPointerMove={handlePointerMove}
 										onPointerUp={stopDrawing}
 										onPointerLeave={stopDrawing}
 									/>
-									<div className="flex flex-wrap gap-3">
-										<button
-											className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+								<div className="flex flex-wrap items-center gap-3">
+									<div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1">
+										{(["black", "white", "blue"] as const).map((c) => (
+											<button
+												key={c}
+												onClick={() => handleSelectColor(c)}
+												className={`h-7 w-7 rounded-full ring-2 transition ${
+													signatureColor === c ? 'ring-white' : 'ring-transparent'
+												}`}
+												style={{
+													backgroundColor: c === 'white' ? '#ffffff' : c === 'blue' ? '#2563eb' : '#000000',
+													border: c === 'white' ? '1px solid rgba(0,0,0,0.2)' : 'none',
+												}}
+												aria-label={`Set color ${c}`}
+											/>
+										))}
+										<span className="px-2 text-xs text-gray-600">Color</span>
+									</div>
+									<button
+										className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
 												hasManualChanges
 													? "bg-primary_button text-white hover:scale-[1.01]"
 													: "bg-white/40 text-gray-400 cursor-not-allowed"
