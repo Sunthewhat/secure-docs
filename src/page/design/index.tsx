@@ -44,6 +44,7 @@ interface ElementUpdate {
 	text?: string;
 	dbField?: string;
 	anchorId?: string;
+	opacity?: number;
 }
 
 const DesignPage = () => {

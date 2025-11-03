@@ -93,6 +93,10 @@ export type GetAnchorResponse = BaseResponse<string[]>;
 //file
 export type UploadResourceResponse = BaseResponse<uploadFileType>;
 export type GetFilesResponse = BaseResponse<getImage>;
+export type DeleteResourceResponse = BaseResponse<{
+	object_name: string;
+	type: string;
+}>;
 
 // participant
 export type GetParticipantResponse = BaseResponse<Participant[]>;

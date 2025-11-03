@@ -17,6 +17,7 @@ interface ElementUpdate {
 	textAlign?: "left" | "center" | "right";
 	text?: string;
 	id?: string;
+	opacity?: number;
 }
 
 interface PropertiesPanelProps {
@@ -251,6 +252,12 @@ const PropertiesPanel = ({
 		}
 	};
 
+	const handleOpacityChange = (opacity: number) => {
+		if (opacity >= 0 && opacity <= 1) {
+			onUpdateElement({ opacity });
+		}
+	};
+
 	const isLine = selectedElement instanceof fabric.Line;
 
 	// Get current color - handle both individual elements and Groups (text anchors)
@@ -299,6 +306,7 @@ const PropertiesPanel = ({
 		| "left"
 		| "center"
 		| "right";
+	const currentOpacity = (selectedElement.get("opacity") as number) ?? 1;
 
 	// Get current text - handle both individual text objects and Groups (text anchors)
 	const getCurrentText = () => {
@@ -349,6 +357,33 @@ const PropertiesPanel = ({
 								}
 								className="w-8 h-8 rounded cursor-pointer"
 							/>
+						</div>
+					)}
+
+					{/* Opacity Slider - For all elements except QR anchors and signatures */}
+					{!isQRanchor && !isSignature && (
+						<div className="flex items-center gap-2">
+							<label className="text-sm font-medium">
+								Opacity:
+							</label>
+							<input
+								type="range"
+								min="0"
+								max="100"
+								value={Math.round(currentOpacity * 100)}
+								onChange={(e) =>
+									handleOpacityChange(
+										parseInt(e.target.value) / 100
+									)
+								}
+								className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+								style={{
+									background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${currentOpacity * 100}%, #e5e7eb ${currentOpacity * 100}%, #e5e7eb 100%)`
+								}}
+							/>
+							<span className="text-xs font-medium w-8 text-center">
+								{Math.round(currentOpacity * 100)}%
+							</span>
 						</div>
 					)}
 

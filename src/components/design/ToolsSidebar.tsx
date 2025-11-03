@@ -13,8 +13,10 @@ import anchorIcon from "@/asset/design/anchor.svg";
 import signatureIcon from "@/asset/design/signature.svg";
 import { uploadBackground, uploadImage } from "@/api/file/upload";
 import { getBackgrounds, getGraphics } from "@/api/file/get";
+import { deleteBackground, deleteImage } from "@/api/file/delete";
 import { MenuType } from "@/page/design/utils/types";
 import { AddSignerModal } from "@/components/modal/AddSignerModal";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import { addSigner } from "@/api/signer/create";
 import { getSigners } from "@/api/signer/get";
 import { useToast } from "@/components/toast/ToastContext";
@@ -47,6 +49,15 @@ const ToolsSidebar = ({
 	const [isSignerModalOpen, setIsSignerModalOpen] = useState(false);
 	const [signerLoading, setSignerLoading] = useState(false);
 	const [signatureSearch, setSignatureSearch] = useState("");
+	const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+		open: boolean;
+		type: "background" | "image" | null;
+		url: string | null;
+	}>({
+		open: false,
+		type: null,
+		url: null,
+	});
 
 	// Extract fetchFiles function to be reusable
 	const fetchFiles = async () => {
@@ -146,6 +157,61 @@ const ToolsSidebar = ({
 		} finally {
 			setSignerLoading(false);
 		}
+	};
+
+	const handleDeleteBackground = (bgUrl: string, e: React.MouseEvent) => {
+		e.stopPropagation();
+		setDeleteConfirmModal({
+			open: true,
+			type: "background",
+			url: bgUrl,
+		});
+	};
+
+	const handleDeleteImage = (imageUrl: string, e: React.MouseEvent) => {
+		e.stopPropagation();
+		setDeleteConfirmModal({
+			open: true,
+			type: "image",
+			url: imageUrl,
+		});
+	};
+
+	const handleConfirmDelete = async () => {
+		const { type, url } = deleteConfirmModal;
+
+		if (!url || !type) return;
+
+		try {
+			const response = type === "background"
+				? await deleteBackground(url)
+				: await deleteImage(url);
+
+			if (response.success) {
+				toast.success(`${type === "background" ? "Background" : "Image"} deleted successfully!`);
+				// Refresh the files list
+				fetchFiles();
+			} else {
+				toast.error(response.msg || `Failed to delete ${type}`);
+			}
+		} catch (error) {
+			console.error(`Error deleting ${type}:`, error);
+			toast.error(`Failed to delete ${type}`);
+		} finally {
+			setDeleteConfirmModal({
+				open: false,
+				type: null,
+				url: null,
+			});
+		}
+	};
+
+	const handleCancelDelete = () => {
+		setDeleteConfirmModal({
+			open: false,
+			type: null,
+			url: null,
+		});
 	};
 
 	return (
@@ -290,7 +356,7 @@ const ToolsSidebar = ({
 							{backgrounds.map((bgUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden group"
 									onClick={() => onBackgroundAdd(bgUrl)}
 								>
 									<img
@@ -298,6 +364,13 @@ const ToolsSidebar = ({
 										alt={`Background ${index + 1}`}
 										className="w-full h-full object-cover rounded-lg"
 									/>
+									<button
+										onClick={(e) => handleDeleteBackground(bgUrl, e)}
+										className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 text-xs font-bold"
+										title="Delete background"
+									>
+										×
+									</button>
 								</div>
 							))}
 							{loading && (
@@ -398,7 +471,7 @@ const ToolsSidebar = ({
 							{graphics.map((graphicUrl, index) => (
 								<div
 									key={index}
-									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden"
+									className="flex flex-col justify-center items-center w-20 h-20 border bg-designcanvas_background shadow-sm rounded-lg cursor-pointer hover:bg-gray-50/80 relative overflow-hidden group"
 									onClick={() => onImageAdd(graphicUrl)}
 								>
 									<img
@@ -406,6 +479,13 @@ const ToolsSidebar = ({
 										alt={`Graphic ${index + 1}`}
 										className="w-full h-full object-cover rounded-lg"
 									/>
+									<button
+										onClick={(e) => handleDeleteImage(graphicUrl, e)}
+										className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 text-xs font-bold"
+										title="Delete image"
+									>
+										×
+									</button>
 								</div>
 							))}
 							{loading && (
@@ -490,6 +570,16 @@ const ToolsSidebar = ({
 				onClose={() => setIsSignerModalOpen(false)}
 				onConfirm={handleAddSigner}
 				loading={signerLoading}
+			/>
+
+			<ConfirmModal
+				open={deleteConfirmModal.open}
+				title={`Delete ${deleteConfirmModal.type === "background" ? "Background" : "Image"}`}
+				message={`Are you sure you want to delete this ${deleteConfirmModal.type}? This action cannot be undone.`}
+				confirmText="Delete"
+				cancelText="Cancel"
+				onConfirm={handleConfirmDelete}
+				onClose={handleCancelDelete}
 			/>
 		</div>
 	);
