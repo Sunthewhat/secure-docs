@@ -370,29 +370,28 @@ const DesignPage = () => {
 			const canvas = this.canvas;
 			if (!canvas) return;
 
-			const obj = this;
 			const zoom = canvas.getZoom();
 			const canvasWidth = (canvas.width || 0) / zoom;
 			const canvasHeight = (canvas.height || 0) / zoom;
 
 			// Get object bounds
-			const objWidth = (obj.width || 100) * (obj.scaleX || 1);
-			const objHeight = (obj.height || 100) * (obj.scaleY || 1);
+			const objWidth = (this.width || 100) * (this.scaleX || 1);
+			const objHeight = (this.height || 100) * (this.scaleY || 1);
 
 			// Constrain horizontal position
-			if ((obj.left || 0) < 0) {
-				obj.left = 0;
+			if ((this.left || 0) < 0) {
+				this.left = 0;
 			}
-			if ((obj.left || 0) + objWidth > canvasWidth) {
-				obj.left = canvasWidth - objWidth;
+			if ((this.left || 0) + objWidth > canvasWidth) {
+				this.left = canvasWidth - objWidth;
 			}
 
 			// Constrain vertical position
-			if ((obj.top || 0) < 0) {
-				obj.top = 0;
+			if ((this.top || 0) < 0) {
+				this.top = 0;
 			}
-			if ((obj.top || 0) + objHeight > canvasHeight) {
-				obj.top = canvasHeight - objHeight;
+			if ((this.top || 0) + objHeight > canvasHeight) {
+				this.top = canvasHeight - objHeight;
 			}
 		});
 
