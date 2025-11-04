@@ -92,8 +92,8 @@ export const addElement = (
 			});
 			break;
 		case "anchor": {
-			// Create a rectangle with dashed border
-			const anchorBorder = new fabric.Rect({
+			// Create a rectangle with dashed border and embedded text
+			fabricObject = new fabric.Rect({
 				left: 100,
 				top: 100,
 				width: 150,
@@ -101,41 +101,84 @@ export const addElement = (
 				fill: "transparent",
 				stroke: "#000000",
 				strokeWidth: 2,
-				strokeDashArray: [5, 5], // Dashed border
-				selectable: false,
-				evented: false,
+				strokeDashArray: [5, 5],
+				// Custom properties for database field mapping
+				dbField: "column",
+				isAnchor: true,
+				id: "PLACEHOLDER-COLUMN",
 			});
 
-			// Create text without border
+			// Store text as a property that we'll render separately
 			const anchorText = new fabric.Textbox("COLUMN", {
-				left: 100,
-				top: 110,
+				left: 100 + 75,
+				top: 100 + 20,
 				width: 150,
 				fontSize: 16,
 				fill: "#000000",
 				fontFamily: "Arial",
 				textAlign: "center",
+				originX: "center",
+				originY: "center",
 				// Custom properties for database field mapping
 				dbField: "column",
 				isAnchor: true,
-				// Lock text editing on canvas
+				// Lock text editing and scaling on canvas
 				editable: false,
+				lockScalingX: true,
+				lockScalingY: true,
+				lockMovementX: true,
+				lockMovementY: true,
 				selectable: false,
 				evented: false,
-				id: "PLACEHOLDER-COLUMN",
+				hasControls: false,
+				id: "PLACEHOLDER-COLUMN-TEXT",
 			});
 
-			// Group them together
-			fabricObject = new fabric.Group([anchorBorder, anchorText], {
-				left: 100,
-				top: 100,
-				selectable: true,
-				evented: true,
-				dbField: "column",
-				isAnchor: true,
-				id: "PLACEHOLDER-COLUMN",
+			// Add both objects to canvas
+			canvasRef.current.add(fabricObject);
+			canvasRef.current.add(anchorText);
+
+			// Link them together - when rect moves/scales, update text position
+			fabricObject.on("moving", function (this: fabric.Rect) {
+				anchorText.set({
+					left:
+						(this.left || 0) +
+						((this.width || 150) * (this.scaleX || 1)) / 2,
+					top:
+						(this.top || 0) +
+						((this.height || 40) * (this.scaleY || 1)) / 2,
+				});
+				anchorText.setCoords();
 			});
-			break;
+
+			fabricObject.on("scaling", function (this: fabric.Rect) {
+				anchorText.set({
+					left:
+						(this.left || 0) +
+						((this.width || 150) * (this.scaleX || 1)) / 2,
+					top:
+						(this.top || 0) +
+						((this.height || 40) * (this.scaleY || 1)) / 2,
+				});
+				anchorText.setCoords();
+			});
+
+			fabricObject.on("rotating", function (this: fabric.Rect) {
+				anchorText.set({
+					angle: this.angle || 0,
+				});
+				anchorText.setCoords();
+			});
+
+			// When rectangle is removed, remove text too
+			fabricObject.on("removed", function () {
+				canvasRef.current?.remove(anchorText);
+			});
+
+			canvasRef.current.setActiveObject(fabricObject);
+			canvasRef.current.renderAll();
+			setSelectedElement(fabricObject);
+			return;
 		}
 		default: {
 			// Handle signature with signer ID
@@ -146,11 +189,13 @@ export const addElement = (
 				const parts = type.replace("signature-", "").split("-");
 
 				let signerId = "";
-				for (let i = 0; i < 5; i++) signerId += i < 4 ? parts[i] + "-" : parts[i];
+				for (let i = 0; i < 5; i++)
+					signerId += i < 4 ? parts[i] + "-" : parts[i];
 
 				let displayName = "";
 				for (let i = 5; i < parts.length; i++)
-					displayName += i < parts.length - 1 ? parts[i] + "-" : parts[i];
+					displayName +=
+						i < parts.length - 1 ? parts[i] + "-" : parts[i];
 
 				// Create a rectangle with 16:9 aspect ratio (landscape)
 				const width = 320;
@@ -186,23 +231,30 @@ export const addElement = (
 				});
 
 				// Group the rectangle and text together
-				fabricObject = new fabric.Group([signatureRect, signatureText], {
-					left: 100,
-					top: 100,
-					id: `SIGNATURE-${signerId}`,
-					lockRotation: false,
-				});
+				fabricObject = new fabric.Group(
+					[signatureRect, signatureText],
+					{
+						left: 100,
+						top: 100,
+						id: `SIGNATURE-${signerId}`,
+						lockRotation: false,
+					}
+				);
 
 				// Add custom properties after creation
-				(fabricObject as fabric.Group & { isSignature: boolean }).isSignature = true;
+				(
+					fabricObject as fabric.Group & { isSignature: boolean }
+				).isSignature = true;
 
 				// Add event handler to maintain 16:9 aspect ratio during scaling
 				fabricObject.on("scaling", function (this: fabric.Group) {
 					const aspectRatio = 16 / 9;
 
 					// Calculate new dimensions based on the original group size
-					const currentWidth = (this.width || width) * (this.scaleX || 1);
-					const currentHeight = (this.height || height) * (this.scaleY || 1);
+					const currentWidth =
+						(this.width || width) * (this.scaleX || 1);
+					const currentHeight =
+						(this.height || height) * (this.scaleY || 1);
 
 					// Determine which dimension to use as base
 					const widthChange = Math.abs(currentWidth - width);
