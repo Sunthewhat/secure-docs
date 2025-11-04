@@ -33,6 +33,54 @@ export const handleCanvasReadyUtil = (
 				canvas.sendObjectToBack(backgroundImage);
 			}
 
+			// Re-attach event handlers to anchor groups after loading
+			const anchorGroups = canvas.getObjects().filter((obj) => {
+				return obj.type === "group" && obj.id === "PLACEHOLDER-COLUMN";
+			});
+
+			anchorGroups.forEach((group) => {
+				if (group.type === "group") {
+					const fabricGroup = group as fabric.Group;
+
+					// Re-attach the scaling event handler
+					fabricGroup.on("scaling", function (this: fabric.Group) {
+						const text = this.getObjects()[1] as fabric.Textbox;
+
+						// Only scale the rectangle, keep text at original scale
+						const groupScaleX = this.scaleX || 1;
+						const groupScaleY = this.scaleY || 1;
+
+						// Counter-scale the text to keep it at original size
+						text.set({
+							scaleX: 1 / groupScaleX,
+							scaleY: 1 / groupScaleY,
+						});
+					});
+				}
+			});
+
+			// Re-attach event handlers to regular textboxes to prevent vertical stretching
+			const textboxes = canvas.getObjects().filter((obj) => {
+				return (
+					obj.type === "textbox" &&
+					!obj.isAnchor &&
+					!obj.isQRanchor &&
+					!(obj.id as string)?.startsWith("PLACEHOLDER-")
+				);
+			});
+
+			textboxes.forEach((textbox) => {
+				const fabricTextbox = textbox as fabric.Textbox;
+
+				// Re-attach the scaling event handler
+				fabricTextbox.on("scaling", function (this: fabric.Textbox) {
+					// Lock vertical scaling - always keep scaleY at 1
+					this.set({
+						scaleY: 1,
+					});
+				});
+			});
+
 			// Check if QR anchor already exists, if not add one
 			const existingQRanchor = canvas
 				.getObjects()

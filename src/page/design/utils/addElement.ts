@@ -90,28 +90,32 @@ export const addElement = (
 				fill: color,
 				fontFamily: "Arial",
 			});
+
+			// Prevent text from stretching vertically - only allow width changes
+			fabricObject.on("scaling", function (this: fabric.Textbox) {
+				// Lock vertical scaling - always keep scaleY at 1
+				this.set({
+					scaleY: 1,
+				});
+			});
 			break;
 		case "anchor": {
-			// Create a rectangle with dashed border and embedded text
-			fabricObject = new fabric.Rect({
-				left: 100,
-				top: 100,
+			// Create a rectangle with dashed border
+			const anchorBorder = new fabric.Rect({
+				left: 0,
+				top: 0,
 				width: 150,
 				height: 40,
 				fill: "transparent",
 				stroke: "#000000",
 				strokeWidth: 2,
 				strokeDashArray: [5, 5],
-				// Custom properties for database field mapping
-				dbField: "column",
-				isAnchor: true,
-				id: "PLACEHOLDER-COLUMN",
 			});
 
-			// Store text as a property that we'll render separately
+			// Create text without border - positioned at center
 			const anchorText = new fabric.Textbox("COLUMN", {
-				left: 100 + 75,
-				top: 100 + 20,
+				left: 75,
+				top: 20,
 				width: 150,
 				fontSize: 16,
 				fill: "#000000",
@@ -119,66 +123,37 @@ export const addElement = (
 				textAlign: "center",
 				originX: "center",
 				originY: "center",
-				// Custom properties for database field mapping
-				dbField: "column",
-				isAnchor: true,
-				// Lock text editing and scaling on canvas
 				editable: false,
 				lockScalingX: true,
 				lockScalingY: true,
-				lockMovementX: true,
-				lockMovementY: true,
-				selectable: false,
-				evented: false,
-				hasControls: false,
-				id: "PLACEHOLDER-COLUMN-TEXT",
 			});
 
-			// Add both objects to canvas
-			canvasRef.current.add(fabricObject);
-			canvasRef.current.add(anchorText);
+			// Group them together
+			fabricObject = new fabric.Group([anchorBorder, anchorText], {
+				left: 100,
+				top: 100,
+				dbField: "column",
+				isAnchor: true,
+				id: "PLACEHOLDER-COLUMN",
+				subTargetCheck: false,
+				interactive: false,
+			});
 
-			// Link them together - when rect moves/scales, update text position
-			fabricObject.on("moving", function (this: fabric.Rect) {
-				anchorText.set({
-					left:
-						(this.left || 0) +
-						((this.width || 150) * (this.scaleX || 1)) / 2,
-					top:
-						(this.top || 0) +
-						((this.height || 40) * (this.scaleY || 1)) / 2,
+			// Add event to prevent text stretching during scaling
+			fabricObject.on("scaling", function (this: fabric.Group) {
+				const text = this.getObjects()[1] as fabric.Textbox;
+
+				// Only scale the rectangle, keep text at original scale
+				const groupScaleX = this.scaleX || 1;
+				const groupScaleY = this.scaleY || 1;
+
+				// Counter-scale the text to keep it at original size
+				text.set({
+					scaleX: 1 / groupScaleX,
+					scaleY: 1 / groupScaleY,
 				});
-				anchorText.setCoords();
 			});
-
-			fabricObject.on("scaling", function (this: fabric.Rect) {
-				anchorText.set({
-					left:
-						(this.left || 0) +
-						((this.width || 150) * (this.scaleX || 1)) / 2,
-					top:
-						(this.top || 0) +
-						((this.height || 40) * (this.scaleY || 1)) / 2,
-				});
-				anchorText.setCoords();
-			});
-
-			fabricObject.on("rotating", function (this: fabric.Rect) {
-				anchorText.set({
-					angle: this.angle || 0,
-				});
-				anchorText.setCoords();
-			});
-
-			// When rectangle is removed, remove text too
-			fabricObject.on("removed", function () {
-				canvasRef.current?.remove(anchorText);
-			});
-
-			canvasRef.current.setActiveObject(fabricObject);
-			canvasRef.current.renderAll();
-			setSelectedElement(fabricObject);
-			return;
+			break;
 		}
 		default: {
 			// Handle signature with signer ID
