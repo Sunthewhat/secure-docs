@@ -355,6 +355,47 @@ const DesignPage = () => {
 		// Set angle to 0 and lock it
 		qrAnchor.set("angle", 0);
 
+		// Add event handler to maintain 1:1 aspect ratio (square shape)
+		qrAnchor.on("scaling", function (this: fabric.Rect) {
+			// Always maintain square aspect ratio
+			const scale = Math.max(this.scaleX || 1, this.scaleY || 1);
+			this.set({
+				scaleX: scale,
+				scaleY: scale,
+			});
+		});
+
+		// Add event handler to prevent moving outside canvas bounds
+		qrAnchor.on("moving", function (this: fabric.Rect) {
+			const canvas = this.canvas;
+			if (!canvas) return;
+
+			const obj = this;
+			const zoom = canvas.getZoom();
+			const canvasWidth = (canvas.width || 0) / zoom;
+			const canvasHeight = (canvas.height || 0) / zoom;
+
+			// Get object bounds
+			const objWidth = (obj.width || 100) * (obj.scaleX || 1);
+			const objHeight = (obj.height || 100) * (obj.scaleY || 1);
+
+			// Constrain horizontal position
+			if ((obj.left || 0) < 0) {
+				obj.left = 0;
+			}
+			if ((obj.left || 0) + objWidth > canvasWidth) {
+				obj.left = canvasWidth - objWidth;
+			}
+
+			// Constrain vertical position
+			if ((obj.top || 0) < 0) {
+				obj.top = 0;
+			}
+			if ((obj.top || 0) + objHeight > canvasHeight) {
+				obj.top = canvasHeight - objHeight;
+			}
+		});
+
 		canvasRef.current.add(qrAnchor);
 		canvasRef.current.bringObjectToFront(qrAnchor);
 		canvasRef.current.renderAll();

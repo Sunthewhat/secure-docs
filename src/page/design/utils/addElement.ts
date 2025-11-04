@@ -91,10 +91,14 @@ export const addElement = (
 				fontFamily: "Arial",
 			});
 
-			// Prevent text from stretching vertically - only allow width changes
+			// Prevent text from stretching - convert scale to width changes only
 			fabricObject.on("scaling", function (this: fabric.Textbox) {
-				// Lock vertical scaling - always keep scaleY at 1
+				const newWidth = (this.width || 200) * (this.scaleX || 1);
+
+				// Apply the width change and reset scale
 				this.set({
+					width: newWidth,
+					scaleX: 1,
 					scaleY: 1,
 				});
 			});

@@ -74,10 +74,63 @@ export const handleCanvasReadyUtil = (
 
 				// Re-attach the scaling event handler
 				fabricTextbox.on("scaling", function (this: fabric.Textbox) {
-					// Lock vertical scaling - always keep scaleY at 1
+					const newWidth = (this.width || 200) * (this.scaleX || 1);
+
+					// Apply the width change and reset scale
 					this.set({
+						width: newWidth,
+						scaleX: 1,
 						scaleY: 1,
 					});
+				});
+			});
+
+			// Re-attach event handlers to QR anchor to maintain square aspect ratio
+			const qrAnchors = canvas.getObjects().filter((obj) => {
+				return obj.isQRanchor;
+			});
+
+			qrAnchors.forEach((qrAnchor) => {
+				const fabricQR = qrAnchor as fabric.Rect;
+
+				// Re-attach the scaling event handler
+				fabricQR.on("scaling", function (this: fabric.Rect) {
+					// Always maintain square aspect ratio
+					const scale = Math.max(this.scaleX || 1, this.scaleY || 1);
+					this.set({
+						scaleX: scale,
+						scaleY: scale,
+					});
+				});
+
+				// Re-attach the moving event handler to prevent moving outside canvas
+				fabricQR.on("moving", function (this: fabric.Rect) {
+					const canvas = this.canvas;
+					if (!canvas) return;
+
+					const zoom = canvas.getZoom();
+					const canvasWidth = (canvas.width || 0) / zoom;
+					const canvasHeight = (canvas.height || 0) / zoom;
+
+					// Get object bounds
+					const objWidth = (this.width || 100) * (this.scaleX || 1);
+					const objHeight = (this.height || 100) * (this.scaleY || 1);
+
+					// Constrain horizontal position
+					if ((this.left || 0) < 0) {
+						this.left = 0;
+					}
+					if ((this.left || 0) + objWidth > canvasWidth) {
+						this.left = canvasWidth - objWidth;
+					}
+
+					// Constrain vertical position
+					if ((this.top || 0) < 0) {
+						this.top = 0;
+					}
+					if ((this.top || 0) + objHeight > canvasHeight) {
+						this.top = canvasHeight - objHeight;
+					}
 				});
 			});
 
