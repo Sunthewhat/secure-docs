@@ -90,50 +90,72 @@ export const addElement = (
 				fill: color,
 				fontFamily: "Arial",
 			});
+
+			// Prevent text from stretching - convert scale to width changes only
+			fabricObject.on("scaling", function (this: fabric.Textbox) {
+				const newWidth = (this.width || 200) * (this.scaleX || 1);
+
+				// Apply the width change and reset scale
+				this.set({
+					width: newWidth,
+					scaleX: 1,
+					scaleY: 1,
+				});
+			});
 			break;
 		case "anchor": {
 			// Create a rectangle with dashed border
 			const anchorBorder = new fabric.Rect({
-				left: 100,
-				top: 100,
+				left: 0,
+				top: 0,
 				width: 150,
 				height: 40,
 				fill: "transparent",
 				stroke: "#000000",
 				strokeWidth: 2,
-				strokeDashArray: [5, 5], // Dashed border
-				selectable: false,
-				evented: false,
+				strokeDashArray: [5, 5],
 			});
 
-			// Create text without border
+			// Create text without border - positioned at center
 			const anchorText = new fabric.Textbox("COLUMN", {
-				left: 100,
-				top: 110,
+				left: 75,
+				top: 20,
 				width: 150,
 				fontSize: 16,
 				fill: "#000000",
 				fontFamily: "Arial",
 				textAlign: "center",
-				// Custom properties for database field mapping
-				dbField: "column",
-				isAnchor: true,
-				// Lock text editing on canvas
+				originX: "center",
+				originY: "center",
 				editable: false,
-				selectable: false,
-				evented: false,
-				id: "PLACEHOLDER-COLUMN",
+				lockScalingX: true,
+				lockScalingY: true,
 			});
 
 			// Group them together
 			fabricObject = new fabric.Group([anchorBorder, anchorText], {
 				left: 100,
 				top: 100,
-				selectable: true,
-				evented: true,
 				dbField: "column",
 				isAnchor: true,
 				id: "PLACEHOLDER-COLUMN",
+				subTargetCheck: false,
+				interactive: false,
+			});
+
+			// Add event to prevent text stretching during scaling
+			fabricObject.on("scaling", function (this: fabric.Group) {
+				const text = this.getObjects()[1] as fabric.Textbox;
+
+				// Only scale the rectangle, keep text at original scale
+				const groupScaleX = this.scaleX || 1;
+				const groupScaleY = this.scaleY || 1;
+
+				// Counter-scale the text to keep it at original size
+				text.set({
+					scaleX: 1 / groupScaleX,
+					scaleY: 1 / groupScaleY,
+				});
 			});
 			break;
 		}
@@ -146,11 +168,13 @@ export const addElement = (
 				const parts = type.replace("signature-", "").split("-");
 
 				let signerId = "";
-				for (let i = 0; i < 5; i++) signerId += i < 4 ? parts[i] + "-" : parts[i];
+				for (let i = 0; i < 5; i++)
+					signerId += i < 4 ? parts[i] + "-" : parts[i];
 
 				let displayName = "";
 				for (let i = 5; i < parts.length; i++)
-					displayName += i < parts.length - 1 ? parts[i] + "-" : parts[i];
+					displayName +=
+						i < parts.length - 1 ? parts[i] + "-" : parts[i];
 
 				// Create a rectangle with 16:9 aspect ratio (landscape)
 				const width = 320;
@@ -186,23 +210,30 @@ export const addElement = (
 				});
 
 				// Group the rectangle and text together
-				fabricObject = new fabric.Group([signatureRect, signatureText], {
-					left: 100,
-					top: 100,
-					id: `SIGNATURE-${signerId}`,
-					lockRotation: false,
-				});
+				fabricObject = new fabric.Group(
+					[signatureRect, signatureText],
+					{
+						left: 100,
+						top: 100,
+						id: `SIGNATURE-${signerId}`,
+						lockRotation: false,
+					}
+				);
 
 				// Add custom properties after creation
-				(fabricObject as fabric.Group & { isSignature: boolean }).isSignature = true;
+				(
+					fabricObject as fabric.Group & { isSignature: boolean }
+				).isSignature = true;
 
 				// Add event handler to maintain 16:9 aspect ratio during scaling
 				fabricObject.on("scaling", function (this: fabric.Group) {
 					const aspectRatio = 16 / 9;
 
 					// Calculate new dimensions based on the original group size
-					const currentWidth = (this.width || width) * (this.scaleX || 1);
-					const currentHeight = (this.height || height) * (this.scaleY || 1);
+					const currentWidth =
+						(this.width || width) * (this.scaleX || 1);
+					const currentHeight =
+						(this.height || height) * (this.scaleY || 1);
 
 					// Determine which dimension to use as base
 					const widthChange = Math.abs(currentWidth - width);

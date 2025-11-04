@@ -361,7 +361,7 @@ const PropertiesPanel = ({
 					)}
 
 					{/* Opacity Slider - For all elements except QR anchors and signatures */}
-					{!isQRanchor && !isSignature && (
+					{!isAnchor && !isText && !isQRanchor && !isSignature && (
 						<div className="flex items-center gap-2">
 							<label className="text-sm font-medium">
 								Opacity:
@@ -378,7 +378,11 @@ const PropertiesPanel = ({
 								}
 								className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
 								style={{
-									background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${currentOpacity * 100}%, #e5e7eb ${currentOpacity * 100}%, #e5e7eb 100%)`
+									background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${
+										currentOpacity * 100
+									}%, #e5e7eb ${
+										currentOpacity * 100
+									}%, #e5e7eb 100%)`,
 								}}
 							/>
 							<span className="text-xs font-medium w-8 text-center">
