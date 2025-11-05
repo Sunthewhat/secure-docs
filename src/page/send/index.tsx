@@ -409,19 +409,17 @@ const SaveSendPage = () => {
     setDownloading(true);
     try {
       if (!renderData) {
-        const certData = await Axios.get<GetCertificateResponse>(
-          `/certificate/${certId}`
-        );
-        const zipfileUrl = certData.data.data.archive_url;
-        if (!zipfileUrl) {
-          throw new Error("No downloadable file available. Please generate first.");
-        }
-
         // Fetch file as blob and download
-        const response = await fetch(zipfileUrl, {
-          method: 'GET',
-          credentials: 'include',
-        });
+        const response = await fetch(
+			`${import.meta.env.VITE_BACKEND_API}/api/v1/certificate/archive/${certId}`,
+			{
+				method: "GET",
+				credentials: "include",
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+				},
+			}
+		);
 
         if (!response.ok) {
           throw new Error(`Download failed: ${response.statusText}`);
