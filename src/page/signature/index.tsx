@@ -36,6 +36,7 @@ const SignaturePage = () => {
 	const signatureImageRef = useRef<fabric.Image | null>(null);
 	const signatureOverlayRef = useRef<HTMLImageElement | null>(null);
 	const devicePixelRatioRef = useRef<number>(Math.min(window.devicePixelRatio || 1, 2));
+	const isPenActiveRef = useRef<boolean>(false); // Track if Apple Pencil is being used
 	const [isDrawing, setIsDrawing] = useState(false);
 	const [signatureColor, setSignatureColor] = useState<"black" | "white" | "blue">(
 		"black"
@@ -607,17 +608,36 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		const context = contextRef.current;
 		if (!context) return;
 
-		const { x, y } = getCanvasCoordinates(event);
-		context.beginPath();
-		context.moveTo(x, y);
-		setIsDrawing(true);
-		setHasManualChanges(true);
-		signatureOriginRef.current = "draw";
+		// Palm rejection: When Apple Pencil is detected, ignore touch input
+		if (event.pointerType === "pen") {
+			isPenActiveRef.current = true;
+		}
+
+		// Only accept input if:
+		// 1. Using pen (Apple Pencil)
+		// 2. Using mouse
+		// 3. Using touch BUT pen hasn't been used yet (for non-iPad devices)
+		if (event.pointerType === "pen" ||
+		    event.pointerType === "mouse" ||
+		    (event.pointerType === "touch" && !isPenActiveRef.current)) {
+			const { x, y } = getCanvasCoordinates(event);
+			context.beginPath();
+			context.moveTo(x, y);
+			setIsDrawing(true);
+			setHasManualChanges(true);
+			signatureOriginRef.current = "draw";
+		}
 	};
 
 	const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
 		if (!isDrawing) return;
 		event.preventDefault();
+
+		// Palm rejection: ignore touch events if pen is active
+		if (event.pointerType === "touch" && isPenActiveRef.current) {
+			return;
+		}
+
 		const context = contextRef.current;
 		if (!context) return;
 
@@ -741,6 +761,8 @@ function toggleSignaturePlaceholders(visible: boolean) {
     resetCanvas();
     savedSignatureRef.current = null;
     setUploadError(null);
+    // Reset pen mode to allow touch input again
+    isPenActiveRef.current = false;
     if (certificateCanvasRef.current && signatureImageRef.current) {
       certificateCanvasRef.current.remove(signatureImageRef.current);
       signatureImageRef.current = null;
