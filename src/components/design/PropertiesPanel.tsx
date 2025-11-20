@@ -184,11 +184,50 @@ const PropertiesPanel = ({
 		// Handle Groups (text anchors) differently than individual text objects
 		if (selectedElement instanceof fabric.Group && isAnchor) {
 			// For text anchors (Groups), update the text object within the group
+			const rect = selectedElement
+				.getObjects()
+				.find((obj) => obj instanceof fabric.Rect) as fabric.Rect;
 			const textObject = selectedElement
 				.getObjects()
 				.find((obj) => obj instanceof fabric.Textbox) as fabric.Textbox;
-			if (textObject) {
-				textObject.set("textAlign", alignment);
+			if (textObject && rect) {
+				// Get group scale factors
+				const groupScaleX = selectedElement.scaleX || 1;
+				const groupScaleY = selectedElement.scaleY || 1;
+
+				// Get the rect dimensions in group's local coordinate space
+				const rectWidth = (rect.width || 150) * (rect.scaleX || 1);
+
+				// Calculate text position based on alignment in local coordinates
+				const padding = 5 / groupScaleX; // Adjust padding for group scale
+				let textLeft = 0;
+				let textOriginX: "left" | "center" | "right" = "center";
+
+				if (alignment === "left") {
+					textLeft = -rectWidth / 2 + padding;
+					textOriginX = "left";
+				} else if (alignment === "right") {
+					textLeft = rectWidth / 2 - padding;
+					textOriginX = "right";
+				} else {
+					textLeft = 0;
+					textOriginX = "center";
+				}
+
+				// Update textbox with proper width and position
+				// Keep the counter-scale to maintain text size
+				textObject.set({
+					textAlign: alignment,
+					width: rectWidth - padding * 2,
+					left: textLeft,
+					top: 0,
+					originX: textOriginX,
+					originY: "center",
+					// Maintain counter-scaling to keep text at correct size
+					scaleX: 1 / groupScaleX,
+					scaleY: 1 / groupScaleY,
+				});
+
 				// Use onUpdateElement to trigger proper re-render
 				onUpdateElement({ textAlign: alignment });
 			}

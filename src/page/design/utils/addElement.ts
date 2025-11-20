@@ -147,11 +147,10 @@ export const addElement = (
 			fabricObject.on("scaling", function (this: fabric.Group) {
 				const text = this.getObjects()[1] as fabric.Textbox;
 
-				// Only scale the rectangle, keep text at original scale
+				// Only counter-scale the text to keep it at original size
 				const groupScaleX = this.scaleX || 1;
 				const groupScaleY = this.scaleY || 1;
 
-				// Counter-scale the text to keep it at original size
 				text.set({
 					scaleX: 1 / groupScaleX,
 					scaleY: 1 / groupScaleY,

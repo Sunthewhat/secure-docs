@@ -18,8 +18,7 @@ const PreviewPage = () => {
 	const [columns, setColumns] = useState<string[]>([]);
 	const [certificate, setCertificate] = useState<Certificate | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [selectedParticipant, setSelectedParticipant] =
-		useState<Participant | null>(null);
+	const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
 	const canvasRef = useRef<fabric.Canvas | null>(null);
 
 	// Fetch certificate and participants data from API
@@ -50,9 +49,7 @@ const PreviewPage = () => {
 						const anchors = anchorResponse.data.data;
 						if (Array.isArray(anchors)) {
 							const sanitized = anchors
-								.map((col) =>
-									typeof col === "string" ? col.trim() : ""
-								)
+								.map((col) => (typeof col === "string" ? col.trim() : ""))
 								.filter((col) => col.length > 0);
 							anchorColumns = ensureEmailColumn(sanitized);
 						}
@@ -60,10 +57,7 @@ const PreviewPage = () => {
 						console.error("Failed to fetch anchor columns");
 					}
 				} catch (anchorError) {
-					console.error(
-						"Error fetching anchor columns:",
-						anchorError
-					);
+					console.error("Error fetching anchor columns:", anchorError);
 				}
 
 				if (!anchorColumns.length) {
@@ -71,43 +65,31 @@ const PreviewPage = () => {
 				}
 
 				// Fetch participants data
-				const participantResponse =
-					await Axios.get<GetParticipantResponse>(
-						`/participant/${certId}`
-					);
+				const participantResponse = await Axios.get<GetParticipantResponse>(
+					`/participant/${certId}`
+				);
 				if (participantResponse.status === 200) {
 					const participantsData = participantResponse.data.data;
 					const serverColumns = Array.from(
 						new Set(
 							participantsData.flatMap((participant) =>
-								participant?.data
-									? Object.keys(participant.data)
-									: []
+								participant?.data ? Object.keys(participant.data) : []
 							)
 						)
 					);
 
 					const anchorOnlyEmail =
 						anchorColumns.length > 0 &&
-						anchorColumns.every((col) =>
-							col.toLowerCase().includes("email")
-						);
+						anchorColumns.every((col) => col.toLowerCase().includes("email"));
 
-					let resolvedColumns = anchorColumns.length
-						? [...anchorColumns]
-						: [];
+					let resolvedColumns = anchorColumns.length ? [...anchorColumns] : [];
 
 					if (!anchorOnlyEmail) {
 						const serverNormalized = serverColumns
-							.map((col) =>
-								typeof col === "string" ? col.trim() : ""
-							)
+							.map((col) => (typeof col === "string" ? col.trim() : ""))
 							.filter((col) => col.length > 0);
 
-						if (
-							!resolvedColumns.length &&
-							serverNormalized.length
-						) {
+						if (!resolvedColumns.length && serverNormalized.length) {
 							resolvedColumns = [...serverNormalized];
 						} else {
 							serverNormalized.forEach((col) => {
@@ -125,26 +107,23 @@ const PreviewPage = () => {
 					const orderedColumns = ensureEmailColumn(resolvedColumns);
 					setColumns(orderedColumns);
 
-					const normalizedParticipants = participantsData.map(
-						(participant) => {
-							const normalizedData: Participant["data"] = {};
-							orderedColumns.forEach((col) => {
-								normalizedData[col] =
-									participant.data?.[col] ?? "";
-							});
-							const normalizedEmailStatus: Participant["email_status"] =
-								participant.email_status === "success" ||
-								participant.email_status === "failed"
-									? participant.email_status
-									: "pending";
-							return {
-								...participant,
-								is_downloaded: Boolean(participant.is_downloaded),
-								email_status: normalizedEmailStatus,
-								data: normalizedData,
-							};
-						}
-					);
+					const normalizedParticipants = participantsData.map((participant) => {
+						const normalizedData: Participant["data"] = {};
+						orderedColumns.forEach((col) => {
+							normalizedData[col] = participant.data?.[col] ?? "";
+						});
+						const normalizedEmailStatus: Participant["email_status"] =
+							participant.email_status === "success" ||
+							participant.email_status === "failed"
+								? participant.email_status
+								: "pending";
+						return {
+							...participant,
+							is_downloaded: Boolean(participant.is_downloaded),
+							email_status: normalizedEmailStatus,
+							data: normalizedData,
+						};
+					});
 
 					setParticipants(normalizedParticipants);
 					setSelectedParticipant(normalizedParticipants[0] ?? null);
@@ -200,15 +179,27 @@ const PreviewPage = () => {
 				// Find the textbox within the group
 				const textObject = group
 					.getObjects()
-					.find(
-						(subObj) => subObj instanceof fabric.Textbox
-					) as fabric.Textbox;
+					.find((subObj) => subObj instanceof fabric.Textbox) as fabric.Textbox;
 				if (textObject) {
 					// Extract column name from group id by removing "PLACEHOLDER-" prefix
 					const columnName = obj.id.replace("PLACEHOLDER-", "");
 					const fieldValue = participant.data[columnName];
 					if (fieldValue) {
-						textObject.set("text", fieldValue);
+						// Remove any newlines and set text to single line
+						const singleLineValue = fieldValue.replace(/\n/g, " ");
+
+						// Calculate proper width based on the text's scale
+						// If scaleX is 0.1927, we need width to be larger to fit text
+						const textScaleX = textObject.scaleX || 1;
+						// Calculate width that gives us ~800px visual width (enough for long names)
+						const targetVisualWidth = 800;
+						const calculatedWidth = targetVisualWidth / textScaleX;
+
+						textObject.set({
+							text: singleLineValue,
+							splitByGrapheme: false,
+							width: calculatedWidth,
+						});
 						textObject.dirty = true;
 					}
 				}
@@ -221,7 +212,12 @@ const PreviewPage = () => {
 				const columnName = obj.id.replace("PLACEHOLDER-", "");
 				const fieldValue = participant.data[columnName];
 				if (fieldValue) {
-					textbox.set("text", fieldValue);
+					// Remove any newlines and set text to single line
+					const singleLineValue = fieldValue.replace(/\n/g, " ");
+					textbox.set({
+						text: singleLineValue,
+						splitByGrapheme: false,
+					});
 					textbox.dirty = true;
 				}
 			}
@@ -330,9 +326,9 @@ const PreviewPage = () => {
 				// Force coordinate calculation
 				obj.setCoords();
 
-					if (!obj.isAnchor) {
-						obj.dirty = true;
-					}
+				if (!obj.isAnchor) {
+					obj.dirty = true;
+				}
 			});
 
 			// Force complete canvas refresh with multiple renders
@@ -377,12 +373,8 @@ const PreviewPage = () => {
 
 		// Use setTimeout to ensure DOM is ready
 		const initCanvas = () => {
-			const canvasElement = document.getElementById(
-				"preview-canvas"
-			) as HTMLCanvasElement;
-			const containerElement = document.getElementById(
-				"certificate-preview"
-			);
+			const canvasElement = document.getElementById("preview-canvas") as HTMLCanvasElement;
+			const containerElement = document.getElementById("certificate-preview");
 
 			if (!canvasElement || !containerElement) {
 				setTimeout(initCanvas, 100);
@@ -465,9 +457,9 @@ const PreviewPage = () => {
 							// Force coordinate calculation
 							obj.setCoords();
 
-								if (!obj.isAnchor) {
-									obj.dirty = true;
-								}
+							if (!obj.isAnchor) {
+								obj.dirty = true;
+							}
 						});
 
 						// Force complete canvas refresh
@@ -500,17 +492,12 @@ const PreviewPage = () => {
 						// Apply selected participant data if available
 						setTimeout(() => {
 							if (selectedParticipant) {
-								updateCertificateWithParticipantData(
-									selectedParticipant
-								);
+								updateCertificateWithParticipantData(selectedParticipant);
 							}
 						}, 200);
 					})
 					.catch((error) => {
-						console.error(
-							"Error loading certificate design:",
-							error
-						);
+						console.error("Error loading certificate design:", error);
 					});
 			} catch (error) {
 				console.error("Error parsing certificate design:", error);
@@ -594,7 +581,8 @@ const PreviewPage = () => {
 					<div className="space-y-2">
 						<h1 className="text-4xl font-semibold">Preview certificate</h1>
 						<p className="max-w-2xl text-base text-white/70">
-							Confirm the layout with real participant data before distributing your certificates.
+							Confirm the layout with real participant data before distributing your
+							certificates.
 						</p>
 					</div>
 				</div>
@@ -612,8 +600,12 @@ const PreviewPage = () => {
 						<div className="rounded-3xl border border-white/20 bg-white/95 p-6 text-primary_text shadow-xl">
 							<div className="flex flex-wrap items-center justify-between gap-4">
 								<div>
-									<h2 className="text-lg font-semibold text-primary_text">Certificate preview</h2>
-									<p className="text-sm text-gray-500">This canvas reflects the selected participant.</p>
+									<h2 className="text-lg font-semibold text-primary_text">
+										Certificate preview
+									</h2>
+									<p className="text-sm text-gray-500">
+										This canvas reflects the selected participant.
+									</p>
 								</div>
 								<button
 									onClick={handleEdit}
@@ -623,48 +615,54 @@ const PreviewPage = () => {
 								</button>
 							</div>
 
-						<div className="mt-6 flex justify-center">
-							{loading ? (
-								<div
-									className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
-									style={{ width: "850px", height: "600px" }}
-								>
-									Loading certificate...
-								</div>
-							) : certificate ? (
-								<div
-									id="certificate-preview"
-									className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white"
-									style={{ width: "850px", height: "600px" }}
-								>
-									<canvas
-										id="preview-canvas"
-										style={{
-											display: "block",
-											margin: "0 auto",
-											border: "2px solid #00000010",
-										}}
-									/>
-								</div>
-							) : (
-								<div
-									className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
-									style={{ width: "850px", height: "600px" }}
-								>
-									No certificate found
-								</div>
-							)}
-						</div>
+							<div className="mt-6 flex justify-center">
+								{loading ? (
+									<div
+										className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
+										style={{ width: "850px", height: "600px" }}
+									>
+										Loading certificate...
+									</div>
+								) : certificate ? (
+									<div
+										id="certificate-preview"
+										className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white"
+										style={{ width: "850px", height: "600px" }}
+									>
+										<canvas
+											id="preview-canvas"
+											style={{
+												display: "block",
+												margin: "0 auto",
+												border: "2px solid #00000010",
+											}}
+										/>
+									</div>
+								) : (
+									<div
+										className="flex items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/80 text-gray-500"
+										style={{ width: "850px", height: "600px" }}
+									>
+										No certificate found
+									</div>
+								)}
+							</div>
 
-							<div className="mt-6 border-t border-gray-100 pt-4 text-xs uppercase tracking-[0.25em] text-gray-400">Preview only</div>
+							<div className="mt-6 border-t border-gray-100 pt-4 text-xs uppercase tracking-[0.25em] text-gray-400">
+								Preview only
+							</div>
 						</div>
 					</div>
 
 					<div className="w-full">
 						<div className="rounded-3xl border border-white/20 bg-white/95 text-primary_text shadow-xl">
 							<div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
-								<h2 className="text-lg font-semibold text-primary_text">Participants</h2>
-								<span className="text-sm text-gray-500">{participants.length} total</span>
+								<h2 className="text-lg font-semibold text-primary_text">
+									Participants
+								</h2>
+								<span className="text-sm text-gray-500">
+									{participants.length} total
+								</span>
 							</div>
 							<div className="max-h-[520px] overflow-auto">
 								<table className="min-w-full">
@@ -684,7 +682,7 @@ const PreviewPage = () => {
 													No columns
 												</th>
 											)}
-									</tr>
+										</tr>
 									</thead>
 									<tbody className="divide-y divide-gray-100 text-sm text-gray-700">
 										{loading ? (
@@ -702,18 +700,23 @@ const PreviewPage = () => {
 													key={recipient.id ?? `participant-${index}`}
 													className={`cursor-pointer transition ${
 														selectedParticipant?.id === recipient.id
-															? 'bg-primary_button/10'
-															: 'hover:bg-primary_button/5'
+															? "bg-primary_button/10"
+															: "hover:bg-primary_button/5"
 													}`}
-													onClick={() => handleParticipantClick(recipient)}
+													onClick={() =>
+														handleParticipantClick(recipient)
+													}
 												>
-													{columns.length > 0 ? (
-														columns.map((col) => (
-															<td key={col} className="px-5 py-3 text-left">
-																{recipient.data?.[col] ?? ''}
-															</td>
-														))
-													) : null}
+													{columns.length > 0
+														? columns.map((col) => (
+																<td
+																	key={col}
+																	className="px-5 py-3 text-left"
+																>
+																	{recipient.data?.[col] ?? ""}
+																</td>
+														  ))
+														: null}
 												</tr>
 											))
 										) : (
@@ -721,7 +724,8 @@ const PreviewPage = () => {
 												<td
 													colSpan={Math.max(columns.length, 1)}
 													className="px-6 py-8 text-center text-gray-500"
-													>No participants found
+												>
+													No participants found
 												</td>
 											</tr>
 										)}
