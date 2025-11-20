@@ -27,6 +27,8 @@ const OUTPUT_HEIGHT = 450;
 const WORKING_WIDTH = 640;
 const WORKING_HEIGHT = 360;
 const DISPLAY_WIDTH = 320;
+const STROKE_WIDTH_OPTIONS = [4, 8, 12] as const;
+type StrokeWidth = (typeof STROKE_WIDTH_OPTIONS)[number];
 
 const SignaturePage = () => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -41,6 +43,7 @@ const SignaturePage = () => {
 	const [signatureColor, setSignatureColor] = useState<"black" | "white" | "blue">(
 		"black"
 	);
+	const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(STROKE_WIDTH_OPTIONS[0]);
 	const [hasManualChanges, setHasManualChanges] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -526,15 +529,23 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		// scale for crisp rendering
 		context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-		context.lineWidth = 2.5;
+		context.lineWidth = STROKE_WIDTH_OPTIONS[0];
 		context.lineCap = "round";
-		// initialize with current selected color
-		const colorHex = signatureColor === 'white' ? '#ffffff' : signatureColor === 'blue' ? '#2563eb' : '#000000';
-		context.strokeStyle = colorHex;
-		// context.fillStyle = "#ffffff";
-		// context.fillRect(0, 0, WORKING_WIDTH, WORKING_HEIGHT);
 		contextRef.current = context;
+	}, []);
+
+	useEffect(() => {
+		const context = contextRef.current;
+		if (!context) return;
+		const colorHex = signatureColor === "white" ? "#ffffff" : signatureColor === "blue" ? "#2563eb" : "#000000";
+		context.strokeStyle = colorHex;
 	}, [signatureColor]);
+
+	useEffect(() => {
+		const context = contextRef.current;
+		if (!context) return;
+		context.lineWidth = strokeWidth;
+	}, [strokeWidth]);
 
 	const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
 		const sanitized = hex.replace('#', '');
@@ -755,6 +766,14 @@ function toggleSignaturePlaceholders(visible: boolean) {
 		setSignatureColor(c);
 		const hex = c === 'white' ? '#ffffff' : c === 'blue' ? '#2563eb' : '#000000';
 		recolorWorkingCanvasTo(hex);
+	};
+
+	const handleSelectStrokeWidth = (width: StrokeWidth) => {
+		setStrokeWidth(width);
+		const context = contextRef.current;
+		if (context) {
+			context.lineWidth = width;
+		}
 	};
 
   const handleClearCanvas = () => {
@@ -1007,51 +1026,92 @@ function toggleSignaturePlaceholders(visible: boolean) {
 											width: "100%",
 											maxWidth: `${DISPLAY_WIDTH}px`,
 											height: "auto",
-											backgroundColor: signatureColor === 'white' ? '#000000' : '#ffffff',
+											backgroundColor: signatureColor === "white" ? "#000000" : "#ffffff",
 										}}
 										onPointerDown={handlePointerDown}
 										onPointerMove={handlePointerMove}
 										onPointerUp={stopDrawing}
 										onPointerLeave={stopDrawing}
 									/>
-								<div className="flex flex-wrap items-center gap-3">
-									<div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1">
-										{(["black", "white", "blue"] as const).map((c) => (
+
+									<div className="flex w-full flex-col gap-3">
+										<div className="flex flex-wrap items-center gap-3">
+											<div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1">
+												{(["black", "white", "blue"] as const).map((c) => {
+													const isActive = signatureColor === c;
+													return (
+														<button
+															key={c}
+															onClick={() => handleSelectColor(c)}
+															className={`h-7 w-7 rounded-full border-2 ring-2 transition ${
+																isActive
+																	? "ring-slate-200 ring-offset-2 ring-offset-white/30"
+																	: "ring-transparent"
+															}`}
+															style={{
+																backgroundColor: c === "white" ? "#ffffff" : c === "blue" ? "#2563eb" : "#000000",
+																borderColor: isActive
+																	? "rgba(148,163,184,1)"
+																	: "rgba(148,163,184,0.75)",
+															}}
+															aria-label={`Set color ${c}`}
+														/>
+													);
+												})}
+												<span className="px-2 text-xs text-gray-600">Color</span>
+											</div>
+											<div className="flex flex-wrap items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1">
+												{STROKE_WIDTH_OPTIONS.map((width) => (
+													<button
+														key={width}
+														onClick={() => handleSelectStrokeWidth(width)}
+														className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition border-2 ${
+															strokeWidth === width
+																? "border-slate-200 bg-white text-primary_text shadow"
+																: "border-slate-400 bg-white/15 text-primary_text/90 hover:bg-white/25"
+														}`}
+														aria-label={`Set thickness to ${width}px`}
+													>
+														<span
+															className="block rounded-full transition-all"
+															style={{
+																width: "36px",
+																height: `${width}px`,
+																backgroundColor:
+																	strokeWidth === width
+																		? "#0f172a"
+																		: "rgba(15,23,42,0.5)",
+															}}
+															aria-hidden="true"
+														/>
+														{width}px
+													</button>
+												))}
+												<span className="px-2 text-xs text-gray-600">Thickness</span>
+											</div>
+										</div>
+										<div className="flex flex-wrap items-center gap-3">
 											<button
-												key={c}
-												onClick={() => handleSelectColor(c)}
-												className={`h-7 w-7 rounded-full ring-2 transition ${
-													signatureColor === c ? 'ring-white' : 'ring-transparent'
-												}`}
-												style={{
-													backgroundColor: c === 'white' ? '#ffffff' : c === 'blue' ? '#2563eb' : '#000000',
-													border: c === 'white' ? '1px solid rgba(0,0,0,0.2)' : 'none',
-												}}
-												aria-label={`Set color ${c}`}
-											/>
-										))}
-										<span className="px-2 text-xs text-gray-600">Color</span>
-									</div>
-									<button
-										className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-												hasManualChanges
-													? "bg-primary_button text-white hover:scale-[1.01]"
-													: "bg-white/40 text-gray-400 cursor-not-allowed"
-											}`}
-											onClick={handleConfirmSignature}
-											disabled={!hasManualChanges}
-										>
-											Confirm
-										</button>
-										<button
-											className="rounded-full border border-primary_button/30 bg-white px-5 py-2 text-sm font-semibold text-primary_button transition hover:scale-[1.01]"
-											onClick={handleClearCanvas}
-										>
-											Clear
-										</button>
+												className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+														hasManualChanges
+															? "bg-primary_button text-white hover:scale-[1.01]"
+															: "bg-white/40 text-gray-400 cursor-not-allowed"
+													}`}
+												onClick={handleConfirmSignature}
+												disabled={!hasManualChanges}
+											>
+												Confirm
+											</button>
+											<button
+												className="rounded-full border border-primary_button/30 bg-white px-5 py-2 text-sm font-semibold text-primary_button transition hover:scale-[1.01]"
+												onClick={handleClearCanvas}
+											>
+												Clear
+											</button>
+										</div>
 									</div>
 								</div>
-
+								
 								<div className="hidden h-full w-px self-stretch rounded-full bg-white/30 md:block" />
 
 								<div className="flex min-w-[220px] flex-col gap-4 rounded-2xl border border-white/15 bg-white/80 p-4 text-primary_text shadow-inner">
