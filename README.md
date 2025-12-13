@@ -2,6 +2,12 @@
 
 A secure document management system built with React, TypeScript, and Vite.
 
+## Authors
+
+* **Chotiwet Wisitworanut** - 65130500208
+* **Witthawin Klairatsamee** - 65130500243
+* **Thawatchai Wongboonsiri** - 65130500262
+  
 ## Requirements
 
 ### Hardware Requirements
